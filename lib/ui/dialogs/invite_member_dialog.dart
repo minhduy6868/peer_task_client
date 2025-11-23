@@ -1,0 +1,404 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+
+class InviteMemberDialog extends StatefulWidget {
+  final String workspaceId;
+  final String workspaceName;
+  final Function(String token, int? expiresIn, int? maxUses) onGenerateLink;
+  final Function() onGetInviteLinks;
+
+  const InviteMemberDialog({
+    super.key,
+    required this.workspaceId,
+    required this.workspaceName,
+    required this.onGenerateLink,
+    required this.onGetInviteLinks,
+  });
+
+  @override
+  State<InviteMemberDialog> createState() => _InviteMemberDialogState();
+}
+
+class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _emailController = TextEditingController();
+  
+  String? _generatedLink;
+  String? _generatedToken;
+  bool _isGenerating = false;
+  
+  int _selectedExpiry = 24; // hours
+  int? _maxUses;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _generateInviteLink() async {
+    setState(() => _isGenerating = true);
+    
+    try {
+      await widget.onGenerateLink(
+        _generatedToken ?? '',
+        _selectedExpiry,
+        _maxUses,
+      );
+      
+      // Simulate API response (in real app, this comes from callback)
+      setState(() {
+        _generatedToken = DateTime.now().millisecondsSinceEpoch.toString();
+        _generatedLink = 'http://localhost:3000/join/$_generatedToken';
+        _isGenerating = false;
+      });
+    } catch (e) {
+      setState(() => _isGenerating = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate link: $e')),
+        );
+      }
+    }
+  }
+
+  void _copyLink() {
+    if (_generatedLink != null) {
+      Clipboard.setData(ClipboardData(text: _generatedLink!));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link copied to clipboard!')),
+      );
+    }
+  }
+
+  void _shareLink() {
+    if (_generatedLink != null) {
+      Share.share(
+        'Join "${widget.workspaceName}" workspace:\n$_generatedLink',
+        subject: 'Workspace Invitation',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: 500,
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.group_add, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Invite Members',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          widget.workspaceName,
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tabs
+            TabBar(
+              controller: _tabController,
+              labelColor: Colors.blue,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.blue,
+              tabs: const [
+                Tab(text: 'Invite Link & QR'),
+                Tab(text: 'Invite by Email'),
+              ],
+            ),
+
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildInviteLinkTab(),
+                  _buildEmailInviteTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInviteLinkTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Expiration settings
+          const Text(
+            'Link Settings',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Expires in:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<int>(
+                      value: _selectedExpiry,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 1, child: Text('1 hour')),
+                        DropdownMenuItem(value: 6, child: Text('6 hours')),
+                        DropdownMenuItem(value: 24, child: Text('24 hours')),
+                        DropdownMenuItem(value: 168, child: Text('7 days')),
+                        DropdownMenuItem(value: 0, child: Text('Never')),
+                      ],
+                      onChanged: (value) => setState(() => _selectedExpiry = value ?? 24),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Max uses:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<int?>(
+                      value: _maxUses,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: null, child: Text('Unlimited')),
+                        DropdownMenuItem(value: 1, child: Text('1 use')),
+                        DropdownMenuItem(value: 5, child: Text('5 uses')),
+                        DropdownMenuItem(value: 10, child: Text('10 uses')),
+                        DropdownMenuItem(value: 50, child: Text('50 uses')),
+                      ],
+                      onChanged: (value) => setState(() => _maxUses = value),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Generate button
+          ElevatedButton.icon(
+            onPressed: _isGenerating ? null : _generateInviteLink,
+            icon: _isGenerating 
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.link),
+            label: Text(_isGenerating ? 'Generating...' : 'Generate Invite Link'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+
+          if (_generatedLink != null) ...[
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+
+            // QR Code
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: QrImageView(
+                  data: _generatedLink!,
+                  version: QrVersions.auto,
+                  size: 200,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Scan QR code to join',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Link display
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _generatedLink!,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 20),
+                    onPressed: _copyLink,
+                    tooltip: 'Copy link',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _copyLink,
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Copy Link'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _shareLink,
+                    icon: const Icon(Icons.share),
+                    label: const Text('Share'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmailInviteTab() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Invite by Email',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email address',
+              hintText: 'user@example.com',
+              prefixIcon: Icon(Icons.email),
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              // TODO: Implement email invite
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Email invite not yet implemented')),
+              );
+            },
+            icon: const Icon(Icons.send),
+            label: const Text('Send Invitation'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'User must have an account to be invited by email',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
