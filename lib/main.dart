@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'providers/app_providers.dart';
 import 'providers/language_provider.dart';
 import 'services/storage_service.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/reset_password_screen.dart';
-import 'ui/screens/workspaces_screen.dart';
-import 'ui/screens/boards_screen.dart';
-import 'ui/screens/settings_screen.dart';
+import 'ui/screens/workspace_selection_screen.dart';
+import 'ui/screens/workspace_home_screen.dart';
 import 'ui/screens/hybrid_board_screen.dart';
+import 'ui/screens/p2p_drawing_board_screen.dart';
+import 'ui/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +40,28 @@ class MyApp extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final locale = ref.watch(languageProvider);
 
+    // Show loading screen while checking auth
+    if (authState.isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading...',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final router = GoRouter(
       refreshListenable: _AuthStateNotifier(ref),
       redirect: (context, state) {
@@ -49,12 +73,44 @@ class MyApp extends ConsumerWidget {
         }
 
         if (isAuthenticated && isLoggingIn) {
+          // Check if there's a last workspace to navigate to
+          final storage = ref.read(storageServiceProvider);
+          final lastWorkspaceId = storage.getLastWorkspace();
+          if (lastWorkspaceId != null) {
+            return '/workspace/$lastWorkspaceId/boards';
+          }
           return '/workspaces';
         }
 
         return null;
       },
       routes: [
+        GoRoute(
+          path: '/',
+          redirect: (context, state) {
+            final isAuthenticated = authState.isAuthenticated;
+            if (isAuthenticated) {
+              final storage = ref.read(storageServiceProvider);
+              final lastWorkspaceId = storage.getLastWorkspace();
+              if (lastWorkspaceId != null) {
+                return '/workspace/$lastWorkspaceId/boards';
+              }
+              return '/workspaces';
+            }
+            return '/login';
+          },
+        ),
+        GoRoute(
+          path: '/workspaces',
+          builder: (context, state) => const WorkspaceSelectionScreen(),
+        ),
+        GoRoute(
+          path: '/workspace/:id/boards',
+          builder: (context, state) {
+            final workspaceId = state.pathParameters['id']!;
+            return WorkspaceHomeScreen(workspaceId: workspaceId);
+          },
+        ),
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
@@ -71,17 +127,6 @@ class MyApp extends ConsumerWidget {
           },
         ),
         GoRoute(
-          path: '/workspaces',
-          builder: (context, state) => const WorkspacesScreen(),
-        ),
-        GoRoute(
-          path: '/workspace/:id/boards',
-          builder: (context, state) {
-            final workspaceId = state.pathParameters['id']!;
-            return BoardsScreen(workspaceId: workspaceId);
-          },
-        ),
-        GoRoute(
           path: '/board/:id',
           builder: (context, state) {
             final boardId = state.pathParameters['id']!;
@@ -89,16 +134,22 @@ class MyApp extends ConsumerWidget {
           },
         ),
         GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
+          path: '/drawing/:id',
+          builder: (context, state) {
+            final boardId = state.pathParameters['id']!;
+            return P2PDrawingBoardScreen(boardId: boardId);
+          },
         ),
       ],
-      initialLocation: authState.isAuthenticated ? '/workspaces' : '/login',
     );
 
     return MaterialApp.router(
       title: 'PeerTask',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      locale: locale,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -107,12 +158,6 @@ class MyApp extends ConsumerWidget {
         Locale('en'),
         Locale('vi'),
       ],
-      locale: locale,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData.dark(useMaterial3: true),
       routerConfig: router,
     );
   }

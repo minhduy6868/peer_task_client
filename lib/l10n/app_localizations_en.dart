@@ -406,4 +406,142 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameRequired => 'Name is required';
+
+  @override
+  String get workspace => 'Workspace';
+
+  @override
+  String get workspaceInfo => 'Workspace Info';
+
+  @override
+  String get workspaceSettings => 'Workspace Settings';
+
+  @override
+  String get changeWorkspace => 'Change Workspace';
+
+  @override
+  String get leaveWorkspace => 'Leave Workspace';
+
+  @override
+  String get deleteWorkspace => 'Delete Workspace';
+
+  @override
+  String get leaveWorkspaceConfirm =>
+      'Are you sure you want to leave this workspace?';
+
+  @override
+  String get deleteWorkspaceConfirm =>
+      'Are you sure you want to delete this workspace? This action cannot be undone.';
+
+  @override
+  String get workspaceUpdated => 'Workspace updated';
+
+  @override
+  String get workspaceDeleted => 'Workspace deleted';
+
+  @override
+  String get memberRemoved => 'Member removed';
+
+  @override
+  String get roleUpdated => 'Role updated';
+
+  @override
+  String get inviteRevoked => 'Invite revoked';
+
+  @override
+  String get inviteCodeCreated => 'Invite Code Created';
+
+  @override
+  String get shareCodeToInvite => 'Share this code to invite members:';
+
+  @override
+  String get scanQROrCopy => '• Scan QR code\n• Or copy and paste the code';
+
+  @override
+  String get inviteCode => 'Invite Code';
+
+  @override
+  String get copyCode => 'Copy Code';
+
+  @override
+  String get codeCopied => '✅ Code copied to clipboard';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get general => 'General';
+
+  @override
+  String get invites => 'Invites';
+
+  @override
+  String get createInviteLink => 'Create Invite Link';
+
+  @override
+  String get noActiveInvites => 'No active invites';
+
+  @override
+  String get expired => 'Expired';
+
+  @override
+  String get expires => 'Expires';
+
+  @override
+  String get invite => 'Invite';
+
+  @override
+  String get dangerZone => 'Danger Zone';
+
+  @override
+  String get deleteAllData =>
+      'Are you sure? This will delete all boards, tasks, and data. This action cannot be undone.';
+
+  @override
+  String get makeAdmin => 'Make Admin';
+
+  @override
+  String get makeMember => 'Make Member';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get useInviteLinkToAdd => 'Use invite link to add members';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String errorLoadingMembers(Object error) {
+    return 'Error loading members: $error';
+  }
+
+  @override
+  String get welcome => 'Welcome!';
+
+  @override
+  String get noWorkspaceYet => 'You don\'t have any workspace yet';
+
+  @override
+  String get createOrJoinWorkspace =>
+      'Create a new workspace or join an existing one to get started';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get join => 'Join';
+
+  @override
+  String get yourWorkspaces => 'Your Workspaces';
+
+  @override
+  String get selectWorkspace => 'Select a workspace to continue';
+
+  @override
+  String get enterWorkspaceName => 'Enter workspace name';
 }

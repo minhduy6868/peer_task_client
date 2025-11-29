@@ -1,5 +1,6 @@
-import '../models/operation.dart';
-import '../models/whiteboard_object.dart';
+import 'package:flutter/foundation.dart';
+import '../models/operation/operation.dart';
+import '../models/whiteboard_object/whiteboard_object.dart';
 import 'package:uuid/uuid.dart';
 
 class SyncEngine {
@@ -48,7 +49,7 @@ class SyncEngine {
   void receiveOperation(Operation operation) {
     // Deduplicate
     if (_appliedOpIds.contains(operation.opId)) {
-      print('⏭️  Skipping duplicate operation: ${operation.opId}');
+      debugPrint('⏭️  Skipping duplicate operation: ${operation.opId}');
       return;
     }
 
@@ -61,7 +62,7 @@ class SyncEngine {
       return;
     }
 
-    print('⚡ Applying operation: ${operation.type} by ${operation.actor}');
+    debugPrint('⚡ Applying operation: ${operation.type} by ${operation.actor}');
 
     switch (operation.type) {
       case OperationType.createObject:
@@ -89,27 +90,55 @@ class SyncEngine {
   }
 
   void _handleCreateObject(Operation operation) {
-    final object = WhiteboardObject.fromJson(operation.payload);
-    _objects[object.id] = object;
+    // For canvas objects (stroke, text, shapes), don't parse as WhiteboardObject
+    // Just store the raw payload - they will be rendered directly from operations
+    final objectType = operation.payload['type'] as String?;
+    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line'];
+    
+    if (canvasTypes.contains(objectType)) {
+      // Canvas objects are handled directly from operations in UI
+      // No need to store in _objects map
+      return;
+    }
+    
+    // For WhiteboardObject types (task, etc.), parse and store
+    try {
+      final object = WhiteboardObject.fromJson(operation.payload);
+      _objects[object.id] = object;
+    } catch (e) {
+      debugPrint('⚠️  Error parsing WhiteboardObject: $e');
+    }
   }
 
   void _handleUpdateObject(Operation operation) {
     final objectId = operation.payload['id'] as String;
+    final objectType = operation.payload['type'] as String?;
+    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line'];
+    
+    // Canvas objects are handled directly from operations
+    if (canvasTypes.contains(objectType)) {
+      return;
+    }
+    
     final existing = _objects[objectId];
 
     if (existing == null) {
-      print('⚠️  Object not found for update: $objectId');
+      debugPrint('⚠️  Object not found for update: $objectId');
       return;
     }
 
     // Last-Write-Wins (LWW) conflict resolution
     if (operation.timestamp < existing.updatedAt) {
-      print('⏭️  Skipping outdated update for $objectId');
+      debugPrint('⏭️  Skipping outdated update for $objectId');
       return;
     }
 
-    final updated = WhiteboardObject.fromJson(operation.payload);
-    _objects[objectId] = updated;
+    try {
+      final updated = WhiteboardObject.fromJson(operation.payload);
+      _objects[objectId] = updated;
+    } catch (e) {
+      debugPrint('⚠️  Error updating WhiteboardObject: $e');
+    }
   }
 
   void _handleDeleteObject(Operation operation) {

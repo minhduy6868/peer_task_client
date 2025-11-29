@@ -1,6 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import '../models/operation.dart';
+import '../models/operation/operation.dart';
 
 class WebRTCService {
   final String userId;
@@ -10,6 +11,9 @@ class WebRTCService {
 
   final Map<String, RTCPeerConnection> _peerConnections = {};
   final Map<String, RTCDataChannel> _dataChannels = {};
+  final Map<String, List<RTCIceCandidate>> _pendingIceCandidates = {};
+  final Map<String, bool> _makingOffer = {};
+  final Map<String, bool> _ignoreOffer = {};
 
   WebRTCService({
     required this.userId,
@@ -18,42 +22,98 @@ class WebRTCService {
     this.onPeerDisconnected,
   });
 
+  bool _isPolite(String peerId) {
+    // Use userId comparison to determine polite peer (stable ordering)
+    return userId.compareTo(peerId) > 0;
+  }
+
+  Map<String, dynamic> _getIceConfiguration() {
+    return {
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'},
+        {
+          'urls': [
+            'turn:openrelay.metered.ca:80',
+            'turn:openrelay.metered.ca:443',
+          ],
+          'username': 'openrelayproject',
+          'credential': 'openrelayproject',
+        },
+      ],
+      'iceTransportPolicy': 'all',
+      'bundlePolicy': 'max-bundle',
+      'rtcpMuxPolicy': 'require',
+    };
+  }
+
   Future<void> initPeerConnection(
     String peerId,
     Function(Map<String, dynamic>) onLocalDescription,
   ) async {
-    print('🔗 Creating peer connection for $peerId');
+    debugPrint('🔗 Creating peer connection for $peerId');
 
-    final Map<String, dynamic> configuration = {
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'},
-      ],
-    };
-
-    final pc = await createPeerConnection(configuration);
+    final pc = await createPeerConnection(_getIceConfiguration());
     _peerConnections[peerId] = pc;
 
-    // Create data channel
-    final dc = await pc.createDataChannel('board_ops', RTCDataChannelInit());
+    // Monitor connection state
+    pc.onConnectionState = (state) {
+      debugPrint('🔗 Peer connection state with $peerId: $state');
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        debugPrint('❌ Connection failed/disconnected with $peerId');
+        onPeerDisconnected?.call(peerId);
+      } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        debugPrint('✅ Connection established with $peerId');
+      }
+    };
+    
+    pc.onIceConnectionState = (state) {
+      debugPrint('🧊 ICE connection state with $peerId: $state');
+      if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        debugPrint('❌ ICE failed with $peerId');
+      } else if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+        debugPrint('✅ ICE connected with $peerId');
+      }
+    };
+    
+    pc.onIceGatheringState = (state) {
+      debugPrint('🔍 ICE gathering state with $peerId: $state');
+    };
+
+    // Create data channel with explicit configuration
+    final dc = await pc.createDataChannel(
+      'board_ops',
+      RTCDataChannelInit()
+        ..ordered = true
+        ..protocol = 'json',
+    );
     _dataChannels[peerId] = dc;
+    debugPrint('📺 Created data channel for $peerId (state: ${dc.state})');
 
     _setupDataChannel(dc, peerId);
 
-    // Create offer
-    final offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    // Use perfect negotiation - track if we're making an offer
+    _makingOffer[peerId] = true;
+    try {
+      // Create offer
+      final offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
-    pc.onIceCandidate = (candidate) {
+      pc.onIceCandidate = (candidate) {
+        debugPrint('🧊 Generated ICE candidate (offer): ${candidate.candidate?.substring(0, 50)}...');
+        onLocalDescription({
+          'type': 'ice',
+          'candidate': candidate.toMap(),
+        });
+      };
+
       onLocalDescription({
-        'type': 'ice',
-        'candidate': candidate.toMap(),
+        'type': 'offer',
+        'sdp': offer.sdp,
       });
-    };
-
-    onLocalDescription({
-      'type': 'offer',
-      'sdp': offer.sdp,
-    });
+    } finally {
+      _makingOffer[peerId] = false;
+    }
   }
 
   Future<void> handleSignal(
@@ -61,14 +121,19 @@ class WebRTCService {
     Map<String, dynamic> signal,
     Function(Map<String, dynamic>)? onLocalDescription,
   ) async {
-    print('📡 Handling signal from $peerId: ${signal['type']}');
+    debugPrint('📡 Handling signal from $peerId: ${signal['type']}');
 
-    if (signal['type'] == 'offer') {
-      await _handleOffer(peerId, signal, onLocalDescription!);
-    } else if (signal['type'] == 'answer') {
-      await _handleAnswer(peerId, signal);
-    } else if (signal['type'] == 'ice') {
-      await _handleIceCandidate(peerId, signal);
+    try {
+      if (signal['type'] == 'offer') {
+        await _handleOffer(peerId, signal, onLocalDescription!);
+      } else if (signal['type'] == 'answer') {
+        await _handleAnswer(peerId, signal);
+      } else if (signal['type'] == 'ice') {
+        await _handleIceCandidate(peerId, signal);
+      }
+    } catch (e) {
+      debugPrint('❌ Error handling signal from $peerId: $e');
+      // Don't rethrow - just log and continue
     }
   }
 
@@ -77,49 +142,107 @@ class WebRTCService {
     Map<String, dynamic> signal,
     Function(Map<String, dynamic>) onLocalDescription,
   ) async {
-    print('📥 Handling offer from $peerId');
+    debugPrint('📥 Handling offer from $peerId');
 
-    final Map<String, dynamic> configuration = {
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'},
-      ],
-    };
+    // Perfect negotiation: ignore offer if we're impolite and making an offer
+    final offerCollision = (_makingOffer[peerId] == true);
+    final ignoreOffer = !_isPolite(peerId) && offerCollision;
+    
+    if (ignoreOffer) {
+      debugPrint('⚠️ Ignoring offer from $peerId (collision, we are impolite)');
+      return;
+    }
 
-    final pc = await createPeerConnection(configuration);
-    _peerConnections[peerId] = pc;
+    var pc = _peerConnections[peerId];
+    if (pc == null) {
+      pc = await createPeerConnection(_getIceConfiguration());
+      _peerConnections[peerId] = pc;
+      
+      // Monitor connection state
+      pc.onConnectionState = (state) {
+        debugPrint('🔗 Peer connection state with $peerId: $state');
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+            state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+          debugPrint('❌ Connection failed/disconnected with $peerId');
+          onPeerDisconnected?.call(peerId);
+        } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+          debugPrint('✅ Connection established with $peerId');
+        }
+      };
+      
+      pc.onIceConnectionState = (state) {
+        debugPrint('🧊 ICE connection state with $peerId: $state');
+        if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+          debugPrint('❌ ICE failed with $peerId');
+        } else if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+          debugPrint('✅ ICE connected with $peerId');
+        }
+      };
+      
+      pc.onIceGatheringState = (state) {
+        debugPrint('🔍 ICE gathering state with $peerId: $state');
+      };
 
-    pc.onDataChannel = (channel) {
-      print('📥 Data channel received from $peerId');
-      _dataChannels[peerId] = channel;
-      _setupDataChannel(channel, peerId);
-    };
+      pc.onDataChannel = (channel) {
+        debugPrint('📥 Data channel received from $peerId');
+        _dataChannels[peerId] = channel;
+        _setupDataChannel(channel, peerId);
+      };
 
-    pc.onIceCandidate = (candidate) {
+      pc.onIceCandidate = (candidate) {
+        debugPrint('🧊 Generated ICE candidate (answer): ${candidate.candidate?.substring(0, 50)}...');
+        onLocalDescription({
+          'type': 'ice',
+          'candidate': candidate.toMap(),
+        });
+      };
+    }
+
+    try {
+      await pc.setRemoteDescription(
+        RTCSessionDescription(signal['sdp'], signal['type']),
+      );
+
+      // Add any buffered ICE candidates
+      final buffered = _pendingIceCandidates.remove(peerId);
+      if (buffered != null && buffered.isNotEmpty) {
+        debugPrint('🔄 Adding ${buffered.length} buffered ICE candidates for $peerId');
+        for (final candidate in buffered) {
+          await pc.addCandidate(candidate);
+        }
+      }
+
+      final answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
       onLocalDescription({
-        'type': 'ice',
-        'candidate': candidate.toMap(),
+        'type': 'answer',
+        'sdp': answer.sdp,
       });
-    };
-
-    await pc.setRemoteDescription(
-      RTCSessionDescription(signal['sdp'], signal['type']),
-    );
-
-    final answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    onLocalDescription({
-      'type': 'answer',
-      'sdp': answer.sdp,
-    });
+    } catch (e) {
+      debugPrint('❌ Error processing offer from $peerId: $e');
+    }
   }
 
   Future<void> _handleAnswer(String peerId, Map<String, dynamic> signal) async {
     final pc = _peerConnections[peerId];
     if (pc != null) {
-      await pc.setRemoteDescription(
-        RTCSessionDescription(signal['sdp'], signal['type']),
-      );
+      try {
+        await pc.setRemoteDescription(
+          RTCSessionDescription(signal['sdp'], signal['type']),
+        );
+        
+        // Add any buffered ICE candidates
+        final buffered = _pendingIceCandidates.remove(peerId);
+        if (buffered != null && buffered.isNotEmpty) {
+          debugPrint('🔄 Adding ${buffered.length} buffered ICE candidates for $peerId');
+          for (final candidate in buffered) {
+            await pc.addCandidate(candidate);
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Error processing answer from $peerId: $e');
+      }
     }
   }
 
@@ -129,44 +252,65 @@ class WebRTCService {
   ) async {
     final pc = _peerConnections[peerId];
     if (pc != null && signal['candidate'] != null) {
-      await pc.addCandidate(RTCIceCandidate(
+      final candidate = RTCIceCandidate(
         signal['candidate']['candidate'],
         signal['candidate']['sdpMid'],
         signal['candidate']['sdpMLineIndex'],
-      ));
+      );
+      
+      // Always try to add candidate, buffer on error
+      try {
+        debugPrint('➕ Adding ICE candidate for $peerId');
+        await pc.addCandidate(candidate);
+      } catch (e) {
+        debugPrint('📦 Buffering ICE candidate for $peerId (remote desc not set yet)');
+        _pendingIceCandidates.putIfAbsent(peerId, () => []).add(candidate);
+      }
     }
   }
 
   void _setupDataChannel(RTCDataChannel channel, String peerId) {
     channel.onMessage = (message) {
-      print('📨 Message from $peerId: ${message.text.substring(0, 50)}...');
+      debugPrint('📨 Message from $peerId: ${message.text.substring(0, 50)}...');
       try {
         final data = json.decode(message.text);
         final operation = Operation.fromJson(data);
         onOperationReceived?.call(peerId, operation);
       } catch (e) {
-        print('❌ Error parsing operation: $e');
+        debugPrint('❌ Error parsing operation: $e');
       }
     };
 
     channel.onDataChannelState = (state) {
-      print('🔄 Data channel state with $peerId: $state');
+      debugPrint('🔄 Data channel state with $peerId: $state');
       if (state == RTCDataChannelState.RTCDataChannelOpen) {
+        debugPrint('✅ Data channel OPEN with $peerId - ready to send!');
         onPeerConnected?.call(peerId);
       } else if (state == RTCDataChannelState.RTCDataChannelClosed) {
+        debugPrint('❌ Data channel CLOSED with $peerId');
         onPeerDisconnected?.call(peerId);
+      } else if (state == RTCDataChannelState.RTCDataChannelConnecting) {
+        debugPrint('⏳ Data channel connecting with $peerId...');
       }
     };
   }
 
   void sendOperation(Operation operation) {
     final message = json.encode(operation.toJson());
-    print('📤 Broadcasting operation to ${_dataChannels.length} peers');
+    final openChannels = _dataChannels.values
+        .where((dc) => dc.state == RTCDataChannelState.RTCDataChannelOpen)
+        .length;
+    
+    debugPrint('📤 Broadcasting operation to $openChannels/${_dataChannels.length} peers (open/total)');
 
     for (final entry in _dataChannels.entries) {
       final channel = entry.value;
+      debugPrint('   Channel ${entry.key}: ${channel.state}');
       if (channel.state == RTCDataChannelState.RTCDataChannelOpen) {
         channel.send(RTCDataChannelMessage(message));
+        debugPrint('   ✅ Sent to ${entry.key}');
+      } else {
+        debugPrint('   ❌ Skip ${entry.key} - channel not open');
       }
     }
   }
@@ -177,8 +321,12 @@ class WebRTCService {
 
     _peerConnections[peerId]?.close();
     _peerConnections.remove(peerId);
+    
+    _pendingIceCandidates.remove(peerId);
+    _makingOffer.remove(peerId);
+    _ignoreOffer.remove(peerId);
 
-    print('🔌 Closed connection with $peerId');
+    debugPrint('🔌 Closed connection with $peerId');
   }
 
   void closeAllConnections() {

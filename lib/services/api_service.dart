@@ -1,8 +1,73 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../models/workspace.dart';
-import '../models/board.dart';
+import '../models/workspace/workspace.dart';
+import '../models/board/board.dart';
 import 'storage_service.dart';
+
+/// PeerTask API Service
+/// 
+/// Complete REST API client with JWT authentication and token refresh.
+/// 
+/// **API Endpoints (48 total):**
+/// 
+/// **Authentication (6 endpoints):**
+/// - POST /auth/register - Register new user
+/// - POST /auth/login - Login user
+/// - POST /auth/forgot-password - Request password reset
+/// - POST /auth/reset-password - Reset password with token
+/// - POST /token/refresh - Refresh access token
+/// - POST /token/logout - Logout user
+/// 
+/// **Workspaces (13 endpoints):**
+/// - POST /workspaces - Create workspace
+/// - GET /workspaces - List user's workspaces
+/// - GET /workspaces/:id - Get workspace details
+/// - PUT /workspaces/:id - Update workspace
+/// - DELETE /workspaces/:id - Delete workspace
+/// - POST /workspaces/:id/invite - Email invite
+/// - POST /workspaces/:id/invite-link - Generate invite link with QR
+/// - GET /workspaces/:id/invite-links - List active invites
+/// - GET /workspaces/invite/:token - Get invite info
+/// - POST /workspaces/join/:token - Join workspace
+/// - DELETE /workspaces/:id/invite-links/:inviteId - Revoke invite
+/// 
+/// **Workspace Members (4 endpoints):**
+/// - GET /workspaces/:id/members - List members
+/// - POST /workspaces/:id/members - Add member
+/// - PUT /workspaces/:id/members/:userId - Update member role
+/// - DELETE /workspaces/:id/members/:userId - Remove member
+/// 
+/// **Boards (5 endpoints):**
+/// - POST /boards - Create board
+/// - GET /boards/workspace/:workspaceId - List workspace boards
+/// - GET /boards/:id - Get board details
+/// - PUT /boards/:id - Update board
+/// - DELETE /boards/:id - Delete board
+/// 
+/// **Board Members (4 endpoints):**
+/// - GET /boards/:id/members - List members
+/// - POST /boards/:id/members - Add member
+/// - PUT /boards/:id/members/:userId - Update member permission
+/// - DELETE /boards/:id/members/:userId - Remove member
+/// 
+/// **Tasks (4 endpoints):**
+/// - GET /tasks/board/:boardId - Get board tasks
+/// - POST /tasks - Create task
+/// - PUT /tasks/:id - Update task
+/// - DELETE /tasks/:id - Delete task
+/// 
+/// **Operations (5 endpoints):**
+/// - GET /operations/board/:boardId - Get operations (with ?since=timestamp)
+/// - POST /operations - Save operation
+/// - GET /operations/board/:boardId/count - Get operation count
+/// - DELETE /operations/board/:boardId/cleanup - Cleanup old operations
+/// 
+/// **Permission System:**
+/// - Workspace roles: owner (full control) / editor (create boards) / viewer (read-only)
+/// - Board permissions: edit (full access) / view (read-only)
+/// - Board ownership: is_board_owner (manage board members)
+/// - Access control: owner sees ALL boards, editor/viewer only see boards they're added to
 
 class ApiService {
   final String baseUrl;
@@ -11,15 +76,18 @@ class ApiService {
   String? _refreshToken;
 
   ApiService({
-    this.baseUrl = 'http://localhost:3000',
+    String? baseUrl,
     required this.storage,
-  });
+  }) : baseUrl = baseUrl ?? (kIsWeb ? 'http://127.0.0.1:3000' : 'http://localhost:3000');
 
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
 
   void setTokens({String? accessToken, String? refreshToken}) {
-    _accessToken = accessToken;
+    if (accessToken != null) {
+      _accessToken = accessToken;
+      storage.saveAuthToken(accessToken);
+    }
     if (refreshToken != null) {
       _refreshToken = refreshToken;
       storage.saveRefreshToken(refreshToken);
@@ -27,8 +95,12 @@ class ApiService {
   }
 
   Future<void> loadTokens() async {
+    // Try to load access token first
+    _accessToken = storage.getAuthToken();
     _refreshToken = await storage.getRefreshToken();
-    if (_refreshToken != null) {
+    
+    // If no access token but have refresh token, try to refresh
+    if (_accessToken == null && _refreshToken != null) {
       try {
         await refreshAccessToken();
       } catch (e) {
@@ -41,7 +113,7 @@ class ApiService {
   Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
-    await storage.saveRefreshToken(null);
+    await storage.clearAuth();
   }
 
   Future<void> refreshAccessToken() async {
@@ -57,7 +129,15 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      // Save new access token
       _accessToken = data['accessToken'];
+      await storage.saveAuthToken(data['accessToken']);
+      
+      // Handle refresh token rotation (if server provides new refresh token)
+      if (data['refreshToken'] != null) {
+        _refreshToken = data['refreshToken'];
+        await storage.saveRefreshToken(data['refreshToken']);
+      }
     } else {
       throw Exception('Token refresh failed');
     }
@@ -68,8 +148,7 @@ class ApiService {
     if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
   };
 
-  // Auto-retry helper for future use
-  // ignore: unused_element
+  // Auto-retry helper with token refresh
   Future<http.Response> _requestWithRetry(
     Future<http.Response> Function() request,
   ) async {
@@ -87,6 +166,13 @@ class ApiService {
     }
 
     return response;
+  }
+
+  Future<http.Response> _get(String endpoint) async {
+    return _requestWithRetry(() => http.get(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+    ));
   }
 
   Future<Map<String, dynamic>> register({
@@ -142,18 +228,32 @@ class ApiService {
   }
 
   Future<void> logout() async {
-    if (_refreshToken != null) {
+    // Always clear local tokens first for security
+    final refreshTokenToRevoke = _refreshToken;
+    await clearTokens();
+    
+    // Then try to revoke on server (best effort)
+    if (refreshTokenToRevoke != null) {
       try {
         await http.post(
           Uri.parse('$baseUrl/token/logout'),
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({'refreshToken': _refreshToken}),
+          body: json.encode({'refreshToken': refreshTokenToRevoke}),
         );
       } catch (e) {
-        // Ignore logout errors
+        // Ignore server logout errors - local tokens already cleared
+        debugPrint('Server logout failed: $e');
       }
     }
-    await clearTokens();
+  }
+
+  Future<Map<String, dynamic>> getCurrentUser() async {
+    final response = await _get('/auth/me');
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to get user info');
   }
 
   Future<void> forgotPassword({required String email}) async {
@@ -189,19 +289,19 @@ class ApiService {
 
   // Workspaces
   Future<Workspace> createWorkspace({required String name}) async {
-    print('📤 Creating workspace: $name');
+    debugPrint('📤 Creating workspace: $name');
     final response = await http.post(
       Uri.parse('$baseUrl/workspaces'),
       headers: _headers,
       body: json.encode({'name': name}),
     );
 
-    print('📥 Response status: ${response.statusCode}');
-    print('📥 Response body: ${response.body}');
+    debugPrint('📥 Response status: ${response.statusCode}');
+    debugPrint('📥 Response body: ${response.body}');
 
     if (response.statusCode == 201) {
       final data = json.decode(response.body);
-      print('✅ Workspace created: $data');
+      debugPrint('✅ Workspace created: $data');
       return Workspace.fromJson(data);
     } else {
       throw Exception('Failed to create workspace: ${response.body}');
@@ -284,6 +384,556 @@ class ApiService {
       return Board.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to get board: ${response.body}');
+    }
+  }
+
+  Future<Workspace> updateWorkspace({
+    required String workspaceId,
+    required String name,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/workspaces/$workspaceId'),
+      headers: _headers,
+      body: json.encode({'name': name}),
+    );
+
+    if (response.statusCode == 200) {
+      return Workspace.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to update workspace: ${response.body}');
+    }
+  }
+
+  Future<void> deleteWorkspace(String workspaceId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/workspaces/$workspaceId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete workspace: ${response.body}');
+    }
+  }
+
+  Future<Workspace> getWorkspace(String workspaceId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/workspaces/$workspaceId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return Workspace.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get workspace: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> createInviteLink({
+    required String workspaceId,
+    int? maxUses,
+    DateTime? expiresAt,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-link'),
+      headers: _headers,
+      body: json.encode({
+        if (maxUses != null) 'maxUses': maxUses,
+        if (expiresAt != null) 'expiresAt': expiresAt.toIso8601String(),
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to create invite link: ${response.body}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getInviteLinks(String workspaceId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-links'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get invite links: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getInviteInfo(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/workspaces/invite/$token'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to get invite info: ${response.body}');
+    }
+  }
+
+  Future<void> joinWorkspace(String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/workspaces/join/$token'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to join workspace: ${response.body}');
+    }
+  }
+
+  Future<void> revokeInviteLink({
+    required String workspaceId,
+    required String inviteId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-links/$inviteId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to revoke invite: ${response.body}');
+    }
+  }
+
+  // Workspace Members
+  Future<List<Map<String, dynamic>>> getWorkspaceMembers(String workspaceId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/members'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get members: ${response.body}');
+    }
+  }
+
+  Future<void> addWorkspaceMember({
+    required String workspaceId,
+    required String userId,
+    required String role,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/members'),
+      headers: _headers,
+      body: json.encode({
+        'userId': userId,
+        'role': role,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to add member: ${response.body}');
+    }
+  }
+
+  Future<void> updateWorkspaceMemberRole({
+    required String workspaceId,
+    required String userId,
+    required String role,
+  }) async {
+    final url = '$baseUrl/workspaces/$workspaceId/members/$userId';
+    print('[API] PUT $url');
+    print('[API] Headers: ${_headers}');
+    print('[API] Body: ${json.encode({'role': role})}');
+    
+    final response = await http.put(
+      Uri.parse(url),
+      headers: _headers,
+      body: json.encode({'role': role}),
+    );
+
+    print('[API] Response status: ${response.statusCode}');
+    print('[API] Response body: ${response.body}');
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update member role: ${response.body}');
+    }
+  }
+
+  Future<void> removeWorkspaceMember({
+    required String workspaceId,
+    required String userId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/workspaces/$workspaceId/members/$userId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove member: ${response.body}');
+    }
+  }
+
+  // Board CRUD
+  Future<Board> updateBoard({
+    required String boardId,
+    String? name,
+    String? description,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/boards/$boardId'),
+      headers: _headers,
+      body: json.encode({
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return Board.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to update board: ${response.body}');
+    }
+  }
+
+  Future<void> deleteBoard(String boardId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/boards/$boardId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete board: ${response.body}');
+    }
+  }
+
+  // Board Members
+  Future<List<Map<String, dynamic>>> getBoardMembers(String boardId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/boards/$boardId/members'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get board members: ${response.body}');
+    }
+  }
+
+  Future<void> addBoardMember({
+    required String boardId,
+    required String userId,
+    required String permission,
+  }) async {
+    final url = '$baseUrl/boards/$boardId/members';
+    final body = json.encode({
+      'userId': userId,
+      'permission': permission,
+    });
+    
+    print('[API] POST $url');
+    print('[API] Headers: ${_headers}');
+    print('[API] Body: $body');
+    
+    final response = await http.post(
+      Uri.parse(url),
+      headers: _headers,
+      body: body,
+    );
+
+    print('[API] Response status: ${response.statusCode}');
+    print('[API] Response body: ${response.body}');
+    
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception('Failed to add board member: ${response.body}');
+    }
+  }
+
+  Future<void> updateBoardMemberPermission({
+    required String boardId,
+    required String userId,
+    required String permission,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/boards/$boardId/members/$userId'),
+      headers: _headers,
+      body: json.encode({'permission': permission}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update board member permission: ${response.body}');
+    }
+  }
+
+  Future<void> removeBoardMember({
+    required String boardId,
+    required String userId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/boards/$boardId/members/$userId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove board member: ${response.body}');
+    }
+  }
+
+  // Tasks
+  Future<List<Map<String, dynamic>>> getBoardTasks(
+    String boardId, {
+    String? assigneeId,
+    String? status,
+    String? priority,
+    String? parentId,
+  }) async {
+    final queryParams = <String, String>{};
+    if (assigneeId != null) queryParams['assignee_id'] = assigneeId;
+    if (status != null) queryParams['status'] = status;
+    if (priority != null) queryParams['priority'] = priority;
+    if (parentId != null) queryParams['parent_id'] = parentId;
+    
+    final uri = Uri.parse('$baseUrl/tasks/board/$boardId').replace(
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get tasks: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> createTask({
+    required String boardId,
+    required String title,
+    String? description,
+    String? assignee,
+    String? assigneeId,
+    String? status,
+    String? priority,
+    DateTime? deadline,
+    int? progress,
+    String? parentId,
+    List<String>? labels,
+    double? estimatedHours,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/tasks'),
+      headers: _headers,
+      body: json.encode({
+        'boardId': boardId,
+        'title': title,
+        if (description != null) 'description': description,
+        if (assignee != null) 'assignee': assignee,
+        if (assigneeId != null) 'assignee_id': assigneeId,
+        if (status != null) 'status': status,
+        if (priority != null) 'priority': priority,
+        if (deadline != null) 'deadline': deadline.toIso8601String(),
+        if (progress != null) 'progress': progress,
+        if (parentId != null) 'parent_id': parentId,
+        if (labels != null) 'labels': labels,
+        if (estimatedHours != null) 'estimated_hours': estimatedHours,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to create task: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateTask({
+    required String taskId,
+    String? title,
+    String? description,
+    String? assignee,
+    String? assigneeId,
+    String? status,
+    int? position,
+    String? priority,
+    DateTime? deadline,
+    int? progress,
+    List<String>? labels,
+    double? estimatedHours,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/tasks/$taskId'),
+      headers: _headers,
+      body: json.encode({
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (assignee != null) 'assignee': assignee,
+        if (assigneeId != null) 'assignee_id': assigneeId,
+        if (status != null) 'status': status,
+        if (position != null) 'position': position,
+        if (priority != null) 'priority': priority,
+        if (deadline != null) 'deadline': deadline.toIso8601String(),
+        if (progress != null) 'progress': progress,
+        if (labels != null) 'labels': labels,
+        if (estimatedHours != null) 'estimated_hours': estimatedHours,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to update task: ${response.body}');
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/tasks/$taskId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete task: ${response.body}');
+    }
+  }
+
+  Future<void> reorderTasks({
+    required String boardId,
+    required String status,
+    required List<String> taskIds,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/tasks/reorder'),
+      headers: _headers,
+      body: json.encode({
+        'boardId': boardId,
+        'status': status,
+        'taskIds': taskIds,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reorder tasks: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> moveTask({
+    required String taskId,
+    required String status,
+    int? position,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/tasks/$taskId/move'),
+      headers: _headers,
+      body: json.encode({
+        'status': status,
+        if (position != null) 'position': position,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to move task: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getTaskStats(String boardId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/tasks/board/$boardId/stats'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to get task stats: ${response.body}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMyTasks({
+    String? status,
+    int limit = 50,
+  }) async {
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+    };
+    if (status != null) queryParams['status'] = status;
+    
+    final uri = Uri.parse('$baseUrl/tasks/my-tasks').replace(
+      queryParameters: queryParams,
+    );
+
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get my tasks: ${response.body}');
+    }
+  }
+
+  // Operations (P2P Sync)
+  Future<List<Map<String, dynamic>>> getBoardOperations(
+    String boardId, {
+    int? since,
+  }) async {
+    final uri = since != null
+        ? Uri.parse('$baseUrl/operations/board/$boardId?since=$since')
+        : Uri.parse('$baseUrl/operations/board/$boardId');
+
+    final response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to get operations: ${response.body}');
+    }
+  }
+
+  Future<void> saveOperation({
+    required String boardId,
+    required String operationId,
+    required String operationType,
+    required Map<String, dynamic> payload,
+    required int timestamp,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/operations'),
+      headers: _headers,
+      body: json.encode({
+        'boardId': boardId,
+        'operationId': operationId,
+        'operationType': operationType,
+        'payload': payload,
+        'timestamp': timestamp,
+      }),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception('Failed to save operation: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getOperationCount(String boardId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/operations/board/$boardId/count'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to get operation count: ${response.body}');
+    }
+  }
+
+  Future<void> cleanupOperations(String boardId, int olderThan) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/operations/board/$boardId/cleanup'),
+      headers: _headers,
+      body: json.encode({'olderThan': olderThan}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cleanup operations: ${response.body}');
     }
   }
 }

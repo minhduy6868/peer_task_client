@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
@@ -5,13 +6,13 @@ import '../services/signaling_service.dart';
 import '../services/storage_service.dart';
 import '../services/webrtc_service.dart';
 import '../core/sync_engine.dart';
-import '../models/user.dart';
-import '../models/workspace.dart';
-import '../models/board.dart';
-import '../models/whiteboard_object.dart';
-import '../models/operation.dart';
-import '../models/task_node.dart';
-import '../models/peer.dart';
+import '../models/user/user.dart';
+import '../models/workspace/workspace.dart';
+import '../models/board/board.dart';
+import '../models/whiteboard_object/whiteboard_object.dart';
+import '../models/operation/operation.dart';
+import '../models/task_node/task_node.dart';
+import '../models/peer/peer.dart';
 
 // Services
 final storageServiceProvider = Provider<StorageService>((ref) {
@@ -65,7 +66,7 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final Ref ref;
 
-  AuthNotifier(this.ref) : super(AuthState()) {
+  AuthNotifier(this.ref) : super(AuthState(isLoading: true)) {
     _loadAuthFromStorage();
   }
 
@@ -74,17 +75,47 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final api = ref.read(apiServiceProvider);
     
     try {
+      // Load tokens from storage
       await api.loadTokens();
+      
       if (api.accessToken != null) {
-        // Token loaded and refreshed successfully
-        state = state.copyWith(
-          accessToken: api.accessToken,
-          refreshToken: api.refreshToken,
-        );
+        // Try to load user from storage first
+        final userJson = storage.getUser();
+        if (userJson != null) {
+          final user = User.fromJson(userJson);
+          state = state.copyWith(
+            user: user,
+            accessToken: api.accessToken,
+            refreshToken: api.refreshToken,
+            isLoading: false,
+          );
+          return;
+        }
+        
+        // If no cached user, fetch from API
+        try {
+          final userInfo = await api.getCurrentUser();
+          final user = User.fromJson(userInfo);
+          await storage.saveUser(userInfo);
+          
+          state = state.copyWith(
+            user: user,
+            accessToken: api.accessToken,
+            refreshToken: api.refreshToken,
+            isLoading: false,
+          );
+        } catch (e) {
+          // Failed to get user info, clear auth
+          await api.clearTokens();
+          state = AuthState(isLoading: false);
+        }
+      } else {
+        state = AuthState(isLoading: false);
       }
     } catch (e) {
-      // Token refresh failed, clear auth
-      await storage.clearAuth();
+      // Token loading or refresh failed, clear auth
+      await api.clearTokens();
+      state = AuthState(isLoading: false);
     }
   }
 
@@ -101,6 +132,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final storage = ref.read(storageServiceProvider);
       await storage.saveUserId(user.id);
+      await storage.saveUser(response['user']);
 
       state = state.copyWith(
         user: user,
@@ -130,9 +162,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = User.fromJson(response['user']);
       final accessToken = response['accessToken'];
       final refreshToken = response['refreshToken'];
-
+      
       final storage = ref.read(storageServiceProvider);
       await storage.saveUserId(user.id);
+      await storage.saveUser(response['user']);
 
       state = state.copyWith(
         user: user,
@@ -149,12 +182,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    // Disconnect from whiteboard and clear P2P connections
+    try {
+      ref.read(whiteboardProvider.notifier).disconnect();
+    } catch (e) {
+      debugPrint('Error disconnecting whiteboard: $e');
+    }
+    
+    // Logout from API (clears tokens from storage)
     final api = ref.read(apiServiceProvider);
     await api.logout();
     
-    final storage = ref.read(storageServiceProvider);
-    await storage.clearAuth();
-
+    // Clear auth state
     state = AuthState();
   }
 }
@@ -258,11 +297,36 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
   WhiteboardNotifier(this.ref) : super(WhiteboardState());
 
-  Future<void> connectToBoard(String boardId) async {
+  // Save operation to backend database
+  Future<void> _saveOperationToBackend(
+    String boardId,
+    Operation op,
+    ApiService api,
+  ) async {
+    try {
+      await api.saveOperation(
+        boardId: boardId,
+        operationId: op.opId,
+        operationType: op.type.name,
+        payload: op.payload,
+        timestamp: op.timestamp,
+      );
+    } catch (e) {
+      debugPrint('Error saving operation to backend: $e');
+      // Don't throw - P2P sync should continue even if backend save fails
+    }
+  }
+
+  Future<void> connectToBoard(
+    String boardId, [
+    void Function(Operation)? onRemoteOperation,
+  ]) async {
     final authState = ref.read(authStateProvider);
     if (!authState.isAuthenticated || authState.accessToken == null) {
       throw Exception('Not authenticated');
     }
+
+    final api = ref.read(apiServiceProvider);
 
     // Initialize sync engine
     _syncEngine = SyncEngine(
@@ -272,6 +336,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         state = state.copyWith(
           operations: [...state.operations, op],
         );
+        
+        // Save operation to backend (async, don't await)
+        _saveOperationToBackend(boardId, op, api);
       },
       onOperationBroadcast: (op) {
         // Broadcast via WebRTC
@@ -284,32 +351,41 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       userId: authState.user!.id,
       onOperationReceived: (peerId, operation) {
         _syncEngine?.receiveOperation(operation);
+        // Call custom callback if provided
+        onRemoteOperation?.call(operation);
       },
       onPeerConnected: (peerId) {
-        print('Peer connected: $peerId');
+        debugPrint('Peer connected: $peerId');
       },
       onPeerDisconnected: (peerId) {
-        print('Peer disconnected: $peerId');
+        debugPrint('Peer disconnected: $peerId');
       },
     );
 
     // Initialize signaling
     _signaling = SignalingService(
-      serverUrl: 'http://localhost:3000',
+      serverUrl: kIsWeb ? 'http://127.0.0.1:3000' : 'http://localhost:3000',
       onRoomJoined: (peers) {
+        debugPrint('📥 Room joined with ${peers.length} existing peers');
+        for (final peer in peers) {
+          debugPrint('   - Peer: ${peer.socketId} (user: ${peer.userId})');
+        }
         state = state.copyWith(peers: peers, isConnected: true);
         
         // Initiate WebRTC connections with existing peers
         for (final peer in peers) {
+          debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId}');
           _webrtc!.initPeerConnection(peer.socketId, (signal) {
             _signaling!.sendSignal(peer.socketId, signal);
           });
         }
       },
       onPeerJoined: (peer) {
+        debugPrint('📥 New peer joined: ${peer.socketId} (user: ${peer.userId})');
         state = state.copyWith(peers: [...state.peers, peer]);
         
         // Initiate WebRTC connection
+        debugPrint('🚀 Initiating WebRTC connection with new peer ${peer.socketId}');
         _webrtc!.initPeerConnection(peer.socketId, (signal) {
           _signaling!.sendSignal(peer.socketId, signal);
         });
@@ -325,9 +401,29 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
           _signaling!.sendSignal(from, responseSignal);
         });
       },
+      onReconnected: () async {
+        // When reconnected, sync operations from backend
+        debugPrint('♻️ Reconnected - syncing operations from backend');
+        try {
+          final api = ref.read(apiServiceProvider);
+          final operations = await api.getBoardOperations(boardId);
+          for (final opData in operations) {
+            try {
+              final operation = Operation.fromJson(opData);
+              _syncEngine?.receiveOperation(operation);
+            } catch (e) {
+              debugPrint('Error applying operation after reconnect: $e');
+            }
+          }
+        } catch (e) {
+          debugPrint('Error syncing operations after reconnect: $e');
+        }
+      },
     );
 
+    debugPrint('🔌 Connecting to signaling server...');
     _signaling!.connect(authState.accessToken!);
+    debugPrint('🚪 Joining room: $boardId');
     _signaling!.joinRoom(boardId);
 
     // Load offline operations
@@ -341,6 +437,17 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
   void createOperation(OperationType type, Map<String, dynamic> payload) {
     _syncEngine?.createOperation(type: type, payload: payload);
+  }
+
+  void receiveOperation(Operation operation) {
+    _syncEngine?.receiveOperation(operation);
+  }
+
+  void broadcastOperation(Operation operation) {
+    // Send to local sync engine
+    _syncEngine?.receiveOperation(operation);
+    // Broadcast via WebRTC P2P
+    _webrtc?.sendOperation(operation);
   }
 
   void addObject(WhiteboardObject object) {

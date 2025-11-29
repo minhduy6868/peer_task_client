@@ -406,4 +406,142 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get nameRequired => 'Vui lòng nhập tên';
+
+  @override
+  String get workspace => 'Không gian';
+
+  @override
+  String get workspaceInfo => 'Thông tin không gian';
+
+  @override
+  String get workspaceSettings => 'Cài đặt không gian';
+
+  @override
+  String get changeWorkspace => 'Đổi không gian';
+
+  @override
+  String get leaveWorkspace => 'Rời khỏi không gian';
+
+  @override
+  String get deleteWorkspace => 'Xóa không gian';
+
+  @override
+  String get leaveWorkspaceConfirm =>
+      'Bạn có chắc muốn rời khỏi không gian này?';
+
+  @override
+  String get deleteWorkspaceConfirm =>
+      'Bạn có chắc muốn xóa không gian này? Hành động này không thể hoàn tác.';
+
+  @override
+  String get workspaceUpdated => 'Đã cập nhật không gian';
+
+  @override
+  String get workspaceDeleted => 'Đã xóa không gian';
+
+  @override
+  String get memberRemoved => 'Đã xóa thành viên';
+
+  @override
+  String get roleUpdated => 'Đã cập nhật vai trò';
+
+  @override
+  String get inviteRevoked => 'Đã hủy lời mời';
+
+  @override
+  String get inviteCodeCreated => 'Đã tạo mã mời';
+
+  @override
+  String get shareCodeToInvite => 'Chia sẻ mã này để mời thành viên:';
+
+  @override
+  String get scanQROrCopy => '• Quét mã QR\n• Hoặc sao chép và dán mã';
+
+  @override
+  String get inviteCode => 'Mã mời';
+
+  @override
+  String get copyCode => 'Sao chép mã';
+
+  @override
+  String get codeCopied => '✅ Đã sao chép mã';
+
+  @override
+  String get close => 'Đóng';
+
+  @override
+  String get general => 'Chung';
+
+  @override
+  String get invites => 'Lời mời';
+
+  @override
+  String get createInviteLink => 'Tạo link mời';
+
+  @override
+  String get noActiveInvites => 'Không có lời mời nào';
+
+  @override
+  String get expired => 'Hết hạn';
+
+  @override
+  String get expires => 'Hết hạn';
+
+  @override
+  String get invite => 'Mời';
+
+  @override
+  String get dangerZone => 'Khu vực nguy hiểm';
+
+  @override
+  String get deleteAllData =>
+      'Bạn có chắc? Điều này sẽ xóa tất cả bảng, công việc và dữ liệu. Hành động này không thể hoàn tác.';
+
+  @override
+  String get makeAdmin => 'Chuyển thành Admin';
+
+  @override
+  String get makeMember => 'Chuyển thành Thành viên';
+
+  @override
+  String get remove => 'Xóa';
+
+  @override
+  String get useInviteLinkToAdd => 'Dùng link mời để thêm thành viên';
+
+  @override
+  String get saveChanges => 'Lưu thay đổi';
+
+  @override
+  String get role => 'Vai trò';
+
+  @override
+  String errorLoadingMembers(Object error) {
+    return 'Lỗi khi tải thành viên: $error';
+  }
+
+  @override
+  String get welcome => 'Chào mừng!';
+
+  @override
+  String get noWorkspaceYet => 'Bạn chưa có không gian làm việc nào';
+
+  @override
+  String get createOrJoinWorkspace =>
+      'Tạo mới hoặc tham gia một không gian để bắt đầu';
+
+  @override
+  String get create => 'Tạo';
+
+  @override
+  String get join => 'Tham gia';
+
+  @override
+  String get yourWorkspaces => 'Không gian của bạn';
+
+  @override
+  String get selectWorkspace => 'Chọn một không gian để tiếp tục';
+
+  @override
+  String get enterWorkspaceName => 'Nhập tên không gian';
 }

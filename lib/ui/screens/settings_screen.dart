@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/app_providers.dart';
 
@@ -8,12 +9,14 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final currentLocale = ref.watch(languageProvider);
     final authState = ref.watch(authStateProvider);
+    final user = authState.user;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l10n.settings),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
@@ -29,33 +32,39 @@ class SettingsScreen extends ConsumerWidget {
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
                 CircleAvatar(
-                  radius: 35,
+                  radius: 40,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 40, color: Colors.blue[700]),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        authState.user?.name ?? 'User',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        authState.user?.email ?? '',
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
-                    ],
+                  child: Text(
+                    user?.name?.substring(0, 1).toUpperCase() ?? 
+                    user?.email.substring(0, 1).toUpperCase() ?? 'U',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
                   ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  user?.name ?? 'User',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user?.email ?? '',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ID: ${user?.id ?? ''}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
                 ),
               ],
             ),
@@ -65,17 +74,17 @@ class SettingsScreen extends ConsumerWidget {
 
           // Language Settings
           _SettingsSection(
-            title: 'Language / Ngôn ngữ',
+            title: l10n.language,
             icon: Icons.language,
             children: [
               _LanguageTile(
-                title: 'English',
+                title: l10n.english,
                 locale: const Locale('en'),
                 currentLocale: currentLocale,
                 onTap: () => ref.read(languageProvider.notifier).setLanguage('en'),
               ),
               _LanguageTile(
-                title: 'Tiếng Việt',
+                title: l10n.vietnamese,
                 locale: const Locale('vi'),
                 currentLocale: currentLocale,
                 onTap: () => ref.read(languageProvider.notifier).setLanguage('vi'),
@@ -87,12 +96,12 @@ class SettingsScreen extends ConsumerWidget {
 
           // Account Settings
           _SettingsSection(
-            title: 'Account',
+            title: l10n.profile,
             icon: Icons.account_circle,
             children: [
               ListTile(
                 leading: const Icon(Icons.edit),
-                title: const Text('Edit Profile'),
+                title: Text(l10n.edit + ' ' + l10n.profile),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   // TODO: Navigate to edit profile
@@ -100,7 +109,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.lock),
-                title: const Text('Change Password'),
+                title: Text('Change Password'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   // TODO: Navigate to change password
@@ -113,13 +122,13 @@ class SettingsScreen extends ConsumerWidget {
 
           // App Info
           _SettingsSection(
-            title: 'About',
+            title: l10n.about,
             icon: Icons.info,
             children: [
-              const ListTile(
-                leading: Icon(Icons.info_outline),
-                title: Text('Version'),
-                trailing: Text('1.0.0', style: TextStyle(color: Colors.grey)),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(l10n.appTitle),
+                trailing: const Text('1.0.0', style: TextStyle(color: Colors.grey)),
               ),
               ListTile(
                 leading: const Icon(Icons.description),
@@ -151,7 +160,7 @@ class SettingsScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               icon: const Icon(Icons.logout),
-              label: const Text('Logout / Đăng xuất'),
+              label: Text(l10n.logout),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,

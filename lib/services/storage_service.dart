@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:convert';
-import '../models/operation.dart';
+import '../models/operation/operation.dart';
 
 class StorageService {
   static const String _authBoxName = 'auth';
@@ -18,7 +19,7 @@ class StorageService {
     _boardsBox = await Hive.openBox(_boardsBoxName);
     _operationsBox = await Hive.openBox(_operationsBoxName);
 
-    print('✅ Storage initialized');
+    debugPrint('✅ Storage initialized');
   }
 
   // Auth persistence
@@ -48,6 +49,28 @@ class StorageService {
 
   String? getUserId() {
     return _authBox.get('userId');
+  }
+
+  Future<void> saveUser(Map<String, dynamic> user) async {
+    await _authBox.put('user', json.encode(user));
+  }
+
+  Map<String, dynamic>? getUser() {
+    final data = _authBox.get('user');
+    if (data == null) return null;
+    return json.decode(data);
+  }
+
+  Future<void> saveLastWorkspace(String? workspaceId) async {
+    if (workspaceId == null) {
+      await _authBox.delete('lastWorkspaceId');
+    } else {
+      await _authBox.put('lastWorkspaceId', workspaceId);
+    }
+  }
+
+  String? getLastWorkspace() {
+    return _authBox.get('lastWorkspaceId');
   }
 
   Future<void> clearAuth() async {

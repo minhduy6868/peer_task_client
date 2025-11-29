@@ -19,7 +19,7 @@ dependencies:
   riverpod_annotation: ^2.3.5
 
   # WebRTC & Networking
-  flutter_webrtc: ^0.11.7
+  flutter_webrtc: ^0.12.3
   web_socket_channel: ^3.0.1
   socket_io_client: ^2.0.3+1
   http: ^1.2.2
@@ -36,6 +36,7 @@ dependencies:
   # Utilities
   uuid: ^4.5.1
   equatable: ^2.0.7
+  crypto: ^3.0.3
 
   # UI
   cupertino_icons: ^1.0.8
@@ -44,6 +45,8 @@ dependencies:
   mobile_scanner: ^5.2.3
   share_plus: ^10.1.2
   url_launcher: ^6.3.1
+  image_picker: ^1.0.7
+  flutter_drawing_board: ^0.9.8
 
 dev_dependencies:
   flutter_test:

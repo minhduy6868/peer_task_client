@@ -21,6 +21,10 @@ mixin _$Board {
   String get name => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   String? get createdBy => throw _privateConstructorUsedError;
+  String? get permission =>
+      throw _privateConstructorUsedError; // 'edit' or 'view' - user's permission on this board
+  bool? get isBoardOwner =>
+      throw _privateConstructorUsedError; // Whether current user is the board owner
   DateTime? get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
@@ -41,6 +45,8 @@ abstract class $BoardCopyWith<$Res> {
       String name,
       String? description,
       String? createdBy,
+      String? permission,
+      bool? isBoardOwner,
       DateTime? createdAt,
       DateTime? updatedAt});
 }
@@ -65,6 +71,8 @@ class _$BoardCopyWithImpl<$Res, $Val extends Board>
     Object? name = null,
     Object? description = freezed,
     Object? createdBy = freezed,
+    Object? permission = freezed,
+    Object? isBoardOwner = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -89,6 +97,14 @@ class _$BoardCopyWithImpl<$Res, $Val extends Board>
           ? _value.createdBy
           : createdBy // ignore: cast_nullable_to_non_nullable
               as String?,
+      permission: freezed == permission
+          ? _value.permission
+          : permission // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isBoardOwner: freezed == isBoardOwner
+          ? _value.isBoardOwner
+          : isBoardOwner // ignore: cast_nullable_to_non_nullable
+              as bool?,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -114,6 +130,8 @@ abstract class _$$BoardImplCopyWith<$Res> implements $BoardCopyWith<$Res> {
       String name,
       String? description,
       String? createdBy,
+      String? permission,
+      bool? isBoardOwner,
       DateTime? createdAt,
       DateTime? updatedAt});
 }
@@ -136,6 +154,8 @@ class __$$BoardImplCopyWithImpl<$Res>
     Object? name = null,
     Object? description = freezed,
     Object? createdBy = freezed,
+    Object? permission = freezed,
+    Object? isBoardOwner = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -160,6 +180,14 @@ class __$$BoardImplCopyWithImpl<$Res>
           ? _value.createdBy
           : createdBy // ignore: cast_nullable_to_non_nullable
               as String?,
+      permission: freezed == permission
+          ? _value.permission
+          : permission // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isBoardOwner: freezed == isBoardOwner
+          ? _value.isBoardOwner
+          : isBoardOwner // ignore: cast_nullable_to_non_nullable
+              as bool?,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -181,6 +209,8 @@ class _$BoardImpl implements _Board {
       required this.name,
       this.description,
       this.createdBy,
+      this.permission,
+      this.isBoardOwner,
       this.createdAt,
       this.updatedAt});
 
@@ -195,13 +225,19 @@ class _$BoardImpl implements _Board {
   @override
   final String? createdBy;
   @override
+  final String? permission;
+// 'edit' or 'view' - user's permission on this board
+  @override
+  final bool? isBoardOwner;
+// Whether current user is the board owner
+  @override
   final DateTime? createdAt;
   @override
   final DateTime? updatedAt;
 
   @override
   String toString() {
-    return 'Board(id: $id, workspaceId: $workspaceId, name: $name, description: $description, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Board(id: $id, workspaceId: $workspaceId, name: $name, description: $description, createdBy: $createdBy, permission: $permission, isBoardOwner: $isBoardOwner, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -217,6 +253,10 @@ class _$BoardImpl implements _Board {
                 other.description == description) &&
             (identical(other.createdBy, createdBy) ||
                 other.createdBy == createdBy) &&
+            (identical(other.permission, permission) ||
+                other.permission == permission) &&
+            (identical(other.isBoardOwner, isBoardOwner) ||
+                other.isBoardOwner == isBoardOwner) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -225,7 +265,7 @@ class _$BoardImpl implements _Board {
 
   @override
   int get hashCode => Object.hash(runtimeType, id, workspaceId, name,
-      description, createdBy, createdAt, updatedAt);
+      description, createdBy, permission, isBoardOwner, createdAt, updatedAt);
 
   /// Create a copy of Board
   /// with the given fields replaced by the non-null parameter values.
@@ -243,6 +283,8 @@ abstract class _Board implements Board {
       required final String name,
       final String? description,
       final String? createdBy,
+      final String? permission,
+      final bool? isBoardOwner,
       final DateTime? createdAt,
       final DateTime? updatedAt}) = _$BoardImpl;
 
@@ -256,6 +298,10 @@ abstract class _Board implements Board {
   String? get description;
   @override
   String? get createdBy;
+  @override
+  String? get permission; // 'edit' or 'view' - user's permission on this board
+  @override
+  bool? get isBoardOwner; // Whether current user is the board owner
   @override
   DateTime? get createdAt;
   @override

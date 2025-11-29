@@ -883,6 +883,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name is required'**
   String get nameRequired;
+
+  /// No description provided for @workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get workspace;
+
+  /// No description provided for @workspaceInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace Info'**
+  String get workspaceInfo;
+
+  /// No description provided for @workspaceSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace Settings'**
+  String get workspaceSettings;
+
+  /// No description provided for @changeWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Workspace'**
+  String get changeWorkspace;
+
+  /// No description provided for @leaveWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Workspace'**
+  String get leaveWorkspace;
+
+  /// No description provided for @deleteWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Workspace'**
+  String get deleteWorkspace;
+
+  /// No description provided for @leaveWorkspaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave this workspace?'**
+  String get leaveWorkspaceConfirm;
+
+  /// No description provided for @deleteWorkspaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this workspace? This action cannot be undone.'**
+  String get deleteWorkspaceConfirm;
+
+  /// No description provided for @workspaceUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace updated'**
+  String get workspaceUpdated;
+
+  /// No description provided for @workspaceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace deleted'**
+  String get workspaceDeleted;
+
+  /// No description provided for @memberRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Member removed'**
+  String get memberRemoved;
+
+  /// No description provided for @roleUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Role updated'**
+  String get roleUpdated;
+
+  /// No description provided for @inviteRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite revoked'**
+  String get inviteRevoked;
+
+  /// No description provided for @inviteCodeCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite Code Created'**
+  String get inviteCodeCreated;
+
+  /// No description provided for @shareCodeToInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code to invite members:'**
+  String get shareCodeToInvite;
+
+  /// No description provided for @scanQROrCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'• Scan QR code\n• Or copy and paste the code'**
+  String get scanQROrCopy;
+
+  /// No description provided for @inviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite Code'**
+  String get inviteCode;
+
+  /// No description provided for @copyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Code'**
+  String get copyCode;
+
+  /// No description provided for @codeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Code copied to clipboard'**
+  String get codeCopied;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @general.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get general;
+
+  /// No description provided for @invites.
+  ///
+  /// In en, this message translates to:
+  /// **'Invites'**
+  String get invites;
+
+  /// No description provided for @createInviteLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Invite Link'**
+  String get createInviteLink;
+
+  /// No description provided for @noActiveInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'No active invites'**
+  String get noActiveInvites;
+
+  /// No description provided for @expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get expired;
+
+  /// No description provided for @expires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires'**
+  String get expires;
+
+  /// No description provided for @invite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get invite;
+
+  /// No description provided for @dangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get dangerZone;
+
+  /// No description provided for @deleteAllData.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure? This will delete all boards, tasks, and data. This action cannot be undone.'**
+  String get deleteAllData;
+
+  /// No description provided for @makeAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Make Admin'**
+  String get makeAdmin;
+
+  /// No description provided for @makeMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Make Member'**
+  String get makeMember;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @useInviteLinkToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Use invite link to add members'**
+  String get useInviteLinkToAdd;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// No description provided for @role.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get role;
+
+  /// No description provided for @errorLoadingMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading members: {error}'**
+  String errorLoadingMembers(Object error);
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome!'**
+  String get welcome;
+
+  /// No description provided for @noWorkspaceYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have any workspace yet'**
+  String get noWorkspaceYet;
+
+  /// No description provided for @createOrJoinWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new workspace or join an existing one to get started'**
+  String get createOrJoinWorkspace;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @join.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get join;
+
+  /// No description provided for @yourWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Workspaces'**
+  String get yourWorkspaces;
+
+  /// No description provided for @selectWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a workspace to continue'**
+  String get selectWorkspace;
+
+  /// No description provided for @enterWorkspaceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter workspace name'**
+  String get enterWorkspaceName;
 }
 
 class _AppLocalizationsDelegate

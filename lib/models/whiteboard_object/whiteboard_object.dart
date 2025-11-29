@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'converters.dart';
+import '../converters.dart';
 
 part 'whiteboard_object.freezed.dart';
 part 'whiteboard_object.g.dart';

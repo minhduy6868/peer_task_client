@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'converters.dart';
+import '../converters.dart';
 
 part 'task_node.freezed.dart';
 part 'task_node.g.dart';

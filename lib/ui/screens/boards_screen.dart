@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
-import 'package:peertask/models/board.dart';
+import 'package:peertask/models/board/board.dart';
+import '../dialogs/board_settings_dialog.dart';
 
 final workspaceBoardsProvider = FutureProvider.family<List<Board>, String>((ref, workspaceId) async {
   final api = ref.watch(apiServiceProvider);
   return await api.getWorkspaceBoards(workspaceId);
+});
+
+final currentWorkspaceRoleProvider = FutureProvider.family<String?, String>((ref, workspaceId) async {
+  final api = ref.watch(apiServiceProvider);
+  final workspace = await api.getWorkspace(workspaceId);
+  return workspace.role; // Returns 'owner', 'editor', or 'viewer'
 });
 
 class BoardsScreen extends ConsumerStatefulWidget {
@@ -92,11 +99,24 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
   @override
   Widget build(BuildContext context) {
     final boardsAsync = ref.watch(workspaceBoardsProvider(widget.workspaceId));
+    final roleAsync = ref.watch(currentWorkspaceRoleProvider(widget.workspaceId));
+
+    // Check if user can create boards (owner or editor)
+    final canCreateBoard = roleAsync.maybeWhen(
+      data: (role) => role == 'owner' || role == 'editor',
+      orElse: () => false,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Boards'),
       ),
+      floatingActionButton: canCreateBoard
+          ? FloatingActionButton(
+              onPressed: _showCreateBoardDialog,
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: boardsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
@@ -122,13 +142,17 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                 children: [
                   const Icon(Icons.dashboard, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  const Text('No boards yet'),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _showCreateBoardDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Board'),
-                  ),
+                  Text(canCreateBoard 
+                    ? 'No boards yet. Create one to get started!'
+                    : 'No boards available. Ask workspace admin to add you to a board.'),
+                  if (canCreateBoard) ...[
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _showCreateBoardDialog,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create Board'),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -153,6 +177,29 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                   },
                   child: Stack(
                     children: [
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          icon: const Icon(Icons.settings),
+                          onPressed: () async {
+                            final result = await showDialog(
+                              context: context,
+                              builder: (context) => BoardSettingsDialog(
+                                boardId: board.id,
+                                boardName: board.name,
+                                boardDescription: board.description,
+                              ),
+                            );
+                            
+                            if (result == 'deleted' && mounted) {
+                              ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                            } else if (result == true && mounted) {
+                              ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                            }
+                          },
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -163,25 +210,89 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 const Icon(Icons.dashboard, size: 32),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
-                                    board.name,
-                                    style: Theme.of(context).textTheme.titleLarge,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        board.name,
+                                        style: Theme.of(context).textTheme.titleLarge,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          if (board.isBoardOwner == true) ...[
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.purple.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                                              ),
+                                              child: const Text(
+                                                'Owner',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.purple,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                          ],
+                                          if (board.permission != null)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: board.permission == 'edit'
+                                                    ? Colors.green.withOpacity(0.1)
+                                                    : Colors.blue.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(
+                                                  color: board.permission == 'edit'
+                                                      ? Colors.green.withOpacity(0.3)
+                                                      : Colors.blue.withOpacity(0.3),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    board.permission == 'edit' ? Icons.edit : Icons.visibility,
+                                                    size: 10,
+                                                    color: board.permission == 'edit' ? Colors.green : Colors.blue,
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                  Text(
+                                                    board.permission == 'edit' ? 'Edit' : 'View',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: board.permission == 'edit' ? Colors.green : Colors.blue,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                const SizedBox(width: 40), // Space for settings button
                               ],
                             ),
                             const SizedBox(height: 8),
                             if (board.description != null)
-                              Expanded(
-                                child: Text(
-                                  board.description!,
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Text(
+                                board.description!,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                            if (board.description != null)
+                              const SizedBox(height: 8),
                             const Spacer(),
                             Text(
                               'Created ${_formatDate(board.createdAt)}',
@@ -197,10 +308,6 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateBoardDialog,
-        child: const Icon(Icons.add),
       ),
     );
   }

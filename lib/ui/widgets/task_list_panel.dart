@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/task_node.dart';
+import '../../models/task_node/task_node.dart';
 
 class TaskListPanel extends StatelessWidget {
   final List<TaskNode> tasks;
