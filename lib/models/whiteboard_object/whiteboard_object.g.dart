@@ -132,7 +132,7 @@ Map<String, dynamic> _$$StrokeDataImplToJson(_$StrokeDataImpl instance) =>
 
 _$TaskDataImpl _$$TaskDataImplFromJson(Map<String, dynamic> json) =>
     _$TaskDataImpl(
-      title: json['title'] as String,
+      title: json['title'] as String?,
       assignee: json['assignee'] as String?,
       status: json['status'] as String? ?? 'todo',
       timestamp: (json['timestamp'] as num?)?.toInt(),

@@ -97,8 +97,8 @@ class StrokeData with _$StrokeData {
 @freezed
 class TaskData with _$TaskData {
   const factory TaskData({
-    required String title,
-    String? assignee,
+    String? title,  // Made nullable for backwards compatibility
+    String? assignee,  // Deprecated, kept for backwards compatibility
     @Default('todo') String status,
     int? timestamp,
   }) = _TaskData;

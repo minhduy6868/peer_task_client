@@ -1426,8 +1426,10 @@ TaskData _$TaskDataFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TaskData {
-  String get title => throw _privateConstructorUsedError;
-  String? get assignee => throw _privateConstructorUsedError;
+  String? get title =>
+      throw _privateConstructorUsedError; // Made nullable for backwards compatibility
+  String? get assignee =>
+      throw _privateConstructorUsedError; // Deprecated, kept for backwards compatibility
   String get status => throw _privateConstructorUsedError;
   int? get timestamp => throw _privateConstructorUsedError;
 
@@ -1446,7 +1448,7 @@ abstract class $TaskDataCopyWith<$Res> {
   factory $TaskDataCopyWith(TaskData value, $Res Function(TaskData) then) =
       _$TaskDataCopyWithImpl<$Res, TaskData>;
   @useResult
-  $Res call({String title, String? assignee, String status, int? timestamp});
+  $Res call({String? title, String? assignee, String status, int? timestamp});
 }
 
 /// @nodoc
@@ -1464,16 +1466,16 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? title = null,
+    Object? title = freezed,
     Object? assignee = freezed,
     Object? status = null,
     Object? timestamp = freezed,
   }) {
     return _then(_value.copyWith(
-      title: null == title
+      title: freezed == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       assignee: freezed == assignee
           ? _value.assignee
           : assignee // ignore: cast_nullable_to_non_nullable
@@ -1498,7 +1500,7 @@ abstract class _$$TaskDataImplCopyWith<$Res>
       __$$TaskDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String title, String? assignee, String status, int? timestamp});
+  $Res call({String? title, String? assignee, String status, int? timestamp});
 }
 
 /// @nodoc
@@ -1514,16 +1516,16 @@ class __$$TaskDataImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? title = null,
+    Object? title = freezed,
     Object? assignee = freezed,
     Object? status = null,
     Object? timestamp = freezed,
   }) {
     return _then(_$TaskDataImpl(
-      title: null == title
+      title: freezed == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       assignee: freezed == assignee
           ? _value.assignee
           : assignee // ignore: cast_nullable_to_non_nullable
@@ -1544,18 +1546,17 @@ class __$$TaskDataImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TaskDataImpl implements _TaskData {
   const _$TaskDataImpl(
-      {required this.title,
-      this.assignee,
-      this.status = 'todo',
-      this.timestamp});
+      {this.title, this.assignee, this.status = 'todo', this.timestamp});
 
   factory _$TaskDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskDataImplFromJson(json);
 
   @override
-  final String title;
+  final String? title;
+// Made nullable for backwards compatibility
   @override
   final String? assignee;
+// Deprecated, kept for backwards compatibility
   @override
   @JsonKey()
   final String status;
@@ -1603,7 +1604,7 @@ class _$TaskDataImpl implements _TaskData {
 
 abstract class _TaskData implements TaskData {
   const factory _TaskData(
-      {required final String title,
+      {final String? title,
       final String? assignee,
       final String status,
       final int? timestamp}) = _$TaskDataImpl;
@@ -1612,9 +1613,9 @@ abstract class _TaskData implements TaskData {
       _$TaskDataImpl.fromJson;
 
   @override
-  String get title;
+  String? get title; // Made nullable for backwards compatibility
   @override
-  String? get assignee;
+  String? get assignee; // Deprecated, kept for backwards compatibility
   @override
   String get status;
   @override

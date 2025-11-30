@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui' as ui;
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
+import '../widgets/task_dialog.dart';
 
 enum DrawingTool { pen, eraser, text }
 
@@ -57,6 +58,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   // Kanban state
   final _taskController = TextEditingController();
   bool _showKanban = true;
+  List<Map<String, dynamic>> _boardMembers = [];
 
   @override
   void initState() {
@@ -78,8 +80,24 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     // Connect to P2P first
     ref.read(whiteboardProvider.notifier).connectToBoard(widget.boardId);
     
+    // Load board members
+    await _loadBoardMembers();
+    
     // Load from backend
     _loadFromBackend();
+  }
+
+  Future<void> _loadBoardMembers() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final members = await api.getBoardMembers(widget.boardId);
+      setState(() {
+        _boardMembers = members;
+      });
+      debugPrint('✅ Loaded ${members.length} board members');
+    } catch (e) {
+      debugPrint('❌ Error loading board members: $e');
+    }
   }
 
   Future<void> _loadFromBackend() async {
@@ -108,10 +126,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               'description': task['description'],
               'status': task['status'] ?? 'todo',
               'priority': task['priority'] ?? 'medium',
-              'assignee': task['assignee'],
-              'assignee_id': task['assignee_id'],
-              'assignee_name': task['assignee_name'],
-              'progress': task['progress'] ?? 0,
+              'assignees': task['assignees'] ?? [],
+              'assignee_list': task['assignee_list'] ?? [],
               'deadline': task['deadline'],
               'labels': task['labels'],
               'estimated_hours': task['estimated_hours'],
@@ -380,27 +396,74 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   // ===== KANBAN METHODS =====
   
-  Future<void> _addTask() async {
-    if (_taskController.text.trim().isEmpty) return;
-    
-    final title = _taskController.text.trim();
-    _taskController.clear();
-    
+  Future<void> _showTaskDialog({
+    String? editTaskId,
+    Map<String, dynamic>? existingTask,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (context) => TaskDialog(
+        taskId: editTaskId,
+        existingTask: existingTask,
+        boardMembers: _boardMembers,
+        onSave: ({
+          required String title,
+          String? description,
+          required String priority,
+          required String status,
+          DateTime? deadline,
+          List<String>? assignees,
+          List<String>? labels,
+        }) async {
+          if (editTaskId == null) {
+            await _createTaskWithDetails(
+              title: title,
+              description: description,
+              priority: priority,
+              status: status,
+              deadline: deadline,
+              assignees: assignees,
+              labels: labels,
+            );
+          } else {
+            await _updateTaskWithDetails(
+              taskId: editTaskId,
+              title: title,
+              description: description,
+              priority: priority,
+              status: status,
+              deadline: deadline,
+              assignees: assignees,
+              labels: labels,
+            );
+          }
+        },
+      ),
+    );
+  }
+  
+  Future<void> _createTaskWithDetails({
+    required String title,
+    String? description,
+    required String priority,
+    required String status,
+    DateTime? deadline,
+    List<String>? assignees,
+    List<String>? labels,
+  }) async {
     try {
       // Save to backend via API first
       final api = ref.read(apiServiceProvider);
       final response = await api.createTask(
         boardId: widget.boardId,
         title: title,
-        description: null,
-        assignee: null,
-        assigneeId: null,
-        status: 'todo',
-        priority: 'medium',
-        deadline: null,
-        progress: 0,
+        description: description,
+        assignees: assignees,
+        status: status,
+        priority: priority,
+        deadline: deadline,
         parentId: null,
-        labels: null,
+        labels: labels,
         estimatedHours: null,
       );
       
@@ -413,54 +476,45 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         {
           'id': taskId,
           'type': 'task',
-          'data': {
-            'title': title,
-            'description': response['description'],
-            'status': 'todo',
-            'priority': response['priority'] ?? 'medium',
-            'assignee': response['assignee'],
-            'assignee_id': response['assignee_id'],
-            'progress': response['progress'] ?? 0,
-            'created_by': response['created_by'],
-            'creator_name': response['creator_name'],
-          },
+          'data': response,
         },
         shouldSaveBackend: false, // Already saved via API
       );
       
-      debugPrint('✅ Added task: $title (id: $taskId)');
+      debugPrint('✅ Created task: $title (id: $taskId)');
     } catch (e) {
-      debugPrint('❌ Error adding task: $e');
+      debugPrint('❌ Error creating task: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add task: $e')),
+          SnackBar(content: Text('Failed to create task: $e')),
         );
       }
     }
   }
-
-  Future<void> _updateTaskStatus(String taskId, String newStatus) async {
-    // Find current task data
-    Map<String, dynamic>? taskData;
-    for (final op in ref.read(whiteboardProvider).operations) {
-      if (op.payload['id'] == taskId && op.payload['type'] == 'task') {
-        taskData = Map<String, dynamic>.from(op.payload['data'] ?? {});
-        break;
-      }
-    }
-    
-    if (taskData == null) {
-      debugPrint('⚠️  Task not found: $taskId');
-      return;
-    }
-    
+  
+  Future<void> _updateTaskWithDetails({
+    required String taskId,
+    String? title,
+    String? description,
+    String? priority,
+    String? status,
+    DateTime? deadline,
+    List<String>? assignees,
+    List<String>? labels,
+  }) async {
     try {
       // Update via API
       final api = ref.read(apiServiceProvider);
-      await api.updateTask(taskId: taskId, status: newStatus);
-      
-      // Update local state
-      taskData['status'] = newStatus;
+      final response = await api.updateTask(
+        taskId: taskId,
+        title: title,
+        description: description,
+        assignees: assignees,
+        priority: priority,
+        status: status,
+        deadline: deadline,
+        labels: labels,
+      );
       
       // Broadcast P2P (without backend save)
       final notifier = ref.read(whiteboardProvider.notifier);
@@ -469,15 +523,61 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         {
           'id': taskId,
           'type': 'task',
-          'data': taskData,
+          'data': response,
         },
         shouldSaveBackend: false, // Already saved via API
       );
       
-      debugPrint('✅ Updated task status: $taskId → $newStatus');
+      debugPrint('✅ Updated task: $taskId');
     } catch (e) {
       debugPrint('❌ Error updating task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update task: $e')),
+        );
+      }
     }
+  }
+  
+
+
+  Future<void> _updateTaskStatus(String taskId, String newStatus) async {
+    try {
+      // Use moveTask API for better position handling
+      final api = ref.read(apiServiceProvider);
+      final response = await api.moveTask(
+        taskId: taskId,
+        status: newStatus,
+      );
+      
+      // Broadcast P2P (without backend save)
+      final notifier = ref.read(whiteboardProvider.notifier);
+      notifier.createOperation(
+        OperationType.updateObject,
+        {
+          'id': taskId,
+          'type': 'task',
+          'data': response,
+        },
+        shouldSaveBackend: false, // Already saved via API
+      );
+      
+      debugPrint('✅ Moved task: $taskId → $newStatus');
+    } catch (e) {
+      debugPrint('❌ Error moving task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to move task: $e')),
+        );
+      }
+    }
+  }
+  
+  Future<void> _editTask(String taskId, Map<String, dynamic> taskData) async {
+    await _showTaskDialog(
+      editTaskId: taskId,
+      existingTask: taskData,
+    );
   }
 
   Future<void> _deleteTask(String taskId) async {
@@ -780,36 +880,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               ),
               child: Column(
                 children: [
-                  // Add task input
+                  // Create task button
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
                       border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
                     ),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _taskController,
-                          decoration: const InputDecoration(
-                            hintText: 'Add new task...',
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onSubmitted: (_) => _addTask(),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _addTask,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Task'),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showTaskDialog(),
+                        icon: const Icon(Icons.add_circle, size: 20),
+                        label: const Text('Create Task'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   
@@ -820,14 +910,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         _TaskColumn(
                           title: 'TODO',
                           tasks: todoTasks,
-                          onMove: (id) => _updateTaskStatus(id, 'doing'),
+                          onMove: (id, data) => _updateTaskStatus(id, 'doing'),
+                          onEdit: _editTask,
                           onDelete: _deleteTask,
                           color: Colors.orange,
                         ),
                         _TaskColumn(
                           title: 'DOING',
                           tasks: doingTasks,
-                          onMove: (id) => _updateTaskStatus(id, 'done'),
+                          onMove: (id, data) => _updateTaskStatus(id, 'done'),
+                          onEdit: _editTask,
                           onDelete: _deleteTask,
                           color: Colors.blue,
                         ),
@@ -835,6 +927,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                           title: 'DONE',
                           tasks: doneTasks,
                           onMove: null,
+                          onEdit: _editTask,
                           onDelete: _deleteTask,
                           color: Colors.green,
                         ),
@@ -1026,7 +1119,8 @@ class _StrokePainter extends CustomPainter {
 class _TaskColumn extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> tasks;
-  final Function(String)? onMove;
+  final Function(String, Map<String, dynamic>)? onMove;
+  final Function(String, Map<String, dynamic>) onEdit;
   final Function(String) onDelete;
   final Color color;
 
@@ -1034,6 +1128,7 @@ class _TaskColumn extends StatelessWidget {
     required this.title,
     required this.tasks,
     required this.onMove,
+    required this.onEdit,
     required this.onDelete,
     required this.color,
   });
@@ -1087,8 +1182,20 @@ class _TaskColumn extends StatelessWidget {
                   final title = task['title'] as String? ?? 'Untitled';
                   final description = task['description'] as String?;
                   final priority = task['priority'] as String? ?? 'medium';
-                  final assigneeName = task['assignee_name'] as String?;
-                  final progress = task['progress'] as int? ?? 0;
+                  final assigneeList = task['assignee_list'] as List<dynamic>?;
+                  final deadline = task['deadline'] as String?;
+                  
+                  // Check if overdue
+                  bool isOverdue = false;
+                  if (deadline != null) {
+                    try {
+                      final deadlineDate = DateTime.parse(deadline);
+                      isOverdue = deadlineDate.isBefore(DateTime.now()) && 
+                          task['status'] != 'done';
+                    } catch (e) {
+                      // Invalid date
+                    }
+                  }
                   
                   // Priority colors
                   Color priorityColor = Colors.grey;
@@ -1113,62 +1220,175 @@ class _TaskColumn extends StatelessWidget {
                   }
                   
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: ListTile(
-                      dense: true,
-                      title: Text(
-                        title,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (description != null && description.isNotEmpty)
-                            Text(
-                              description,
-                              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(priorityIcon, size: 10, color: priorityColor),
-                              const SizedBox(width: 4),
-                              if (assigneeName != null)
+                    margin: const EdgeInsets.only(bottom: 8),
+                    elevation: 2,
+                    child: InkWell(
+                      onTap: () => onEdit(taskId, task),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title row with priority
+                            Row(
+                              children: [
+                                Icon(priorityIcon, size: 12, color: priorityColor),
+                                const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    assigneeName,
-                                    style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              if (progress > 0)
-                                Text(
-                                  '$progress%',
-                                  style: TextStyle(fontSize: 9, color: Colors.blue[700]),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (onMove != null)
-                            IconButton(
-                              icon: const Icon(Icons.arrow_forward, size: 16),
-                              onPressed: () => onMove!(taskId),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
+                              ],
                             ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, size: 16),
-                            onPressed: () => onDelete(taskId),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
+                            
+                            // Description
+                            if (description != null && description.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                description,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            
+                            // Metadata row
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                // Assignees avatars (compact)
+                                if (assigneeList != null && assigneeList.isNotEmpty) ...[
+                                  ...assigneeList.take(2).map((assignee) {
+                                    final name = assignee['name'] as String? ?? '?';
+                                    return Tooltip(
+                                      message: name,
+                                      child: CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: Colors.blue,
+                                        child: Text(
+                                          name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  if (assigneeList.length > 2)
+                                    Tooltip(
+                                      message: '${assigneeList.length - 2} more',
+                                      child: CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: Colors.grey[400],
+                                        child: Text(
+                                          '+${assigneeList.length - 2}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                                
+                                // Deadline badge
+                                if (deadline != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isOverdue ? Colors.red[50] : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: isOverdue ? Colors.red : Colors.grey[300]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 10,
+                                          color: isOverdue ? Colors.red : Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          deadline.substring(5, 10), // MM-DD
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: isOverdue ? Colors.red : Colors.grey[700],
+                                            fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            
+                            // Action buttons (compact)
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Move button (if available)
+                                if (onMove != null)
+                                  OutlinedButton.icon(
+                                    onPressed: () => onMove!(taskId, task),
+                                    icon: const Icon(Icons.arrow_forward, size: 12),
+                                    label: const Text('Move', style: TextStyle(fontSize: 10)),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  )
+                                else
+                                  const SizedBox.shrink(),
+                                
+                                // Edit & Delete icons
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined, size: 16),
+                                      onPressed: () => onEdit(taskId, task),
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                      tooltip: 'Edit',
+                                      color: Colors.blue[700],
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 16),
+                                      onPressed: () => onDelete(taskId),
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                      tooltip: 'Delete',
+                                      color: Colors.red[400],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
