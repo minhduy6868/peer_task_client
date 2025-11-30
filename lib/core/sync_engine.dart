@@ -23,23 +23,24 @@ class SyncEngine {
 
   final _uuid = const Uuid();
 
-  // Create and broadcast a new operation
+  // Create and broadcast a new operation (local only)
   Operation createOperation({
     required OperationType type,
     required Map<String, dynamic> payload,
+    bool shouldSaveBackend = true, // Control backend save
   }) {
     final operation = Operation(
       opId: _uuid.v4(),
       actor: userId,
       timestamp: DateTime.now().millisecondsSinceEpoch,
       type: type,
-      payload: payload,
+      payload: {...payload, '_saveBackend': shouldSaveBackend},
     );
 
     // Apply locally
     _applyOperation(operation);
 
-    // Broadcast to peers
+    // Broadcast to peers AND save to backend (if flag is true)
     onOperationBroadcast?.call(operation);
 
     return operation;
@@ -90,10 +91,10 @@ class SyncEngine {
   }
 
   void _handleCreateObject(Operation operation) {
-    // For canvas objects (stroke, text, shapes), don't parse as WhiteboardObject
+    // For canvas objects (stroke, text, shapes, cursor), don't parse as WhiteboardObject
     // Just store the raw payload - they will be rendered directly from operations
     final objectType = operation.payload['type'] as String?;
-    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line'];
+    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line', 'cursor'];
     
     if (canvasTypes.contains(objectType)) {
       // Canvas objects are handled directly from operations in UI
@@ -113,7 +114,7 @@ class SyncEngine {
   void _handleUpdateObject(Operation operation) {
     final objectId = operation.payload['id'] as String;
     final objectType = operation.payload['type'] as String?;
-    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line'];
+    final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line', 'cursor'];
     
     // Canvas objects are handled directly from operations
     if (canvasTypes.contains(objectType)) {
@@ -123,7 +124,10 @@ class SyncEngine {
     final existing = _objects[objectId];
 
     if (existing == null) {
-      debugPrint('⚠️  Object not found for update: $objectId');
+      // Don't log error for cursors - they're P2P only and don't need to exist
+      if (objectType != 'cursor') {
+        debugPrint('⚠️  Object not found for update: $objectId');
+      }
       return;
     }
 

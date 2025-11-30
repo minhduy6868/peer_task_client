@@ -327,6 +327,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     }
 
     final api = ref.read(apiServiceProvider);
+    String? _boardId = boardId; // Store boardId for callbacks
 
     // Initialize sync engine
     _syncEngine = SyncEngine(
@@ -336,12 +337,19 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         state = state.copyWith(
           operations: [...state.operations, op],
         );
-        
-        // Save operation to backend (async, don't await)
-        _saveOperationToBackend(boardId, op, api);
       },
       onOperationBroadcast: (op) {
-        // Broadcast via WebRTC
+        // Save to backend ONLY if shouldSaveBackend flag is true
+        final shouldSave = op.payload['_saveBackend'] ?? true;
+        if (shouldSave) {
+          debugPrint('💾 Saving operation to backend: ${op.type.name}');
+          _saveOperationToBackend(_boardId, op, api);
+        } else {
+          debugPrint('⏭️  Skipping backend save for: ${op.type.name}');
+        }
+        
+        // Always broadcast via WebRTC to peers for realtime sync
+        debugPrint('📡 Broadcasting operation via WebRTC: ${op.type.name}');
         _webrtc?.sendOperation(op);
       },
     );
@@ -350,12 +358,14 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     _webrtc = WebRTCService(
       userId: authState.user!.id,
       onOperationReceived: (peerId, operation) {
+        debugPrint('📥 Received operation from $peerId: ${operation.type.name}');
         _syncEngine?.receiveOperation(operation);
         // Call custom callback if provided
         onRemoteOperation?.call(operation);
       },
       onPeerConnected: (peerId) {
-        debugPrint('Peer connected: $peerId');
+        debugPrint('✅ Peer CONNECTED and ready: $peerId');
+        debugPrint('📊 Total connected peers: ${_webrtc?.connectedPeersCount ?? 0}');
       },
       onPeerDisconnected: (peerId) {
         debugPrint('Peer disconnected: $peerId');
@@ -363,8 +373,11 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     );
 
     // Initialize signaling
+    final serverUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000';
+    debugPrint('🌐 Signaling server URL: $serverUrl');
+    
     _signaling = SignalingService(
-      serverUrl: kIsWeb ? 'http://127.0.0.1:3000' : 'http://localhost:3000',
+      serverUrl: serverUrl,
       onRoomJoined: (peers) {
         debugPrint('📥 Room joined with ${peers.length} existing peers');
         for (final peer in peers) {
@@ -373,22 +386,35 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         state = state.copyWith(peers: peers, isConnected: true);
         
         // Initiate WebRTC connections with existing peers
+        // Perfect negotiation: only peer with higher userId creates offer
+        final myUserId = authState.user!.id;
         for (final peer in peers) {
-          debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId}');
-          _webrtc!.initPeerConnection(peer.socketId, (signal) {
-            _signaling!.sendSignal(peer.socketId, signal);
-          });
+          final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
+          if (shouldInitiate) {
+            debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)');
+            _webrtc!.initPeerConnection(peer.socketId, (signal) {
+              _signaling!.sendSignal(peer.socketId, signal);
+            });
+          } else {
+            debugPrint('⏳ Waiting for offer from ${peer.socketId} (they are initiator)');
+          }
         }
       },
       onPeerJoined: (peer) {
         debugPrint('📥 New peer joined: ${peer.socketId} (user: ${peer.userId})');
         state = state.copyWith(peers: [...state.peers, peer]);
         
-        // Initiate WebRTC connection
-        debugPrint('🚀 Initiating WebRTC connection with new peer ${peer.socketId}');
-        _webrtc!.initPeerConnection(peer.socketId, (signal) {
-          _signaling!.sendSignal(peer.socketId, signal);
-        });
+        // Perfect negotiation: only peer with higher userId creates offer
+        final myUserId = authState.user!.id;
+        final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
+        if (shouldInitiate) {
+          debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)');
+          _webrtc!.initPeerConnection(peer.socketId, (signal) {
+            _signaling!.sendSignal(peer.socketId, signal);
+          });
+        } else {
+          debugPrint('⏳ Waiting for offer from ${peer.socketId} (they are initiator)');
+        }
       },
       onPeerLeft: (peer) {
         state = state.copyWith(
@@ -435,8 +461,16 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     }
   }
 
-  void createOperation(OperationType type, Map<String, dynamic> payload) {
-    _syncEngine?.createOperation(type: type, payload: payload);
+  void createOperation(
+    OperationType type,
+    Map<String, dynamic> payload, {
+    bool shouldSaveBackend = true,
+  }) {
+    _syncEngine?.createOperation(
+      type: type,
+      payload: payload,
+      shouldSaveBackend: shouldSaveBackend,
+    );
   }
 
   void receiveOperation(Operation operation) {

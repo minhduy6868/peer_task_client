@@ -34,6 +34,15 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
   DateTime? _lastDrawUpdate; // Throttle drawing updates
   bool _isLoading = true;
   String? _errorMessage;
+  
+  // Cursor tracking for realtime collaboration
+  Offset? _myCursorPosition;
+  DateTime? _lastCursorBroadcast;
+  
+  // Drag state for moving objects
+  String? _draggingObjectId;
+  Offset? _dragStartPosition;
+  DateTime? _lastDragUpdate;
 
   @override
   void initState() {
@@ -80,12 +89,19 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
       final api = ref.read(apiServiceProvider);
       final tasks = await api.getBoardTasks(widget.boardId);
       
-      // Convert backend tasks to operations
+      debugPrint('📦 Loading ${tasks.length} tasks from backend');
+      
+      // Use receiveOperation instead of createOperation to avoid saving back to backend
       final notifier = ref.read(whiteboardProvider.notifier);
       for (final task in tasks) {
-        notifier.createOperation(
-          OperationType.createObject,
-          {
+        final operation = Operation(
+          opId: task['id'], // Use task ID as operation ID
+          actor: task['created_by'] ?? 'backend',
+          timestamp: task['created_at'] != null
+              ? DateTime.parse(task['created_at']).millisecondsSinceEpoch
+              : DateTime.now().millisecondsSinceEpoch,
+          type: OperationType.createObject,
+          payload: {
             'id': task['id'],
             'type': 'task',
             'data': {
@@ -107,9 +123,14 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
                 : DateTime.now().millisecondsSinceEpoch,
           },
         );
+        
+        // Use receiveOperation to avoid duplicate backend save
+        notifier.receiveOperation(operation);
       }
+      
+      debugPrint('✅ Tasks loaded successfully');
     } catch (e) {
-      debugPrint('Error loading tasks: $e');
+      debugPrint('❌ Error loading tasks: $e');
     }
   }
 
@@ -255,6 +276,7 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': now,
         'updatedAt': now,
       },
+      shouldSaveBackend: false, // Already saved via API
     );
 
     _taskController.clear();
@@ -306,6 +328,7 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': existing.payload['createdAt'] ?? now,
         'updatedAt': now,
       },
+      shouldSaveBackend: false, // Already saved via API
     );
   }
 
@@ -328,6 +351,7 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.deleteObject,
       {'id': taskId},
+      shouldSaveBackend: false, // Already deleted via API
     );
   }
 
@@ -385,6 +409,7 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': now,
         'updatedAt': now,
       },
+      shouldSaveBackend: true,
     );
   }
 
@@ -420,6 +445,7 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': now,
         'updatedAt': now,
       },
+      shouldSaveBackend: true,
     );
 
     setState(() => _shapeStartPoint = null);
@@ -465,9 +491,129 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.deleteObject,
       {'id': _selectedObjectId!},
+      shouldSaveBackend: true,
     );
     
     setState(() => _selectedObjectId = null);
+  }
+
+  void _startDragging(String objectId, Offset position) {
+    setState(() {
+      _draggingObjectId = objectId;
+      _dragStartPosition = position;
+    });
+  }
+
+  void _updateDragging(Offset newPosition) {
+    if (_draggingObjectId == null) return;
+    
+    // Throttle drag updates to 30ms
+    final now = DateTime.now();
+    if (_lastDragUpdate != null && now.difference(_lastDragUpdate!).inMilliseconds < 30) {
+      return;
+    }
+    _lastDragUpdate = now;
+
+    final state = ref.read(whiteboardProvider);
+    final notifier = ref.read(whiteboardProvider.notifier);
+
+    // Find the object being dragged
+    Operation? existing;
+    try {
+      existing = state.operations.lastWhere(
+        (op) => op.payload['id'] == _draggingObjectId,
+      );
+    } catch (e) {
+      return;
+    }
+
+    final type = existing.payload['type'] as String?;
+    if (type != 'text' && type != 'rectangle' && type != 'circle' && type != 'line') {
+      return; // Only support dragging text and shapes
+    }
+
+    final existingData = Map<String, dynamic>.from(existing.payload['data'] ?? {});
+    final timestamp = now.millisecondsSinceEpoch;
+
+    Map<String, dynamic> updatedData;
+    if (type == 'text') {
+      // Update text position
+      updatedData = {
+        ...existingData,
+        'x': newPosition.dx,
+        'y': newPosition.dy,
+      };
+    } else {
+      // Update shape position (move both points)
+      final dx = newPosition.dx - _dragStartPosition!.dx;
+      final dy = newPosition.dy - _dragStartPosition!.dy;
+      final x1 = (existingData['x1'] as num?)?.toDouble() ?? 0;
+      final y1 = (existingData['y1'] as num?)?.toDouble() ?? 0;
+      final x2 = (existingData['x2'] as num?)?.toDouble() ?? 0;
+      final y2 = (existingData['y2'] as num?)?.toDouble() ?? 0;
+      
+      updatedData = {
+        ...existingData,
+        'x1': x1 + dx,
+        'y1': y1 + dy,
+        'x2': x2 + dx,
+        'y2': y2 + dy,
+      };
+      
+      _dragStartPosition = newPosition;
+    }
+
+    // Intermediate drag updates - P2P only
+    notifier.createOperation(
+      OperationType.updateObject,
+      {
+        'id': _draggingObjectId,
+        'type': type,
+        'data': updatedData,
+        'zIndex': existing.payload['zIndex'] ?? 0,
+        'version': (existing.payload['version'] ?? 0) + 1,
+        'createdBy': existing.payload['createdBy'] ?? 'unknown',
+        'createdAt': existing.payload['createdAt'] ?? timestamp,
+        'updatedAt': timestamp,
+      },
+      shouldSaveBackend: false, // Don't save intermediate drag updates
+    );
+  }
+
+  void _finishDragging() {
+    if (_draggingObjectId == null) return;
+
+    final state = ref.read(whiteboardProvider);
+    final notifier = ref.read(whiteboardProvider.notifier);
+
+    // Save final position to backend
+    try {
+      final existing = state.operations.lastWhere(
+        (op) => op.payload['id'] == _draggingObjectId,
+      );
+
+      notifier.createOperation(
+        OperationType.updateObject,
+        {
+          'id': _draggingObjectId,
+          'type': existing.payload['type'],
+          'data': existing.payload['data'],
+          'zIndex': existing.payload['zIndex'] ?? 0,
+          'version': (existing.payload['version'] ?? 0) + 1,
+          'createdBy': existing.payload['createdBy'] ?? 'unknown',
+          'createdAt': existing.payload['createdAt'],
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        },
+        shouldSaveBackend: true, // Save final position
+      );
+    } catch (e) {
+      debugPrint('Error finishing drag: $e');
+    }
+
+    setState(() {
+      _draggingObjectId = null;
+      _dragStartPosition = null;
+    });
   }
 
   void _startDrawing(Offset point) {
@@ -496,15 +642,16 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': now,
         'updatedAt': now,
       },
+      shouldSaveBackend: true, // Save initial stroke
     );
   }
 
   void _continueDrawing(Offset point) {
     if (!mounted || _currentStrokeId == null) return;
 
-    // Throttle updates to 50ms to reduce operations
+    // Throttle updates to 30ms for better responsiveness
     final now = DateTime.now();
-    if (_lastDrawUpdate != null && now.difference(_lastDrawUpdate!).inMilliseconds < 50) {
+    if (_lastDrawUpdate != null && now.difference(_lastDrawUpdate!).inMilliseconds < 30) {
       return;
     }
     _lastDrawUpdate = now;
@@ -527,6 +674,9 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
     final points = List<double>.from(existingData['points'] ?? []);
     points.addAll([point.dx, point.dy]);
 
+    // IMPORTANT: Don't save intermediate stroke updates to backend
+    // Only broadcast via P2P for smooth drawing
+    // Final stroke will be saved when user finishes drawing
     notifier.createOperation(
       OperationType.updateObject,
       {
@@ -542,6 +692,75 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         'createdAt': existing.payload['createdAt'] ?? timestamp,
         'updatedAt': timestamp,
       },
+      shouldSaveBackend: false, // Don't save intermediate updates - P2P only
+    );
+  }
+
+  void _finishDrawing() {
+    if (_currentStrokeId == null) return;
+    
+    // Save final stroke state to backend
+    final state = ref.read(whiteboardProvider);
+    final notifier = ref.read(whiteboardProvider.notifier);
+    
+    try {
+      final existing = state.operations.lastWhere(
+        (op) => op.payload['id'] == _currentStrokeId,
+      );
+      
+      // Create final operation that WILL be saved to backend
+      notifier.createOperation(
+        OperationType.updateObject,
+        {
+          'id': _currentStrokeId,
+          'type': 'stroke',
+          'data': existing.payload['data'],
+          'zIndex': existing.payload['zIndex'] ?? 0,
+          'version': (existing.payload['version'] ?? 0) + 1,
+          'createdBy': existing.payload['createdBy'] ?? 'unknown',
+          'createdAt': existing.payload['createdAt'],
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        },
+        shouldSaveBackend: true, // Save final state to backend
+      );
+    } catch (e) {
+      debugPrint('Error finishing stroke: $e');
+    }
+    
+    _currentStrokeId = null;
+  }
+
+  void _updateCursorPosition(Offset position) {
+    setState(() => _myCursorPosition = position);
+    
+    // Throttle cursor broadcasts to 100ms
+    final now = DateTime.now();
+    if (_lastCursorBroadcast != null && 
+        now.difference(_lastCursorBroadcast!).inMilliseconds < 100) {
+      return;
+    }
+    _lastCursorBroadcast = now;
+    
+    // Broadcast cursor position via P2P ONLY
+    // Don't create cursor objects in sync engine - just broadcast raw data
+    final notifier = ref.read(whiteboardProvider.notifier);
+    final authState = ref.read(authStateProvider);
+    
+    // Always use updateObject - it's OK if object doesn't exist, we just want P2P broadcast
+    notifier.createOperation(
+      OperationType.updateObject,
+      {
+        'id': 'cursor-${authState.user?.id}',
+        'type': 'cursor',
+        'data': {
+          'x': position.dx,
+          'y': position.dy,
+          'userId': authState.user?.id,
+          'userName': authState.user?.name ?? 'Unknown',
+        },
+        'zIndex': 999,
+      },
+      shouldSaveBackend: false, // Never save cursors - P2P only
     );
   }
 
@@ -554,13 +773,14 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
     final Map<String, Map<String, dynamic>> strokesMap = {};
     final Map<String, Map<String, dynamic>> textsMap = {};
     final Map<String, Map<String, dynamic>> shapesMap = {};
+    final Map<String, Map<String, dynamic>> cursorsMap = {};
 
     for (final op in state.operations) {
       final id = op.payload['id'] as String?;
       final type = op.payload['type'] as String?;
       if (id == null || type == null) continue;
 
-      if (op.type == OperationType.createObject) {
+      if (op.type == OperationType.createObject || op.type == OperationType.updateObject) {
         if (type == 'task') {
           tasks[id] = {
             'id': id,
@@ -582,29 +802,31 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
             'type': type,
             ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
           };
-        }
-      } else if (op.type == OperationType.updateObject) {
-        // Merge update data with existing object
-        if (tasks.containsKey(id)) {
-          tasks[id]!.addAll(Map<String, dynamic>.from(op.payload['data'] ?? {}));
-        } else if (strokesMap.containsKey(id)) {
-          strokesMap[id]!.addAll(Map<String, dynamic>.from(op.payload['data'] ?? {}));
-        } else if (textsMap.containsKey(id)) {
-          textsMap[id]!.addAll(Map<String, dynamic>.from(op.payload['data'] ?? {}));
-        } else if (shapesMap.containsKey(id)) {
-          shapesMap[id]!.addAll(Map<String, dynamic>.from(op.payload['data'] ?? {}));
+        } else if (type == 'cursor') {
+          // Track peer cursors
+          final authState = ref.read(authStateProvider);
+          final cursorUserId = op.payload['data']?['userId'];
+          // Don't show my own cursor
+          if (cursorUserId != null && cursorUserId != authState.user?.id) {
+            cursorsMap[id] = {
+              'id': id,
+              ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
+            };
+          }
         }
       } else if (op.type == OperationType.deleteObject) {
         tasks.remove(id);
         strokesMap.remove(id);
         textsMap.remove(id);
         shapesMap.remove(id);
+        cursorsMap.remove(id);
       }
     }
-    
+
     final strokes = strokesMap.values.toList();
     final texts = textsMap.values.toList();
     final shapes = shapesMap.values.toList();
+    final cursors = cursorsMap.values.toList();
     final allObjects = [...texts, ...shapes]; // For selection
 
     final todoTasks = tasks.entries.where((e) => e.value['status'] == 'todo').toList();
@@ -642,19 +864,36 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
-          // Peers counter
+          // Connection status indicator
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: state.isConnected ? Colors.green : Colors.red,
+              color: state.isConnected 
+                  ? (state.peers.isNotEmpty ? Colors.green : Colors.orange)
+                  : Colors.red,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                const Icon(Icons.people, size: 14, color: Colors.white),
-                const SizedBox(width: 4),
-                Text('${state.peers.length + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Icon(
+                  state.isConnected 
+                      ? (state.peers.isNotEmpty ? Icons.wifi : Icons.wifi_lock)
+                      : Icons.wifi_off,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  state.peers.isEmpty 
+                      ? 'Solo' 
+                      : '${state.peers.length + 1} peers',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -831,33 +1070,6 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
                             ),
                           );
                         }).toList(),
-                        
-                        const SizedBox(width: 16),
-                        
-                        // Delete selected object button
-                        ...(_selectedObjectId != null ? [
-                          OutlinedButton.icon(
-                            onPressed: _deleteSelectedObject,
-                            icon: const Icon(Icons.delete, size: 16, color: Colors.red),
-                            label: const Text('Delete', style: TextStyle(fontSize: 12, color: Colors.red)),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.red),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                        ] : []),
-                        
-                        // Clear canvas
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            // Delete all strokes
-                            for (final stroke in strokes) {
-                              _deleteTask(stroke['id']);
-                            }
-                          },
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          label: const Text('Clear Canvas'),
-                        ),
                       ],
                     ),
                   ),
@@ -865,45 +1077,72 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
 
                 // Canvas
                 Expanded(
-                  child: GestureDetector(
-                    onTapUp: (details) {
-                      if (_drawMode == 'text') {
-                        _addTextAtPosition(details.localPosition);
-                      } else {
-                        _selectObject(details.localPosition, allObjects);
-                      }
+                  child: MouseRegion(
+                    onHover: (event) {
+                      _updateCursorPosition(event.localPosition);
                     },
-                    onPanStart: (details) {
-                      if (_drawMode == 'draw') {
-                        _startDrawing(details.localPosition);
-                      } else if (['rectangle', 'circle', 'line'].contains(_drawMode)) {
-                        _startShape(details.localPosition);
-                      }
-                    },
-                    onPanUpdate: _drawMode == 'draw'
-                        ? (details) => _continueDrawing(details.localPosition)
-                        : null,
-                    onPanEnd: (details) {
-                      if (_drawMode == 'draw') {
-                        _currentStrokeId = null;
-                      } else if (['rectangle', 'circle', 'line'].contains(_drawMode)) {
-                        _finishShape(details.localPosition);
-                      }
-                    },
-                    child: Container(
-                      color: Colors.white,
-                      child: CustomPaint(
-                        painter: _CanvasPainter(
-                          strokes: strokes,
-                          texts: texts,
-                          shapes: shapes,
-                          selectedObjectId: _selectedObjectId,
-                          shapeStartPoint: _shapeStartPoint,
-                          currentShapeType: _drawMode,
-                          currentColor: _selectedColor,
-                          currentStrokeWidth: _strokeWidth,
+                    child: GestureDetector(
+                      onTapUp: (details) {
+                        if (_drawMode == 'text') {
+                          _addTextAtPosition(details.localPosition);
+                        } else if (_drawMode == 'pan') {
+                          _selectObject(details.localPosition, allObjects);
+                        }
+                      },
+                      onPanStart: (details) {
+                        if (_drawMode == 'draw') {
+                          _startDrawing(details.localPosition);
+                        } else if (['rectangle', 'circle', 'line'].contains(_drawMode)) {
+                          _startShape(details.localPosition);
+                        } else if (_drawMode == 'pan') {
+                          // Check if we're starting to drag an object
+                          for (final obj in allObjects.reversed) {
+                            if (_isPointInObject(details.localPosition, obj)) {
+                              final objId = obj['id'] as String;
+                              _startDragging(objId, details.localPosition);
+                              return;
+                            }
+                          }
+                        }
+                      },
+                      onPanUpdate: _drawMode == 'draw'
+                          ? (details) {
+                              _continueDrawing(details.localPosition);
+                              _updateCursorPosition(details.localPosition);
+                            }
+                          : _drawMode == 'pan'
+                              ? (details) {
+                                  if (_draggingObjectId != null) {
+                                    _updateDragging(details.localPosition);
+                                  }
+                                  _updateCursorPosition(details.localPosition);
+                                }
+                              : null,
+                      onPanEnd: (details) {
+                        if (_drawMode == 'draw') {
+                          _finishDrawing(); // Save final stroke state to backend
+                        } else if (['rectangle', 'circle', 'line'].contains(_drawMode)) {
+                          _finishShape(details.localPosition);
+                        } else if (_drawMode == 'pan' && _draggingObjectId != null) {
+                          _finishDragging(); // Save final position to backend
+                        }
+                      },
+                      child: Container(
+                        color: Colors.white,
+                        child: CustomPaint(
+                          painter: _CanvasPainter(
+                            strokes: strokes,
+                            texts: texts,
+                            shapes: shapes,
+                            cursors: cursors,
+                            selectedObjectId: _selectedObjectId,
+                            shapeStartPoint: _shapeStartPoint,
+                            currentShapeType: _drawMode,
+                            currentColor: _selectedColor,
+                            currentStrokeWidth: _strokeWidth,
+                          ),
+                          size: Size.infinite,
                         ),
-                        size: Size.infinite,
                       ),
                     ),
                   ),
@@ -1110,6 +1349,7 @@ class _CanvasPainter extends CustomPainter {
   final List<Map<String, dynamic>> strokes;
   final List<Map<String, dynamic>> texts;
   final List<Map<String, dynamic>> shapes;
+  final List<Map<String, dynamic>> cursors;
   final String? selectedObjectId;
   final Offset? shapeStartPoint;
   final String currentShapeType;
@@ -1120,6 +1360,7 @@ class _CanvasPainter extends CustomPainter {
     required this.strokes,
     required this.texts,
     required this.shapes,
+    required this.cursors,
     this.selectedObjectId,
     this.shapeStartPoint,
     required this.currentShapeType,
@@ -1236,6 +1477,63 @@ class _CanvasPainter extends CustomPainter {
       // This will be updated in real-time by mouse position
       // Note: We need mouse position which we don't have here
       // This is a limitation - we'd need to pass current mouse position
+    }
+
+    // Draw peer cursors
+    for (final cursor in cursors) {
+      final x = (cursor['x'] as num?)?.toDouble() ?? 0;
+      final y = (cursor['y'] as num?)?.toDouble() ?? 0;
+      final userName = cursor['userName'] as String? ?? 'User';
+      
+      // Draw cursor pointer (triangle shape)
+      final cursorPaint = Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill;
+      
+      final cursorPath = Path()
+        ..moveTo(x, y)
+        ..lineTo(x + 12, y + 12)
+        ..lineTo(x + 5, y + 15)
+        ..close();
+      
+      canvas.drawPath(cursorPath, cursorPaint);
+      
+      // Draw user name label
+      final textSpan = TextSpan(
+        text: userName,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
+      
+      textPainter.layout();
+      
+      // Draw background for label
+      final labelRect = Rect.fromLTWH(
+        x + 15,
+        y + 5,
+        textPainter.width + 8,
+        textPainter.height + 4,
+      );
+      
+      final labelBgPaint = Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
+        labelBgPaint,
+      );
+      
+      // Draw text
+      textPainter.paint(canvas, Offset(x + 19, y + 7));
     }
   }
 

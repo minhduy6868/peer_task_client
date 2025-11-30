@@ -144,14 +144,18 @@ class WebRTCService {
   ) async {
     debugPrint('📥 Handling offer from $peerId');
 
-    // Perfect negotiation: ignore offer if we're impolite and making an offer
+    // Perfect negotiation: check for offer collision
     final offerCollision = (_makingOffer[peerId] == true);
-    final ignoreOffer = !_isPolite(peerId) && offerCollision;
+    final readyForOffer = !offerCollision || _isPolite(peerId);
+    final ignoreOffer = !readyForOffer;
     
     if (ignoreOffer) {
-      debugPrint('⚠️ Ignoring offer from $peerId (collision, we are impolite)');
+      debugPrint('⚠️ Ignoring offer from $peerId (collision detected, we are impolite)');
+      _ignoreOffer[peerId] = true;
       return;
     }
+    
+    _ignoreOffer[peerId] = false;
 
     var pc = _peerConnections[peerId];
     if (pc == null) {
@@ -199,6 +203,22 @@ class WebRTCService {
     }
 
     try {
+      final signalingState = await pc.getSignalingState();
+      
+      // Handle offer collision with rollback
+      if (signalingState == RTCSignalingState.RTCSignalingStateHaveLocalOffer && offerCollision) {
+        if (_isPolite(peerId)) {
+          // Polite peer: rollback our local offer and accept theirs
+          debugPrint('🔄 Offer collision - rolling back (we are polite)');
+          await pc.setLocalDescription(RTCSessionDescription('', 'rollback'));
+        } else {
+          // Impolite peer: ignore their offer
+          debugPrint('⚠️ Offer collision - ignoring remote offer (we are impolite)');
+          _ignoreOffer[peerId] = true;
+          return;
+        }
+      }
+      
       await pc.setRemoteDescription(
         RTCSessionDescription(signal['sdp'], signal['type']),
       );
@@ -219,8 +239,12 @@ class WebRTCService {
         'type': 'answer',
         'sdp': answer.sdp,
       });
+      
+      debugPrint('✅ Successfully handled offer from $peerId');
     } catch (e) {
       debugPrint('❌ Error processing offer from $peerId: $e');
+      // On error, try to recover by recreating connection
+      closePeerConnection(peerId);
     }
   }
 
@@ -228,6 +252,22 @@ class WebRTCService {
     final pc = _peerConnections[peerId];
     if (pc != null) {
       try {
+        // Check if we should ignore this answer (due to collision)
+        if (_ignoreOffer[peerId] == true) {
+          debugPrint('⚠️  Ignoring answer from $peerId (we ignored their offer)');
+          return;
+        }
+        
+        // Check signaling state
+        final signalingState = await pc.getSignalingState();
+        debugPrint('📊 Current signaling state: $signalingState');
+        
+        // Only accept answer if we're in have-local-offer state
+        if (signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+          debugPrint('⚠️  Ignoring answer from $peerId - wrong state: $signalingState');
+          return;
+        }
+        
         await pc.setRemoteDescription(
           RTCSessionDescription(signal['sdp'], signal['type']),
         );
@@ -240,6 +280,8 @@ class WebRTCService {
             await pc.addCandidate(candidate);
           }
         }
+        
+        debugPrint('✅ Successfully handled answer from $peerId');
       } catch (e) {
         debugPrint('❌ Error processing answer from $peerId: $e');
       }
@@ -271,13 +313,27 @@ class WebRTCService {
 
   void _setupDataChannel(RTCDataChannel channel, String peerId) {
     channel.onMessage = (message) {
-      debugPrint('📨 Message from $peerId: ${message.text.substring(0, 50)}...');
       try {
-        final data = json.decode(message.text);
+        final messageText = message.text;
+        if (messageText.isEmpty) {
+          debugPrint('⚠️  Empty message from $peerId');
+          return;
+        }
+        
+        debugPrint('📨 Message from $peerId (${messageText.length} bytes)');
+        
+        final data = json.decode(messageText);
+        if (data is! Map<String, dynamic>) {
+          debugPrint('❌ Invalid message format from $peerId');
+          return;
+        }
+        
         final operation = Operation.fromJson(data);
+        debugPrint('✅ Parsed operation: ${operation.type.name} from ${operation.actor}');
         onOperationReceived?.call(peerId, operation);
-      } catch (e) {
-        debugPrint('❌ Error parsing operation: $e');
+      } catch (e, stack) {
+        debugPrint('❌ Error parsing operation from $peerId: $e');
+        debugPrint('Stack: $stack');
       }
     };
 
@@ -301,18 +357,30 @@ class WebRTCService {
         .where((dc) => dc.state == RTCDataChannelState.RTCDataChannelOpen)
         .length;
     
-    debugPrint('📤 Broadcasting operation to $openChannels/${_dataChannels.length} peers (open/total)');
+    if (openChannels == 0) {
+      debugPrint('⚠️  No open channels - operation not sent');
+      return;
+    }
+    
+    debugPrint('📤 Broadcasting operation ${operation.type.name} to $openChannels/${_dataChannels.length} peers');
 
+    int successCount = 0;
     for (final entry in _dataChannels.entries) {
       final channel = entry.value;
-      debugPrint('   Channel ${entry.key}: ${channel.state}');
       if (channel.state == RTCDataChannelState.RTCDataChannelOpen) {
-        channel.send(RTCDataChannelMessage(message));
-        debugPrint('   ✅ Sent to ${entry.key}');
+        try {
+          channel.send(RTCDataChannelMessage(message));
+          successCount++;
+          debugPrint('   ✅ Sent to ${entry.key}');
+        } catch (e) {
+          debugPrint('   ❌ Failed to send to ${entry.key}: $e');
+        }
       } else {
-        debugPrint('   ❌ Skip ${entry.key} - channel not open');
+        debugPrint('   ⏭️  Skip ${entry.key} - channel ${channel.state}');
       }
     }
+    
+    debugPrint('📊 Broadcast complete: $successCount/$openChannels successful');
   }
 
   void closePeerConnection(String peerId) {

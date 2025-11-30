@@ -78,7 +78,7 @@ class ApiService {
   ApiService({
     String? baseUrl,
     required this.storage,
-  }) : baseUrl = baseUrl ?? (kIsWeb ? 'http://127.0.0.1:3000' : 'http://localhost:3000');
+  }) : baseUrl = baseUrl ?? (kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000');
 
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;

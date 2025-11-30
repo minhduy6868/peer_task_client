@@ -11,8 +11,7 @@ import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/reset_password_screen.dart';
 import 'ui/screens/workspace_selection_screen.dart';
 import 'ui/screens/workspace_home_screen.dart';
-import 'ui/screens/hybrid_board_screen.dart';
-import 'ui/screens/p2p_drawing_board_screen.dart';
+import 'ui/screens/board_screen.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() async {
@@ -130,14 +129,7 @@ class MyApp extends ConsumerWidget {
           path: '/board/:id',
           builder: (context, state) {
             final boardId = state.pathParameters['id']!;
-            return HybridBoardScreen(boardId: boardId);
-          },
-        ),
-        GoRoute(
-          path: '/drawing/:id',
-          builder: (context, state) {
-            final boardId = state.pathParameters['id']!;
-            return P2PDrawingBoardScreen(boardId: boardId);
+            return BoardScreen(boardId: boardId);
           },
         ),
       ],
