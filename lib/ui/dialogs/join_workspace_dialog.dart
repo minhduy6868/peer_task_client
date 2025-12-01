@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 
 class JoinWorkspaceDialog extends StatefulWidget {
   final Function(String token) onJoinWithToken;
@@ -43,9 +45,8 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
   Future<void> _joinWithLink() async {
     final token = _extractToken(_linkController.text);
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid invite link')),
-      );
+      final l10n = AppLocalizations.of(context);
+      ErrorHandler.showWarning(context, 'Please enter a valid invite link');
       return;
     }
 
@@ -55,16 +56,13 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
       await widget.onJoinWithToken(token);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully joined workspace!')),
-        );
+        final l10n = AppLocalizations.of(context);
+        ErrorHandler.showSuccess(context, l10n?.joinedSuccessfully ?? 'Successfully joined workspace!');
       }
     } catch (e) {
       setState(() => _isJoining = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to join: $e')),
-        );
+        ErrorHandler.handle(context, e, customMessage: 'Failed to join workspace');
       }
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/ui/theme/app_colors.dart';
+import 'package:peertask/l10n/app_localizations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -50,6 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final isWideScreen = screenWidth > 900;
     final isTablet = screenWidth > 600 && screenWidth <= 900;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Row(
@@ -164,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             
                             // Title
                             Text(
-                              _isRegisterMode ? 'START YOUR\nADVENTURE!' : 'SIGN IN TO YOUR\nADVENTURE!',
+                              _isRegisterMode ? l10n.startYourAdventure : l10n.signInToAdventure,
                               style: const TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
@@ -175,7 +177,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'Collaborate seamlessly with your team\non P2P whiteboards and task boards',
+                              l10n.collaborativeDescription,
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white.withOpacity(0.7),
@@ -185,11 +187,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(height: 40),
                             
                             // Features
-                            _buildFeature(Icons.people_outline, 'Real-time collaboration'),
+                            _buildFeature(Icons.people_outline, l10n.realTimeCollaboration),
                             const SizedBox(height: 16),
-                            _buildFeature(Icons.security_outlined, 'Secure P2P connection'),
+                            _buildFeature(Icons.security_outlined, l10n.secureP2P),
                             const SizedBox(height: 16),
-                            _buildFeature(Icons.devices_outlined, 'Cross-platform support'),
+                            _buildFeature(Icons.devices_outlined, l10n.crossPlatform),
                           ],
                         ),
                       ),
@@ -250,7 +252,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             
                             // Title
                             Text(
-                              _isRegisterMode ? 'SIGN UP' : 'SIGN IN',
+                              _isRegisterMode ? l10n.signUpTitle : l10n.signInTitle,
                               style: TextStyle(
                                 fontSize: isWideScreen ? 32 : (isTablet ? 30 : 26),
                                 fontWeight: FontWeight.bold,
@@ -260,9 +262,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             SizedBox(height: isTablet ? 10 : 8),
                             Text(
-                              _isRegisterMode
-                                  ? 'Create your account to get started'
-                                  : 'Sign in with email address',
+                              _isRegisterMode ? l10n.signUpSubtitle : l10n.signInSubtitle,
                               style: TextStyle(
                                 fontSize: isTablet ? 15 : 14,
                                 color: AppColors.textSecondary,
@@ -303,11 +303,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             TextFormField(
                               controller: _emailController,
                               decoration: InputDecoration(
-                                hintText: 'Yourname@gmail.com',
-                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary, size: 20),
+                                hintText: l10n.emailPlaceholder,
+                                hintStyle: TextStyle(fontSize: isTablet ? 15 : 14),
+                                prefixIcon: Icon(
+                                  Icons.email_outlined, 
+                                  color: AppColors.textSecondary, 
+                                  size: isTablet ? 22 : 20,
+                                ),
                                 filled: true,
                                 fillColor: const Color(0xFFF7F8FA),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 22 : 20,
+                                  vertical: isTablet ? 20 : 18,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -330,13 +338,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(fontSize: 15),
+                              style: TextStyle(fontSize: isTablet ? 16 : 15),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Email is required';
+                                  return l10n.emailRequired;
                                 }
                                 if (!value.contains('@')) {
-                                  return 'Enter a valid email';
+                                  return l10n.emailInvalid;
                                 }
                                 return null;
                               },
@@ -347,7 +355,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             TextFormField(
                               controller: _passwordController,
                               decoration: InputDecoration(
-                                hintText: 'Password',
+                                hintText: l10n.passwordPlaceholder,
                                 prefixIcon: Icon(Icons.lock_outline, color: AppColors.textSecondary, size: 20),
                                 filled: true,
                                 fillColor: const Color(0xFFF7F8FA),
@@ -387,10 +395,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: const TextStyle(fontSize: 15),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Password is required';
+                                  return l10n.passwordRequired;
                                 }
                                 if (_isRegisterMode && value.length < 6) {
-                                  return 'Password must be at least 6 characters';
+                                  return l10n.passwordTooShort;
                                 }
                                 return null;
                               },
@@ -402,7 +410,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               TextFormField(
                                 controller: _nameController,
                                 decoration: InputDecoration(
-                                  hintText: 'Your Name (optional)',
+                                  hintText: l10n.namePlaceholder,
                                   prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary, size: 20),
                                   filled: true,
                                   fillColor: const Color(0xFFF7F8FA),
@@ -459,7 +467,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                       )
                                     : Text(
-                                        _isRegisterMode ? 'Sign up' : 'Sign in',
+                                        _isRegisterMode ? l10n.signUp : l10n.signIn,
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -478,7 +486,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
-                                    'Or continue with',
+                                    l10n.orContinueWith,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: AppColors.textSecondary,
@@ -507,7 +515,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                     icon: Icon(Icons.g_mobiledata, color: AppColors.textPrimary, size: 24),
                                     label: Text(
-                                      'Google',
+                                      l10n.google,
                                       style: TextStyle(
                                         color: AppColors.textPrimary,
                                         fontSize: 14,
@@ -531,7 +539,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                     icon: Icon(Icons.facebook, color: AppColors.textPrimary, size: 20),
                                     label: Text(
-                                      'Facebook',
+                                      l10n.facebook,
                                       style: TextStyle(
                                         color: AppColors.textPrimary,
                                         fontSize: 14,
@@ -550,9 +558,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  _isRegisterMode
-                                      ? 'Already have an account?'
-                                      : "Don't have an account?",
+                                  _isRegisterMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: AppColors.textSecondary,
@@ -568,7 +574,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           });
                                         },
                                   child: Text(
-                                    _isRegisterMode ? 'Sign In' : 'Sign Up',
+                                    _isRegisterMode ? l10n.signIn : l10n.signUp,
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -583,7 +589,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             if (_isRegisterMode) ...[
                               const SizedBox(height: 8),
                               Text(
-                                'By registering you with our Terms and Conditions',
+                                l10n.byRegistering,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textTertiary,

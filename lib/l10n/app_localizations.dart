@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'Register'**
   String get register;
 
+  /// No description provided for @signIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get signIn;
+
+  /// No description provided for @signUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Up'**
+  String get signUp;
+
   /// No description provided for @email.
   ///
   /// In en, this message translates to:
@@ -164,6 +176,132 @@ abstract class AppLocalizations {
   /// **'Logout'**
   String get logout;
 
+  /// No description provided for @signInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN IN'**
+  String get signInTitle;
+
+  /// No description provided for @signUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN UP'**
+  String get signUpTitle;
+
+  /// No description provided for @signInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email address'**
+  String get signInSubtitle;
+
+  /// No description provided for @signUpSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account to get started'**
+  String get signUpSubtitle;
+
+  /// No description provided for @signInToAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN IN TO YOUR\nADVENTURE!'**
+  String get signInToAdventure;
+
+  /// No description provided for @startYourAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'START YOUR\nADVENTURE!'**
+  String get startYourAdventure;
+
+  /// No description provided for @collaborativeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborate seamlessly with your team\non P2P whiteboards and task boards'**
+  String get collaborativeDescription;
+
+  /// No description provided for @realTimeCollaboration.
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time collaboration'**
+  String get realTimeCollaboration;
+
+  /// No description provided for @secureP2P.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure P2P connection'**
+  String get secureP2P;
+
+  /// No description provided for @crossPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-platform support'**
+  String get crossPlatform;
+
+  /// No description provided for @emailPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Yourname@gmail.com'**
+  String get emailPlaceholder;
+
+  /// No description provided for @passwordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordPlaceholder;
+
+  /// No description provided for @namePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Name (optional)'**
+  String get namePlaceholder;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccount;
+
+  /// No description provided for @orContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Or continue with'**
+  String get orContinueWith;
+
+  /// No description provided for @google.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get google;
+
+  /// No description provided for @facebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook'**
+  String get facebook;
+
+  /// No description provided for @byRegistering.
+  ///
+  /// In en, this message translates to:
+  /// **'By registering you with our Terms and Conditions'**
+  String get byRegistering;
+
+  /// No description provided for @emailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get emailRequired;
+
+  /// No description provided for @emailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get emailInvalid;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get passwordRequired;
+
   /// No description provided for @workspaces.
   ///
   /// In en, this message translates to:
@@ -205,6 +343,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Board Description'**
   String get boardDescription;
+
+  /// No description provided for @myBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'My Boards'**
+  String get myBoards;
+
+  /// No description provided for @newBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'New Board'**
+  String get newBoard;
+
+  /// No description provided for @createNewBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Board'**
+  String get createNewBoard;
+
+  /// No description provided for @enterBoardName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a creative name...'**
+  String get enterBoardName;
+
+  /// No description provided for @boardDescriptionOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this board about?'**
+  String get boardDescriptionOptional;
+
+  /// No description provided for @boardCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Board \"{name}\" created successfully!'**
+  String boardCreatedSuccess(Object name);
+
+  /// No description provided for @noBoardsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No boards yet'**
+  String get noBoardsYet;
+
+  /// No description provided for @createFirstBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first board to start collaborating'**
+  String get createFirstBoard;
 
   /// No description provided for @inviteMembers.
   ///
@@ -836,35 +1022,65 @@ abstract class AppLocalizations {
   /// **'Loading...'**
   String get loading;
 
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// No description provided for @serverError.
   ///
   /// In en, this message translates to:
-  /// **'Server error'**
+  /// **'Server error. Please try again later.'**
   String get serverError;
 
   /// No description provided for @networkError.
   ///
   /// In en, this message translates to:
-  /// **'Network error'**
+  /// **'Network error. Please check your connection.'**
   String get networkError;
+
+  /// No description provided for @connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed. Please try again.'**
+  String get connectionError;
+
+  /// No description provided for @timeoutError.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timeout. Please try again.'**
+  String get timeoutError;
+
+  /// No description provided for @unknownError.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred. Please try again.'**
+  String get unknownError;
+
+  /// No description provided for @validationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid input. Please check your data.'**
+  String get validationError;
+
+  /// No description provided for @permissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to perform this action'**
+  String get permissionDenied;
+
+  /// No description provided for @notFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource not found'**
+  String get notFound;
 
   /// No description provided for @invalidCredentials.
   ///
   /// In en, this message translates to:
   /// **'Invalid email or password'**
   String get invalidCredentials;
-
-  /// No description provided for @emailRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Email is required'**
-  String get emailRequired;
-
-  /// No description provided for @passwordRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Password is required'**
-  String get passwordRequired;
 
   /// No description provided for @passwordTooShort.
   ///
@@ -883,6 +1099,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name is required'**
   String get nameRequired;
+
+  /// No description provided for @taskSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task saved successfully'**
+  String get taskSavedSuccess;
+
+  /// No description provided for @taskUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task updated successfully'**
+  String get taskUpdatedSuccess;
+
+  /// No description provided for @taskDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task deleted successfully'**
+  String get taskDeletedSuccess;
+
+  /// No description provided for @taskSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save task'**
+  String get taskSaveError;
+
+  /// No description provided for @taskUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update task'**
+  String get taskUpdateError;
+
+  /// No description provided for @taskDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete task'**
+  String get taskDeleteError;
+
+  /// No description provided for @taskTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Task title is required'**
+  String get taskTitleRequired;
+
+  /// No description provided for @boardUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Board updated successfully'**
+  String get boardUpdatedSuccess;
+
+  /// No description provided for @boardDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Board deleted successfully'**
+  String get boardDeletedSuccess;
+
+  /// No description provided for @boardUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update board'**
+  String get boardUpdateError;
+
+  /// No description provided for @boardDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete board'**
+  String get boardDeleteError;
+
+  /// No description provided for @boardDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this board?'**
+  String get boardDeleteConfirm;
+
+  /// No description provided for @boardNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Board name is required'**
+  String get boardNameRequired;
+
+  /// No description provided for @operationSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation completed successfully'**
+  String get operationSuccess;
+
+  /// No description provided for @operationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get operationFailed;
+
+  /// No description provided for @pleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait...'**
+  String get pleaseWait;
+
+  /// No description provided for @processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get processing;
 
   /// No description provided for @workspace.
   ///

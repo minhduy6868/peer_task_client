@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 
 class InviteMemberDialog extends StatefulWidget {
   final String workspaceId;
@@ -75,9 +77,7 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
     } catch (e) {
       setState(() => _isGenerating = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate link: $e')),
-        );
+        ErrorHandler.handle(context, e, customMessage: 'Failed to generate link');
       }
     }
   }
@@ -85,9 +85,8 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
   void _copyLink() {
     if (_generatedLink != null) {
       Clipboard.setData(ClipboardData(text: _generatedLink!));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link copied to clipboard!')),
-      );
+      final l10n = AppLocalizations.of(context);
+      ErrorHandler.showSuccess(context, l10n?.linkCopied ?? 'Link copied to clipboard!');
     }
   }
 
@@ -372,12 +371,10 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
+            ElevatedButton.icon(
             onPressed: () {
               // TODO: Implement email invite
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Email invite not yet implemented')),
-              );
+              ErrorHandler.showInfo(context, 'Email invite not yet implemented');
             },
             icon: const Icon(Icons.send),
             label: const Text('Send Invitation'),

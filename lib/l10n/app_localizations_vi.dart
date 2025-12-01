@@ -18,6 +18,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get register => 'Đăng ký';
 
   @override
+  String get signIn => 'Đăng nhập';
+
+  @override
+  String get signUp => 'Đăng ký';
+
+  @override
   String get email => 'Email';
 
   @override
@@ -42,6 +48,71 @@ class AppLocalizationsVi extends AppLocalizations {
   String get logout => 'Đăng xuất';
 
   @override
+  String get signInTitle => 'ĐĂNG NHẬP';
+
+  @override
+  String get signUpTitle => 'ĐĂNG KÝ';
+
+  @override
+  String get signInSubtitle => 'Đăng nhập bằng địa chỉ email';
+
+  @override
+  String get signUpSubtitle => 'Tạo tài khoản để bắt đầu';
+
+  @override
+  String get signInToAdventure => 'ĐĂNG NHẬP ĐỂ BẮT ĐẦU\nHÀNH TRÌNH!';
+
+  @override
+  String get startYourAdventure => 'BẮT ĐẦU HÀNH TRÌNH\nCỦA BẠN!';
+
+  @override
+  String get collaborativeDescription =>
+      'Cộng tác liền mạch với nhóm của bạn\ntrên bảng trắng và bảng công việc P2P';
+
+  @override
+  String get realTimeCollaboration => 'Cộng tác thời gian thực';
+
+  @override
+  String get secureP2P => 'Kết nối P2P bảo mật';
+
+  @override
+  String get crossPlatform => 'Hỗ trợ đa nền tảng';
+
+  @override
+  String get emailPlaceholder => 'Yourname@gmail.com';
+
+  @override
+  String get passwordPlaceholder => 'Mật khẩu';
+
+  @override
+  String get namePlaceholder => 'Tên của bạn (không bắt buộc)';
+
+  @override
+  String get createAccount => 'Tạo tài khoản';
+
+  @override
+  String get orContinueWith => 'Hoặc tiếp tục với';
+
+  @override
+  String get google => 'Google';
+
+  @override
+  String get facebook => 'Facebook';
+
+  @override
+  String get byRegistering =>
+      'Bằng việc đăng ký, bạn đồng ý với Điều khoản và Điều kiện của chúng tôi';
+
+  @override
+  String get emailRequired => 'Vui lòng nhập email';
+
+  @override
+  String get emailInvalid => 'Vui lòng nhập email hợp lệ';
+
+  @override
+  String get passwordRequired => 'Vui lòng nhập mật khẩu';
+
+  @override
   String get workspaces => 'Không gian làm việc';
 
   @override
@@ -61,6 +132,32 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get boardDescription => 'Mô tả bảng';
+
+  @override
+  String get myBoards => 'Bảng của tôi';
+
+  @override
+  String get newBoard => 'Bảng mới';
+
+  @override
+  String get createNewBoard => 'Tạo bảng mới';
+
+  @override
+  String get enterBoardName => 'Nhập tên sáng tạo...';
+
+  @override
+  String get boardDescriptionOptional => 'Bảng này về cái gì?';
+
+  @override
+  String boardCreatedSuccess(Object name) {
+    return 'Đã tạo bảng \"$name\" thành công!';
+  }
+
+  @override
+  String get noBoardsYet => 'Chưa có bảng nào';
+
+  @override
+  String get createFirstBoard => 'Tạo bảng đầu tiên để bắt đầu cộng tác';
 
   @override
   String get inviteMembers => 'Mời thành viên';
@@ -384,19 +481,34 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loading => 'Đang tải...';
 
   @override
-  String get serverError => 'Lỗi máy chủ';
+  String get retry => 'Thử lại';
 
   @override
-  String get networkError => 'Lỗi mạng';
+  String get serverError => 'Lỗi máy chủ. Vui lòng thử lại sau.';
+
+  @override
+  String get networkError => 'Lỗi mạng. Vui lòng kiểm tra kết nối.';
+
+  @override
+  String get connectionError => 'Kết nối thất bại. Vui lòng thử lại.';
+
+  @override
+  String get timeoutError => 'Hết thời gian chờ. Vui lòng thử lại.';
+
+  @override
+  String get unknownError => 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
+
+  @override
+  String get validationError => 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+
+  @override
+  String get permissionDenied => 'Bạn không có quyền thực hiện thao tác này';
+
+  @override
+  String get notFound => 'Không tìm thấy tài nguyên';
 
   @override
   String get invalidCredentials => 'Email hoặc mật khẩu không đúng';
-
-  @override
-  String get emailRequired => 'Vui lòng nhập email';
-
-  @override
-  String get passwordRequired => 'Vui lòng nhập mật khẩu';
 
   @override
   String get passwordTooShort => 'Mật khẩu phải có ít nhất 6 ký tự';
@@ -406,6 +518,57 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get nameRequired => 'Vui lòng nhập tên';
+
+  @override
+  String get taskSavedSuccess => 'Đã lưu công việc thành công';
+
+  @override
+  String get taskUpdatedSuccess => 'Đã cập nhật công việc thành công';
+
+  @override
+  String get taskDeletedSuccess => 'Đã xóa công việc thành công';
+
+  @override
+  String get taskSaveError => 'Không thể lưu công việc';
+
+  @override
+  String get taskUpdateError => 'Không thể cập nhật công việc';
+
+  @override
+  String get taskDeleteError => 'Không thể xóa công việc';
+
+  @override
+  String get taskTitleRequired => 'Vui lòng nhập tên công việc';
+
+  @override
+  String get boardUpdatedSuccess => 'Đã cập nhật bảng thành công';
+
+  @override
+  String get boardDeletedSuccess => 'Đã xóa bảng thành công';
+
+  @override
+  String get boardUpdateError => 'Không thể cập nhật bảng';
+
+  @override
+  String get boardDeleteError => 'Không thể xóa bảng';
+
+  @override
+  String get boardDeleteConfirm => 'Bạn có chắc muốn xóa bảng này?';
+
+  @override
+  String get boardNameRequired => 'Vui lòng nhập tên bảng';
+
+  @override
+  String get operationSuccess => 'Thao tác hoàn thành thành công';
+
+  @override
+  String get operationFailed => 'Thao tác thất bại';
+
+  @override
+  String get pleaseWait => 'Vui lòng đợi...';
+
+  @override
+  String get processing => 'Đang xử lý...';
 
   @override
   String get workspace => 'Không gian';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 
 class BoardSettingsDialog extends ConsumerStatefulWidget {
   final String boardId;
@@ -164,16 +166,14 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                     : _descController.text.trim(),
                 );
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Board updated')),
-                  );
+                  final l10n = AppLocalizations.of(context)!;
+                  ErrorHandler.showSuccess(context, l10n.boardUpdatedSuccess);
                   Navigator.pop(context, true);
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  final l10n = AppLocalizations.of(context)!;
+                  ErrorHandler.handle(context, e, customMessage: l10n.boardUpdateError);
                 }
               }
             }
@@ -223,15 +223,13 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 await api.deleteBoard(widget.boardId);
                 if (mounted) {
                   Navigator.pop(context, 'deleted');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Board deleted')),
-                  );
+                  final l10n = AppLocalizations.of(context)!;
+                  ErrorHandler.showSuccess(context, l10n.boardDeletedSuccess);
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  final l10n = AppLocalizations.of(context)!;
+                  ErrorHandler.handle(context, e, customMessage: l10n.boardDeleteError);
                 }
               }
             }
@@ -281,9 +279,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading board info: $e')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }
@@ -302,9 +299,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading members: $e')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }
@@ -448,9 +444,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (!mounted) return;
       
       if (availableMembers.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All workspace members are already in this board')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.showSuccess(context, l10n.operationSuccess);
         return;
       }
       
@@ -464,9 +459,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }
@@ -513,12 +507,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       
       await _loadMembers();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Member added successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.showSuccess(context, l10n.operationSuccess);
       }
     } catch (e, stackTrace) {
       print('Error adding member: $e');
@@ -528,13 +518,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }
@@ -549,15 +534,13 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       );
       await _loadMembers();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission updated')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.showSuccess(context, l10n.roleUpdated);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }
@@ -571,15 +554,13 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       );
       await _loadMembers();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Member removed')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.showSuccess(context, l10n.memberRemoved);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
       }
     }
   }

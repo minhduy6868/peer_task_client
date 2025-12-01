@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
 import '../dialogs/board_settings_dialog.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Hybrid Board - Canvas vẽ + Kanban tasks
 /// Kết hợp Canva (vẽ tự do) + Trello (phân công việc)
@@ -251,9 +253,8 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving task: $e')),
-        );
+        final l10n = AppLocalizations.of(context);
+        ErrorHandler.handle(context, e, customMessage: l10n.taskSaveError);
       }
       return;
     }
@@ -295,9 +296,8 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating task: $e')),
-        );
+        final l10n = AppLocalizations.of(context);
+        ErrorHandler.handle(context, e, customMessage: l10n.taskUpdateError);
       }
       return;
     }
@@ -341,9 +341,8 @@ class _HybridBoardScreenState extends ConsumerState<HybridBoardScreen> {
       await api.deleteTask(taskId);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting task: $e')),
-        );
+        final l10n = AppLocalizations.of(context);
+        ErrorHandler.handle(context, e, customMessage: l10n.taskDeleteError);
       }
       return;
     }

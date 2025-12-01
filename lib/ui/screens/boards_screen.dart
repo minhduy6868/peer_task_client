@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/models/board/board.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
 
 final workspaceBoardsProvider = FutureProvider.family<List<Board>, String>((ref, workspaceId) async {
@@ -150,19 +152,15 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 if (mounted) {
                                   Navigator.pop(context);
                                   ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Board "$name" created successfully!'),
-                                      backgroundColor: const Color(0xFF43E97B),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
+                                  final l10n = AppLocalizations.of(context);
+                                  ErrorHandler.showSuccess(
+                                    context,
+                                    l10n?.boardCreatedSuccess(name) ?? 'Board "$name" created successfully!',
                                   );
                                 }
                               } catch (e) {
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                                  );
+                                  ErrorHandler.handle(context, e, customMessage: 'Failed to create board');
                                 }
                               }
                             },

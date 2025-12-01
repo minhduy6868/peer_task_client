@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../utils/error_handler.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Task Creation/Edit Dialog
 /// Full featured dialog with all task properties
@@ -375,9 +377,7 @@ class _TaskDialogState extends State<TaskDialog> {
               onPressed: () {
                 final title = _titleController.text.trim();
                 if (title.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Title is required')),
-                  );
+                  ErrorHandler.showWarning(context, 'Title is required');
                   return;
                 }
                 

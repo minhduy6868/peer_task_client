@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/error_handler.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../dialogs/join_workspace_dialog.dart';
@@ -69,10 +70,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                   }
                 } catch (e) {
                   if (mounted) {
-                    final errorL10n = AppLocalizations.of(context)!;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${errorL10n.error}: $e')),
-                    );
+                    ErrorHandler.handle(context, e, customMessage: 'Failed to create workspace');
                   }
                 }
               }
@@ -96,16 +94,11 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               Navigator.pop(context);
               ref.invalidate(workspacesProvider);
               final l10n = AppLocalizations.of(context)!;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.joinedSuccessfully)),
-              );
+              ErrorHandler.showSuccess(context, l10n.joinedSuccessfully);
             }
           } catch (e) {
             if (mounted) {
-              final l10n = AppLocalizations.of(context)!;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${l10n.error}: $e')),
-              );
+              ErrorHandler.handle(context, e, customMessage: 'Failed to join workspace');
             }
           }
         },

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../models/workspace/workspace.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/error_handler.dart';
 import '../theme/app_colors.dart';
 import 'workspace_settings_dialog.dart';
 
@@ -197,9 +198,7 @@ class WorkspaceMenuDialog extends ConsumerWidget {
                       onWorkspaceLeft?.call();
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
+                        ErrorHandler.handle(context, e);
                       }
                     }
                   }
@@ -242,10 +241,7 @@ class WorkspaceMenuDialog extends ConsumerWidget {
                       onWorkspaceDeleted?.call();
                     } catch (e) {
                       if (context.mounted) {
-                        final errorL10n = AppLocalizations.of(context)!;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${errorL10n.error}: $e')),
-                        );
+                        ErrorHandler.handle(context, e);
                       }
                     }
                   }

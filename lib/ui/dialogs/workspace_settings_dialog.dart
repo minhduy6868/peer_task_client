@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/error_handler.dart';
 
 class WorkspaceSettingsDialog extends ConsumerStatefulWidget {
   final String workspaceId;
@@ -172,17 +173,13 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                     name: name,
                   );
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.workspaceUpdated)),
-                    );
+                    ErrorHandler.showSuccess(context, l10n.workspaceUpdated);
                     ref.invalidate(workspacesProvider);
                     Navigator.pop(context);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${l10n.error}: $e')),
-                    );
+                    ErrorHandler.handle(context, e);
                   }
                 }
               }
@@ -234,15 +231,11 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                   if (mounted) {
                     ref.invalidate(workspacesProvider);
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.workspaceDeleted)),
-                    );
+                    ErrorHandler.showSuccess(context, l10n.workspaceDeleted);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${l10n.error}: $e')),
-                    );
+                    ErrorHandler.handle(context, e);
                   }
                 }
               }
@@ -310,10 +303,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${l10n.error}: $e')),
-        );
+        ErrorHandler.handle(context, e);
       }
     }
   }
@@ -335,9 +325,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
             padding: const EdgeInsets.all(16),
             child: ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.useInviteLinkToAdd)),
-                );
+                final l10n = AppLocalizations.of(context)!;
+                ErrorHandler.showInfo(context, l10n.useInviteLinkToAdd);
               },
               icon: const Icon(Icons.person_add),
               label: Text(l10n.addMember),
@@ -454,12 +443,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.roleUpdated),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ErrorHandler.showSuccess(context, l10n.roleUpdated);
       }
     } catch (e, stackTrace) {
       print('Error updating role: $e');
@@ -469,14 +453,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n.error}: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        ErrorHandler.handle(context, e);
       }
     }
   }
@@ -519,12 +496,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.memberRemoved),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ErrorHandler.showSuccess(context, l10n.memberRemoved);
       }
     } catch (e) {
       print('Error removing member: $e');
@@ -533,14 +505,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${l10n.error}: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        ErrorHandler.handle(context, e);
       }
     }
   }
@@ -612,9 +577,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
         
         if (token.isEmpty) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to extract invite code from response')),
-            );
+            ErrorHandler.showWarning(context, 'Failed to extract invite code from response');
           }
           return;
         }
@@ -719,9 +682,8 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                       ElevatedButton.icon(
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: token));
-                          ScaffoldMessenger.of(dialogContext).showSnackBar(
-                            SnackBar(content: Text(inviteL10n.codeCopied)),
-                          );
+                          final inviteL10n = AppLocalizations.of(dialogContext)!;
+                          ErrorHandler.showSuccess(dialogContext, inviteL10n.codeCopied);
                         },
                         icon: const Icon(Icons.copy),
                         label: Text(inviteL10n.copyCode),
@@ -745,10 +707,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
       }
     } catch (e) {
       if (mounted) {
-        final errorL10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${errorL10n.error}: $e')),
-        );
+        ErrorHandler.handle(context, e, customMessage: 'Failed to create invite link');
       }
     }
   }
@@ -818,16 +777,11 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                                   await _loadInvites();
                                   if (mounted) {
                                     final l10nMsg = AppLocalizations.of(context)!;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(l10nMsg.inviteRevoked)),
-                                    );
+                                    ErrorHandler.showSuccess(context, l10nMsg.inviteRevoked);
                                   }
                                 } catch (e) {
                                   if (mounted) {
-                                    final l10nMsg = AppLocalizations.of(context)!;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('${l10nMsg.error}: $e')),
-                                    );
+                                    ErrorHandler.handle(context, e);
                                   }
                                 }
                               },
