@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../models/workspace/workspace.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/error_handler.dart';
 import '../theme/app_colors.dart';
 import 'workspace_settings_dialog.dart';
 
+import '../../utils/error_display.dart';
 class WorkspaceMenuDialog extends ConsumerWidget {
   final Workspace workspace;
   final VoidCallback? onWorkspaceChanged;
@@ -198,7 +198,7 @@ class WorkspaceMenuDialog extends ConsumerWidget {
                       onWorkspaceLeft?.call();
                     } catch (e) {
                       if (context.mounted) {
-                        ErrorHandler.handle(context, e);
+                        context.showErrorSnackBar(e);
                       }
                     }
                   }
@@ -241,7 +241,7 @@ class WorkspaceMenuDialog extends ConsumerWidget {
                       onWorkspaceDeleted?.call();
                     } catch (e) {
                       if (context.mounted) {
-                        ErrorHandler.handle(context, e);
+                        context.showErrorSnackBar(e);
                       }
                     }
                   }

@@ -302,6 +302,180 @@ abstract class AppLocalizations {
   /// **'Password is required'**
   String get passwordRequired;
 
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMinLength;
+
+  /// No description provided for @passwordMinLength8.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordMinLength8;
+
+  /// No description provided for @passwordRequireUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least 1 uppercase letter'**
+  String get passwordRequireUppercase;
+
+  /// No description provided for @passwordRequireLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least 1 lowercase letter'**
+  String get passwordRequireLowercase;
+
+  /// No description provided for @passwordRequireDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least 1 digit'**
+  String get passwordRequireDigit;
+
+  /// No description provided for @passwordConfirmRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get passwordConfirmRequired;
+
+  /// No description provided for @passwordNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordNotMatch;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequired;
+
+  /// No description provided for @nameMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be at least 2 characters'**
+  String get nameMinLength;
+
+  /// No description provided for @nameMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Name cannot exceed 50 characters'**
+  String get nameMaxLength;
+
+  /// No description provided for @nameLettersOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Name can only contain letters'**
+  String get nameLettersOnly;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get fieldRequired;
+
+  /// No description provided for @fieldMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be at least {min} characters'**
+  String fieldMinLength(String field, int min);
+
+  /// No description provided for @fieldMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} cannot exceed {max} characters'**
+  String fieldMaxLength(String field, int max);
+
+  /// No description provided for @phoneNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number is required'**
+  String get phoneNumberRequired;
+
+  /// No description provided for @phoneNumberInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid phone number'**
+  String get phoneNumberInvalid;
+
+  /// No description provided for @urlRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'URL is required'**
+  String get urlRequired;
+
+  /// No description provided for @urlInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid URL'**
+  String get urlInvalid;
+
+  /// No description provided for @numberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get numberRequired;
+
+  /// No description provided for @numberInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This field must be a number'**
+  String get numberInvalid;
+
+  /// No description provided for @integerInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This field must be an integer'**
+  String get integerInvalid;
+
+  /// No description provided for @valueMin.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be greater than or equal to {min}'**
+  String valueMin(String field, num min);
+
+  /// No description provided for @valueMax.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be less than or equal to {max}'**
+  String valueMax(String field, num max);
+
+  /// No description provided for @valueRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be between {min} and {max}'**
+  String valueRange(String field, num min, num max);
+
+  /// No description provided for @workspaceNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace name is required'**
+  String get workspaceNameRequired;
+
+  /// No description provided for @workspaceNameMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace name must be at least 3 characters'**
+  String get workspaceNameMinLength;
+
+  /// No description provided for @workspaceNameMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace name cannot exceed 50 characters'**
+  String get workspaceNameMaxLength;
+
+  /// No description provided for @taskTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Task title is required'**
+  String get taskTitleRequired;
+
+  /// No description provided for @taskTitleMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Task title cannot exceed 200 characters'**
+  String get taskTitleMaxLength;
+
   /// No description provided for @workspaces.
   ///
   /// In en, this message translates to:
@@ -1094,12 +1268,6 @@ abstract class AppLocalizations {
   /// **'Passwords do not match'**
   String get passwordsDoNotMatch;
 
-  /// No description provided for @nameRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Name is required'**
-  String get nameRequired;
-
   /// No description provided for @taskSavedSuccess.
   ///
   /// In en, this message translates to:
@@ -1135,12 +1303,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete task'**
   String get taskDeleteError;
-
-  /// No description provided for @taskTitleRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Task title is required'**
-  String get taskTitleRequired;
 
   /// No description provided for @boardUpdatedSuccess.
   ///

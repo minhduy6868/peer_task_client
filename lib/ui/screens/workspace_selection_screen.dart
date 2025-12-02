@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/error_handler.dart';
+import '../../utils/error_display.dart';
+import '../../utils/validators_l10n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../dialogs/join_workspace_dialog.dart';
@@ -30,6 +31,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
   }
 
   void _showCreateWorkspaceDialog() {
+    final formKey = GlobalKey<FormState>();
     final controller = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
 
@@ -40,16 +42,21 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
           borderRadius: BorderRadius.circular(20),
         ),
         title: Text(l10n.createWorkspace),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: l10n.enterWorkspaceName,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        content: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: l10n.enterWorkspaceName,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.workspaces),
             ),
-            prefixIcon: const Icon(Icons.workspaces),
+            validator: ValidatorsL10n.workspaceName(context),
+            autofocus: true,
           ),
-          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -58,20 +65,21 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
           ),
           ElevatedButton(
             onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              
               final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                try {
-                  await ref.read(workspacesProvider.notifier).createWorkspace(name);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    // Wait a bit and refresh
-                    await Future.delayed(const Duration(milliseconds: 300));
-                    ref.invalidate(workspacesProvider);
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ErrorHandler.handle(context, e, customMessage: 'Failed to create workspace');
-                  }
+              try {
+                await ref.read(workspacesProvider.notifier).createWorkspace(name);
+                if (mounted) {
+                  Navigator.pop(context);
+                  // Wait a bit and refresh
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  ref.invalidate(workspacesProvider);
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  context.showErrorSnackBar(e);
                 }
               }
             },
@@ -94,11 +102,12 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               Navigator.pop(context);
               ref.invalidate(workspacesProvider);
               final l10n = AppLocalizations.of(context)!;
-              ErrorHandler.showSuccess(context, l10n.joinedSuccessfully);
+              context.showSuccessMessage(l10n.joinedSuccessfully);
             }
           } catch (e) {
             if (mounted) {
-              ErrorHandler.handle(context, e, customMessage: 'Failed to join workspace');
+              Navigator.pop(context);
+              context.showErrorSnackBar(e);
             }
           }
         },

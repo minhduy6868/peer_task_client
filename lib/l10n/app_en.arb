@@ -39,8 +39,68 @@
   "byRegistering": "By registering you with our Terms and Conditions",
   
   "emailRequired": "Email is required",
-  "emailInvalid": "Enter a valid email",
+  "emailInvalid": "Invalid email address",
   "passwordRequired": "Password is required",
+  "passwordMinLength": "Password must be at least 6 characters",
+  "passwordMinLength8": "Password must be at least 8 characters",
+  "passwordRequireUppercase": "Password must contain at least 1 uppercase letter",
+  "passwordRequireLowercase": "Password must contain at least 1 lowercase letter",
+  "passwordRequireDigit": "Password must contain at least 1 digit",
+  "passwordConfirmRequired": "Please confirm your password",
+  "passwordNotMatch": "Passwords do not match",
+  "nameRequired": "Name is required",
+  "nameMinLength": "Name must be at least 2 characters",
+  "nameMaxLength": "Name cannot exceed 50 characters",
+  "nameLettersOnly": "Name can only contain letters",
+  "fieldRequired": "This field is required",
+  "fieldMinLength": "{field} must be at least {min} characters",
+  "@fieldMinLength": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "int"}
+    }
+  },
+  "fieldMaxLength": "{field} cannot exceed {max} characters",
+  "@fieldMaxLength": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "max": {"type": "int"}
+    }
+  },
+  "phoneNumberRequired": "Phone number is required",
+  "phoneNumberInvalid": "Invalid phone number",
+  "urlRequired": "URL is required",
+  "urlInvalid": "Invalid URL",
+  "numberRequired": "This field is required",
+  "numberInvalid": "This field must be a number",
+  "integerInvalid": "This field must be an integer",
+  "valueMin": "{field} must be greater than or equal to {min}",
+  "@valueMin": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "num"}
+    }
+  },
+  "valueMax": "{field} must be less than or equal to {max}",
+  "@valueMax": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "max": {"type": "num"}
+    }
+  },
+  "valueRange": "{field} must be between {min} and {max}",
+  "@valueRange": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "num"},
+      "max": {"type": "num"}
+    }
+  },
+  "workspaceNameRequired": "Workspace name is required",
+  "workspaceNameMinLength": "Workspace name must be at least 3 characters",
+  "workspaceNameMaxLength": "Workspace name cannot exceed 50 characters",
+  "taskTitleRequired": "Task title is required",
+  "taskTitleMaxLength": "Task title cannot exceed 200 characters",
 
   "workspaces": "Workspaces",
   "createWorkspace": "Create Workspace",

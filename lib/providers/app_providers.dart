@@ -8,6 +8,7 @@ import '../services/webrtc_service.dart';
 import '../core/sync_engine.dart';
 import '../models/user/user.dart';
 import '../models/workspace/workspace.dart';
+import '../models/api_error.dart';
 import '../models/board/board.dart';
 import '../models/whiteboard_object/whiteboard_object.dart';
 import '../models/operation/operation.dart';
@@ -140,6 +141,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         refreshToken: refreshToken,
         isLoading: false,
       );
+    } on ApiError catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.userMessage,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -172,6 +178,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         accessToken: accessToken,
         refreshToken: refreshToken,
         isLoading: false,
+      );
+    } on ApiError catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.userMessage,
       );
     } catch (e) {
       state = state.copyWith(

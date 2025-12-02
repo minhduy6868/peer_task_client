@@ -113,6 +113,107 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordRequired => 'Password is required';
 
   @override
+  String get passwordMinLength => 'Password must be at least 6 characters';
+
+  @override
+  String get passwordMinLength8 => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordRequireUppercase =>
+      'Password must contain at least 1 uppercase letter';
+
+  @override
+  String get passwordRequireLowercase =>
+      'Password must contain at least 1 lowercase letter';
+
+  @override
+  String get passwordRequireDigit => 'Password must contain at least 1 digit';
+
+  @override
+  String get passwordConfirmRequired => 'Please confirm your password';
+
+  @override
+  String get passwordNotMatch => 'Passwords do not match';
+
+  @override
+  String get nameRequired => 'Name is required';
+
+  @override
+  String get nameMinLength => 'Name must be at least 2 characters';
+
+  @override
+  String get nameMaxLength => 'Name cannot exceed 50 characters';
+
+  @override
+  String get nameLettersOnly => 'Name can only contain letters';
+
+  @override
+  String get fieldRequired => 'This field is required';
+
+  @override
+  String fieldMinLength(String field, int min) {
+    return '$field must be at least $min characters';
+  }
+
+  @override
+  String fieldMaxLength(String field, int max) {
+    return '$field cannot exceed $max characters';
+  }
+
+  @override
+  String get phoneNumberRequired => 'Phone number is required';
+
+  @override
+  String get phoneNumberInvalid => 'Invalid phone number';
+
+  @override
+  String get urlRequired => 'URL is required';
+
+  @override
+  String get urlInvalid => 'Invalid URL';
+
+  @override
+  String get numberRequired => 'This field is required';
+
+  @override
+  String get numberInvalid => 'This field must be a number';
+
+  @override
+  String get integerInvalid => 'This field must be an integer';
+
+  @override
+  String valueMin(String field, num min) {
+    return '$field must be greater than or equal to $min';
+  }
+
+  @override
+  String valueMax(String field, num max) {
+    return '$field must be less than or equal to $max';
+  }
+
+  @override
+  String valueRange(String field, num min, num max) {
+    return '$field must be between $min and $max';
+  }
+
+  @override
+  String get workspaceNameRequired => 'Workspace name is required';
+
+  @override
+  String get workspaceNameMinLength =>
+      'Workspace name must be at least 3 characters';
+
+  @override
+  String get workspaceNameMaxLength =>
+      'Workspace name cannot exceed 50 characters';
+
+  @override
+  String get taskTitleRequired => 'Task title is required';
+
+  @override
+  String get taskTitleMaxLength => 'Task title cannot exceed 200 characters';
+
+  @override
   String get workspaces => 'Workspaces';
 
   @override
@@ -519,9 +620,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get nameRequired => 'Name is required';
-
-  @override
   String get taskSavedSuccess => 'Task saved successfully';
 
   @override
@@ -538,9 +636,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskDeleteError => 'Failed to delete task';
-
-  @override
-  String get taskTitleRequired => 'Task title is required';
 
   @override
   String get boardUpdatedSuccess => 'Board updated successfully';

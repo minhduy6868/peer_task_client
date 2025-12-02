@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/ui/theme/app_colors.dart';
 import 'package:peertask/l10n/app_localizations.dart';
+import 'package:peertask/utils/error_display.dart';
+import 'package:peertask/utils/validators_l10n.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -37,10 +39,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final authNotifier = ref.read(authStateProvider.notifier);
 
-    if (_isRegisterMode) {
-      await authNotifier.register(email, password, name.isEmpty ? null : name);
-    } else {
-      await authNotifier.login(email, password);
+    try {
+      if (_isRegisterMode) {
+        await authNotifier.register(email, password, name.isEmpty ? null : name);
+      } else {
+        await authNotifier.login(email, password);
+      }
+
+      // Check for errors in authState
+      final authState = ref.read(authStateProvider);
+      if (authState.error != null && mounted) {
+        context.showErrorSnackBar(authState.error!);
+      }
+    } catch (e) {
+      if (mounted) {
+        context.showErrorSnackBar(e);
+      }
     }
   }
 
@@ -219,6 +233,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: Form(
                         key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -339,15 +354,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               keyboardType: TextInputType.emailAddress,
                               style: TextStyle(fontSize: isTablet ? 16 : 15),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return l10n.emailRequired;
-                                }
-                                if (!value.contains('@')) {
-                                  return l10n.emailInvalid;
-                                }
-                                return null;
-                              },
+                              validator: ValidatorsL10n.email(context),
                             ),
                             const SizedBox(height: 16),
                             
@@ -393,15 +400,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               obscureText: _obscurePassword,
                               style: const TextStyle(fontSize: 15),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return l10n.passwordRequired;
-                                }
-                                if (_isRegisterMode && value.length < 6) {
-                                  return l10n.passwordTooShort;
-                                }
-                                return null;
-                              },
+                              validator: _isRegisterMode 
+                                ? ValidatorsL10n.password(context)
+                                : ValidatorsL10n.required(context),
                             ),
                             
                             // Name Field (Register mode)

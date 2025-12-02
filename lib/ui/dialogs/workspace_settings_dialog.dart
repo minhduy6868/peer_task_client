@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/error_handler.dart';
+
+import '../../utils/error_display.dart';
 
 class WorkspaceSettingsDialog extends ConsumerStatefulWidget {
   final String workspaceId;
@@ -173,13 +174,13 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                     name: name,
                   );
                   if (mounted) {
-                    ErrorHandler.showSuccess(context, l10n.workspaceUpdated);
+                    context.showSuccessMessage(l10n.workspaceUpdated);
                     ref.invalidate(workspacesProvider);
                     Navigator.pop(context);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ErrorHandler.handle(context, e);
+                    context.showErrorSnackBar(e);
                   }
                 }
               }
@@ -231,11 +232,11 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                   if (mounted) {
                     ref.invalidate(workspacesProvider);
                     Navigator.pop(context);
-                    ErrorHandler.showSuccess(context, l10n.workspaceDeleted);
+                    context.showSuccessMessage(l10n.workspaceDeleted);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ErrorHandler.handle(context, e);
+                    context.showErrorSnackBar(e);
                   }
                 }
               }
@@ -303,7 +304,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ErrorHandler.handle(context, e);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -326,7 +327,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
             child: ElevatedButton.icon(
               onPressed: () {
                 final l10n = AppLocalizations.of(context)!;
-                ErrorHandler.showInfo(context, l10n.useInviteLinkToAdd);
+                context.showInfoMessage(l10n.useInviteLinkToAdd);
               },
               icon: const Icon(Icons.person_add),
               label: Text(l10n.addMember),
@@ -443,7 +444,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.roleUpdated);
+        context.showSuccessMessage(l10n.roleUpdated);
       }
     } catch (e, stackTrace) {
       print('Error updating role: $e');
@@ -453,7 +454,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        ErrorHandler.handle(context, e);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -496,7 +497,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.memberRemoved);
+        context.showSuccessMessage(l10n.memberRemoved);
       }
     } catch (e) {
       print('Error removing member: $e');
@@ -505,7 +506,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        ErrorHandler.handle(context, e);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -577,7 +578,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
         
         if (token.isEmpty) {
           if (mounted) {
-            ErrorHandler.showWarning(context, 'Failed to extract invite code from response');
+            context.showWarningMessage('Failed to extract invite code from response');
           }
           return;
         }
@@ -707,7 +708,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
       }
     } catch (e) {
       if (mounted) {
-        ErrorHandler.handle(context, e, customMessage: 'Failed to create invite link');
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -777,11 +778,11 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                                   await _loadInvites();
                                   if (mounted) {
                                     final l10nMsg = AppLocalizations.of(context)!;
-                                    ErrorHandler.showSuccess(context, l10nMsg.inviteRevoked);
+                                    context.showSuccessMessage(l10nMsg.inviteRevoked);
                                   }
                                 } catch (e) {
                                   if (mounted) {
-                                    ErrorHandler.handle(context, e);
+                                    context.showErrorSnackBar(e);
                                   }
                                 }
                               },

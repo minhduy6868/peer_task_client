@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui' as ui;
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
-import '../../utils/error_handler.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/error_display.dart';
 import '../widgets/task_dialog.dart';
 
 enum DrawingTool { pen, eraser, text }
@@ -487,7 +487,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     } catch (e) {
       debugPrint('❌ Error creating task: $e');
       if (mounted) {
-        ErrorHandler.handle(context, e, customMessage: 'Failed to create task');
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -532,7 +532,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     } catch (e) {
       debugPrint('❌ Error updating task: $e');
       if (mounted) {
-        ErrorHandler.handle(context, e, customMessage: 'Failed to update task');
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -564,7 +564,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     } catch (e) {
       debugPrint('❌ Error moving task: $e');
       if (mounted) {
-        ErrorHandler.handle(context, e, customMessage: 'Failed to move task');
+        context.showErrorSnackBar(e);
       }
     }
   }

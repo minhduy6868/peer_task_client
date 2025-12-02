@@ -38,9 +38,69 @@
   "facebook": "Facebook",
   "byRegistering": "Bằng việc đăng ký, bạn đồng ý với Điều khoản và Điều kiện của chúng tôi",
   
-  "emailRequired": "Vui lòng nhập email",
-  "emailInvalid": "Vui lòng nhập email hợp lệ",
-  "passwordRequired": "Vui lòng nhập mật khẩu",
+  "emailRequired": "Email không được để trống",
+  "emailInvalid": "Email không hợp lệ",
+  "passwordRequired": "Mật khẩu không được để trống",
+  "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+  "passwordMinLength8": "Mật khẩu phải có ít nhất 8 ký tự",
+  "passwordRequireUppercase": "Mật khẩu phải có ít nhất 1 chữ hoa",
+  "passwordRequireLowercase": "Mật khẩu phải có ít nhất 1 chữ thường",
+  "passwordRequireDigit": "Mật khẩu phải có ít nhất 1 chữ số",
+  "passwordConfirmRequired": "Vui lòng xác nhận mật khẩu",
+  "passwordNotMatch": "Mật khẩu không khớp",
+  "nameRequired": "Tên không được để trống",
+  "nameMinLength": "Tên phải có ít nhất 2 ký tự",
+  "nameMaxLength": "Tên không được quá 50 ký tự",
+  "nameLettersOnly": "Tên chỉ được chứa chữ cái",
+  "fieldRequired": "Trường này không được để trống",
+  "fieldMinLength": "{field} phải có ít nhất {min} ký tự",
+  "@fieldMinLength": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "int"}
+    }
+  },
+  "fieldMaxLength": "{field} không được quá {max} ký tự",
+  "@fieldMaxLength": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "max": {"type": "int"}
+    }
+  },
+  "phoneNumberRequired": "Số điện thoại không được để trống",
+  "phoneNumberInvalid": "Số điện thoại không hợp lệ",
+  "urlRequired": "URL không được để trống",
+  "urlInvalid": "URL không hợp lệ",
+  "numberRequired": "Trường này không được để trống",
+  "numberInvalid": "Trường này phải là số",
+  "integerInvalid": "Trường này phải là số nguyên",
+  "valueMin": "{field} phải lớn hơn hoặc bằng {min}",
+  "@valueMin": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "num"}
+    }
+  },
+  "valueMax": "{field} phải nhỏ hơn hoặc bằng {max}",
+  "@valueMax": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "max": {"type": "num"}
+    }
+  },
+  "valueRange": "{field} phải nằm trong khoảng {min} - {max}",
+  "@valueRange": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "min": {"type": "num"},
+      "max": {"type": "num"}
+    }
+  },
+  "workspaceNameRequired": "Tên workspace không được để trống",
+  "workspaceNameMinLength": "Tên workspace phải có ít nhất 3 ký tự",
+  "workspaceNameMaxLength": "Tên workspace không được quá 50 ký tự",
+  "taskTitleRequired": "Tiêu đề task không được để trống",
+  "taskTitleMaxLength": "Tiêu đề task không được quá 200 ký tự",
 
   "workspaces": "Không gian làm việc",
   "createWorkspace": "Tạo không gian mới",

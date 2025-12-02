@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/workspace/workspace.dart';
 import '../models/board/board.dart';
+import '../models/api_error.dart';
 import 'storage_service.dart';
 
 /// PeerTask API Service
@@ -152,20 +155,83 @@ class ApiService {
   Future<http.Response> _requestWithRetry(
     Future<http.Response> Function() request,
   ) async {
-    var response = await request();
+    try {
+      var response = await request().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiError.timeout(),
+      );
 
-    // If unauthorized and we have a refresh token, try to refresh
-    if (response.statusCode == 401 && _refreshToken != null) {
+      // If unauthorized and we have a refresh token, try to refresh
+      if (response.statusCode == 401 && _refreshToken != null) {
+        try {
+          await refreshAccessToken();
+          response = await request().timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw ApiError.timeout(),
+          );
+        } catch (e) {
+          await clearTokens();
+          rethrow;
+        }
+      }
+
+      return response;
+    } on SocketException {
+      throw ApiError.network();
+    } on TimeoutException {
+      throw ApiError.timeout();
+    } on http.ClientException {
+      throw ApiError.network('Failed to connect to server');
+    }
+  }
+
+  /// Parse response and handle errors
+  dynamic _handleResponse(http.Response response, {bool expectData = true}) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (!expectData) return null;
+      
       try {
-        await refreshAccessToken();
-        response = await request(); // Retry with new access token
+        return json.decode(response.body);
       } catch (e) {
-        await clearTokens();
-        rethrow;
+        throw ApiError(
+          message: 'Failed to parse server response',
+          code: 'PARSE_ERROR',
+          statusCode: response.statusCode,
+        );
       }
     }
 
-    return response;
+    // Handle error responses
+    try {
+      final errorData = json.decode(response.body);
+      throw ApiError.fromJson(errorData);
+    } catch (e) {
+      if (e is ApiError) rethrow;
+      
+      // Fallback error messages based on status code
+      switch (response.statusCode) {
+        case 400:
+          throw ApiError.validation('Bad request');
+        case 401:
+          throw ApiError.unauthorized();
+        case 403:
+          throw ApiError.forbidden();
+        case 404:
+          throw ApiError.notFound();
+        case 408:
+          throw ApiError.timeout();
+        case 500:
+        case 502:
+        case 503:
+          throw ApiError.server();
+        default:
+          throw ApiError(
+            message: 'Request failed with status ${response.statusCode}',
+            code: 'HTTP_ERROR',
+            statusCode: response.statusCode,
+          );
+      }
+    }
   }
 
   Future<http.Response> _get(String endpoint) async {
@@ -180,25 +246,34 @@ class ApiService {
     required String password,
     String? name,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'email': email,
-        'password': password,
-        if (name != null) 'name': name,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+          if (name != null) 'name': name,
+        }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiError.timeout(),
+      );
 
-    if (response.statusCode == 201) {
-      final data = json.decode(response.body);
+      final data = _handleResponse(response);
       setTokens(
         accessToken: data['accessToken'],
         refreshToken: data['refreshToken'],
       );
       return data;
-    } else {
-      throw Exception('Registration failed: ${response.body}');
+    } on SocketException {
+      throw ApiError.network();
+    } on TimeoutException {
+      throw ApiError.timeout();
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError.server('Registration failed: ${e.toString()}');
     }
   }
 
@@ -206,24 +281,34 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'email': email,
-        'password': password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiError.timeout(),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      // Don't use _requestWithRetry for login - direct response handling
+      final data = _handleResponse(response);
       setTokens(
         accessToken: data['accessToken'],
         refreshToken: data['refreshToken'],
       );
       return data;
-    } else {
-      throw Exception('Login failed: ${response.body}');
+    } on SocketException {
+      throw ApiError.network();
+    } on TimeoutException {
+      throw ApiError.timeout();
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError.server('Login failed: ${e.toString()}');
     }
   }
 
@@ -249,22 +334,25 @@ class ApiService {
 
   Future<Map<String, dynamic>> getCurrentUser() async {
     final response = await _get('/auth/me');
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
-    throw Exception('Failed to get user info');
+    return _handleResponse(response);
   }
 
   Future<void> forgotPassword({required String email}) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/forgot-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiError.timeout(),
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to send reset email: ${response.body}');
+      _handleResponse(response, expectData: false);
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError.server('Failed to send reset email');
     }
   }
 
@@ -272,54 +360,52 @@ class ApiService {
     required String token,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/reset-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'token': token,
-        'password': password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': token,
+          'password': password,
+        }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiError.timeout(),
+      );
 
-    if (response.statusCode != 200) {
-      final error = json.decode(response.body);
-      throw Exception(error['error'] ?? 'Failed to reset password');
+      _handleResponse(response, expectData: false);
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError.server('Failed to reset password');
     }
   }
 
   // Workspaces
   Future<Workspace> createWorkspace({required String name}) async {
     debugPrint('📤 Creating workspace: $name');
-    final response = await http.post(
+    final response = await _requestWithRetry(() => http.post(
       Uri.parse('$baseUrl/workspaces'),
       headers: _headers,
       body: json.encode({'name': name}),
-    );
+    ));
 
     debugPrint('📥 Response status: ${response.statusCode}');
     debugPrint('📥 Response body: ${response.body}');
 
-    if (response.statusCode == 201) {
-      final data = json.decode(response.body);
-      debugPrint('✅ Workspace created: $data');
-      return Workspace.fromJson(data);
-    } else {
-      throw Exception('Failed to create workspace: ${response.body}');
-    }
+    final data = _handleResponse(response);
+    debugPrint('✅ Workspace created: $data');
+    return Workspace.fromJson(data);
   }
 
   Future<List<Workspace>> getWorkspaces() async {
-    final response = await http.get(
+    final response = await _requestWithRetry(() => http.get(
       Uri.parse('$baseUrl/workspaces'),
       headers: _headers,
-    );
+    ));
 
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.map((w) => Workspace.fromJson(w)).toList();
-    } else {
-      throw Exception('Failed to get workspaces: ${response.body}');
-    }
+    final List data = _handleResponse(response);
+    return data.map((w) => Workspace.fromJson(w)).toList();
   }
 
   Future<void> inviteToWorkspace({

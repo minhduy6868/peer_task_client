@@ -113,6 +113,104 @@ class AppLocalizationsVi extends AppLocalizations {
   String get passwordRequired => 'Vui lòng nhập mật khẩu';
 
   @override
+  String get passwordMinLength => 'Mật khẩu phải có ít nhất 6 ký tự';
+
+  @override
+  String get passwordMinLength8 => 'Mật khẩu phải có ít nhất 8 ký tự';
+
+  @override
+  String get passwordRequireUppercase => 'Mật khẩu phải có ít nhất 1 chữ hoa';
+
+  @override
+  String get passwordRequireLowercase =>
+      'Mật khẩu phải có ít nhất 1 chữ thường';
+
+  @override
+  String get passwordRequireDigit => 'Mật khẩu phải có ít nhất 1 chữ số';
+
+  @override
+  String get passwordConfirmRequired => 'Vui lòng xác nhận mật khẩu';
+
+  @override
+  String get passwordNotMatch => 'Mật khẩu không khớp';
+
+  @override
+  String get nameRequired => 'Vui lòng nhập tên';
+
+  @override
+  String get nameMinLength => 'Tên phải có ít nhất 2 ký tự';
+
+  @override
+  String get nameMaxLength => 'Tên không được quá 50 ký tự';
+
+  @override
+  String get nameLettersOnly => 'Tên chỉ được chứa chữ cái';
+
+  @override
+  String get fieldRequired => 'Trường này không được để trống';
+
+  @override
+  String fieldMinLength(String field, int min) {
+    return '$field phải có ít nhất $min ký tự';
+  }
+
+  @override
+  String fieldMaxLength(String field, int max) {
+    return '$field không được quá $max ký tự';
+  }
+
+  @override
+  String get phoneNumberRequired => 'Số điện thoại không được để trống';
+
+  @override
+  String get phoneNumberInvalid => 'Số điện thoại không hợp lệ';
+
+  @override
+  String get urlRequired => 'URL không được để trống';
+
+  @override
+  String get urlInvalid => 'URL không hợp lệ';
+
+  @override
+  String get numberRequired => 'Trường này không được để trống';
+
+  @override
+  String get numberInvalid => 'Trường này phải là số';
+
+  @override
+  String get integerInvalid => 'Trường này phải là số nguyên';
+
+  @override
+  String valueMin(String field, num min) {
+    return '$field phải lớn hơn hoặc bằng $min';
+  }
+
+  @override
+  String valueMax(String field, num max) {
+    return '$field phải nhỏ hơn hoặc bằng $max';
+  }
+
+  @override
+  String valueRange(String field, num min, num max) {
+    return '$field phải nằm trong khoảng $min - $max';
+  }
+
+  @override
+  String get workspaceNameRequired => 'Tên workspace không được để trống';
+
+  @override
+  String get workspaceNameMinLength => 'Tên workspace phải có ít nhất 3 ký tự';
+
+  @override
+  String get workspaceNameMaxLength => 'Tên workspace không được quá 50 ký tự';
+
+  @override
+  String get taskTitleRequired => 'Vui lòng nhập tên công việc';
+
+  @override
+  String get taskTitleMaxLength => 'Tiêu đề task không được quá 200 ký tự';
+
+  @override
   String get workspaces => 'Không gian làm việc';
 
   @override
@@ -517,9 +615,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get passwordsDoNotMatch => 'Mật khẩu không khớp';
 
   @override
-  String get nameRequired => 'Vui lòng nhập tên';
-
-  @override
   String get taskSavedSuccess => 'Đã lưu công việc thành công';
 
   @override
@@ -536,9 +631,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get taskDeleteError => 'Không thể xóa công việc';
-
-  @override
-  String get taskTitleRequired => 'Vui lòng nhập tên công việc';
 
   @override
   String get boardUpdatedSuccess => 'Đã cập nhật bảng thành công';

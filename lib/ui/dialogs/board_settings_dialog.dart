@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
-import '../../utils/error_handler.dart';
 import '../../l10n/app_localizations.dart';
 
+import '../../utils/error_display.dart';
 class BoardSettingsDialog extends ConsumerStatefulWidget {
   final String boardId;
   final String boardName;
@@ -167,13 +167,13 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 );
                 if (mounted) {
                   final l10n = AppLocalizations.of(context)!;
-                  ErrorHandler.showSuccess(context, l10n.boardUpdatedSuccess);
+                  context.showSuccessMessage(l10n.boardUpdatedSuccess);
                   Navigator.pop(context, true);
                 }
               } catch (e) {
                 if (mounted) {
                   final l10n = AppLocalizations.of(context)!;
-                  ErrorHandler.handle(context, e, customMessage: l10n.boardUpdateError);
+                  context.showErrorSnackBar(e);
                 }
               }
             }
@@ -224,12 +224,12 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 if (mounted) {
                   Navigator.pop(context, 'deleted');
                   final l10n = AppLocalizations.of(context)!;
-                  ErrorHandler.showSuccess(context, l10n.boardDeletedSuccess);
+                  context.showSuccessMessage(l10n.boardDeletedSuccess);
                 }
               } catch (e) {
                 if (mounted) {
                   final l10n = AppLocalizations.of(context)!;
-                  ErrorHandler.handle(context, e, customMessage: l10n.boardDeleteError);
+                  context.showErrorSnackBar(e);
                 }
               }
             }
@@ -280,7 +280,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) {
         setState(() => _loading = false);
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -300,7 +300,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) {
         setState(() => _loading = false);
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -445,7 +445,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       
       if (availableMembers.isEmpty) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.operationSuccess);
+        context.showSuccessMessage(l10n.operationSuccess);
         return;
       }
       
@@ -460,7 +460,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -508,7 +508,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.operationSuccess);
+        context.showSuccessMessage(l10n.operationSuccess);
       }
     } catch (e, stackTrace) {
       print('Error adding member: $e');
@@ -519,7 +519,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -535,12 +535,12 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.roleUpdated);
+        context.showSuccessMessage(l10n.roleUpdated);
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -555,12 +555,12 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       await _loadMembers();
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.showSuccess(context, l10n.memberRemoved);
+        context.showSuccessMessage(l10n.memberRemoved);
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ErrorHandler.handle(context, e, customMessage: l10n.operationFailed);
+        context.showErrorSnackBar(e);
       }
     }
   }

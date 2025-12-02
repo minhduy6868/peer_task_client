@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
-import '../../utils/error_handler.dart';
+import '../../utils/error_display.dart';
+import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -42,13 +43,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       );
 
       if (mounted) {
-        ErrorHandler.showSuccess(context, 'Password reset successful!');
+        context.showSuccessMessage('Password reset successful!');
         context.go('/login');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ErrorHandler.handle(context, e, customMessage: 'Failed to reset password');
+        context.showErrorSnackBar(e);
       }
     }
   }
@@ -100,15 +101,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     ),
                     obscureText: _obscurePassword,
                     autofocus: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
+                    validator: ValidatorsL10n.password(context),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -123,15 +116,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ),
                     ),
                     obscureText: _obscureConfirm,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
+                    validator: ValidatorsL10n.confirmPassword(context, _passwordController.text),
                   ),
                   const SizedBox(height: 24),
                   FilledButton(

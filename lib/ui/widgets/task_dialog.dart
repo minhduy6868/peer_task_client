@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/error_handler.dart';
+import '../../utils/error_display.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Task Creation/Edit Dialog
@@ -377,7 +377,7 @@ class _TaskDialogState extends State<TaskDialog> {
               onPressed: () {
                 final title = _titleController.text.trim();
                 if (title.isEmpty) {
-                  ErrorHandler.showWarning(context, 'Title is required');
+                  context.showWarningMessage('Title is required');
                   return;
                 }
                 

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/models/board/board.dart';
-import '../../utils/error_handler.dart';
+import '../../utils/error_display.dart';
+import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
 
@@ -28,10 +29,8 @@ class BoardsScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardsScreenState extends ConsumerState<BoardsScreen> {
-  // void _showCreateBoardDialog() {
-  //   final nameController = TextEditingController();
-  //   final descController = TextEditingController();
-    void _showCreateBoardDialog() {
+  void _showCreateBoardDialog() {
+    final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final descController = TextEditingController();
 
@@ -56,125 +55,131 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                 ),
               ),
               child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Tiêu đề + icon
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 12 : 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                child: Form(
+                  key: formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tiêu đề + icon
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 12 : 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.add_circle_outline,
-                            color: Colors.white,
-                            size: MediaQuery.of(context).size.width > 600 ? 28 : 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            'Create New Board',
-                            style: TextStyle(
-                              fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF2D3748),
+                            child: Icon(
+                              Icons.add_circle_outline,
+                              color: Colors.white,
+                              size: MediaQuery.of(context).size.width > 600 ? 28 : 24,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Board Name
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Board Name',
-                        hintText: 'Enter a creative name...',
-                        prefixIcon: const Icon(Icons.label_outline, color: Color(0xFF667EEA)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'Create New Board',
+                              style: TextStyle(
+                                fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2D3748),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      autofocus: true,
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                    // Description
-                    TextField(
-                      controller: descController,
-                      decoration: InputDecoration(
-                        labelText: 'Description (optional)',
-                        hintText: 'What is this board about?',
-                        prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF667EEA)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Nút Cancel + Create
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      // Board Name
+                      TextFormField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Board Name',
+                          hintText: 'Enter a creative name...',
+                          prefixIcon: const Icon(Icons.label_outline, color: Color(0xFF667EEA)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
                         ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final name = nameController.text.trim();
-                              if (name.isEmpty) return;
+                        validator: ValidatorsL10n.required(context),
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 20),
 
-                              try {
-                                final api = ref.read(apiServiceProvider);
-                                await api.createBoard(
-                                  workspaceId: widget.workspaceId,
-                                  name: name,
-                                  description: descController.text.trim().isEmpty ? null : descController.text.trim(),
-                                );
+                      // Description
+                      TextFormField(
+                        controller: descController,
+                        decoration: InputDecoration(
+                          labelText: 'Description (optional)',
+                          hintText: 'What is this board about?',
+                          prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF667EEA)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 32),
 
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
-                                  final l10n = AppLocalizations.of(context);
-                                  ErrorHandler.showSuccess(
-                                    context,
-                                    l10n?.boardCreatedSuccess(name) ?? 'Board "$name" created successfully!',
+                      // Nút Cancel + Create
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (!formKey.currentState!.validate()) return;
+
+                                final name = nameController.text.trim();
+                                try {
+                                  final api = ref.read(apiServiceProvider);
+                                  await api.createBoard(
+                                    workspaceId: widget.workspaceId,
+                                    name: name,
+                                    description: descController.text.trim().isEmpty ? null : descController.text.trim(),
                                   );
+
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                                    final l10n = AppLocalizations.of(context);
+                                    ErrorHandler.showSuccess(
+                                      context,
+                                      l10n?.boardCreatedSuccess(name) ?? 'Board "$name" created successfully!',
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    context.showErrorSnackBar(e);
+                                  }
                                 }
-                              } catch (e) {
-                                if (mounted) {
-                                  ErrorHandler.handle(context, e, customMessage: 'Failed to create board');
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF667EEA),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF667EEA),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
                             ),
-                            child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
