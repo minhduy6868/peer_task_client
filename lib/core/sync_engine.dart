@@ -102,29 +102,17 @@ class SyncEngine {
       return;
     }
     
-    // For WhiteboardObject types (task, etc.), parse and store
+    // For WhiteboardObject types, parse and store
+    // Skip tasks - they are managed directly in the UI layer via operations
+    if (objectType == 'task') {
+      // Tasks don't need to be stored as WhiteboardObjects
+      // They are handled directly in the board UI via operations list
+      return;
+    }
+    
     try {
-      // Special handling for tasks with potential null fields
-      if (objectType == 'task') {
-        final taskData = operation.payload['data'];
-        if (taskData != null && taskData is Map) {
-          // Ensure required fields exist with defaults
-          final safeData = {
-            ...operation.payload,
-            'data': {
-              'title': taskData['title'] ?? 'Untitled',
-              'assignee': taskData['assignee'],
-              'status': taskData['status'] ?? 'todo',
-              'timestamp': taskData['timestamp'],
-            }
-          };
-          final object = WhiteboardObject.fromJson(safeData);
-          _objects[object.id] = object;
-        }
-      } else {
-        final object = WhiteboardObject.fromJson(operation.payload);
-        _objects[object.id] = object;
-      }
+      final object = WhiteboardObject.fromJson(operation.payload);
+      _objects[object.id] = object;
     } catch (e) {
       debugPrint('⚠️  Error parsing WhiteboardObject: $e');
       debugPrint('   Payload: ${operation.payload}');

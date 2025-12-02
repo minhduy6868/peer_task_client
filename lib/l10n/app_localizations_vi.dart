@@ -799,4 +799,83 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get enterWorkspaceName => 'Nhập tên không gian';
+
+  @override
+  String get taskCard => 'Thẻ công việc';
+
+  @override
+  String get untitled => 'Chưa đặt tên';
+
+  @override
+  String get overdue => 'Quá hạn';
+
+  @override
+  String get dueDate => 'Hạn chót';
+
+  @override
+  String get assignees => 'Người thực hiện';
+
+  @override
+  String moreAssignees(int count) {
+    return 'Còn $count người';
+  }
+
+  @override
+  String get move => 'Di chuyển';
+
+  @override
+  String get moveTask => 'Di chuyển công việc';
+
+  @override
+  String get urgent => 'Khẩn cấp';
+
+  @override
+  String get labels => 'Nhãn';
+
+  @override
+  String get deadline => 'Hạn chót';
+
+  @override
+  String get estimatedHours => 'Thời gian ước tính';
+
+  @override
+  String get actualHours => 'Thời gian thực tế';
+
+  @override
+  String get createdBy => 'Tạo bởi';
+
+  @override
+  String get updatedAt => 'Cập nhật lúc';
+
+  @override
+  String get createTask => 'Tạo công việc';
+
+  @override
+  String get editTask => 'Sửa công việc';
+
+  @override
+  String get deleteTask => 'Xóa công việc';
+
+  @override
+  String get deleteTaskConfirm => 'Bạn có chắc muốn xóa công việc này?';
+
+  @override
+  String get todoColumn => 'Cần làm';
+
+  @override
+  String get doingColumn => 'Đang làm';
+
+  @override
+  String get doneColumn => 'Hoàn thành';
+
+  @override
+  String taskCount(int count) {
+    return '$count công việc';
+  }
+
+  @override
+  String get noTasks => 'Chưa có công việc nào';
+
+  @override
+  String get addFirstTask => 'Thêm công việc đầu tiên để bắt đầu';
 }

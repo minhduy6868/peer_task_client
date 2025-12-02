@@ -18,10 +18,12 @@ _$TaskNodeImpl _$$TaskNodeImplFromJson(Map<String, dynamic> json) =>
       progress: (json['progress'] as num?)?.toInt() ?? 0,
       priority: json['priority'] as String? ?? 'medium',
       status: json['status'] as String? ?? 'todo',
-      position: const OffsetConverter()
-          .fromJson(json['position'] as Map<String, dynamic>),
-      size:
-          const SizeConverter().fromJson(json['size'] as Map<String, dynamic>),
+      position: const OffsetConverter().fromJson(
+        json['position'] as Map<String, dynamic>,
+      ),
+      size: const SizeConverter().fromJson(
+        json['size'] as Map<String, dynamic>,
+      ),
       zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
       version: (json['version'] as num?)?.toInt() ?? 0,
       color: (json['color'] as num?)?.toInt() ?? 0xFFFFEB3B,

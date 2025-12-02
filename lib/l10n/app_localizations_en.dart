@@ -805,4 +805,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterWorkspaceName => 'Enter workspace name';
+
+  @override
+  String get taskCard => 'Task Card';
+
+  @override
+  String get untitled => 'Untitled';
+
+  @override
+  String get overdue => 'Overdue';
+
+  @override
+  String get dueDate => 'Due date';
+
+  @override
+  String get assignees => 'Assignees';
+
+  @override
+  String moreAssignees(int count) {
+    return '$count more';
+  }
+
+  @override
+  String get move => 'Move';
+
+  @override
+  String get moveTask => 'Move Task';
+
+  @override
+  String get urgent => 'Urgent';
+
+  @override
+  String get labels => 'Labels';
+
+  @override
+  String get deadline => 'Deadline';
+
+  @override
+  String get estimatedHours => 'Estimated Hours';
+
+  @override
+  String get actualHours => 'Actual Hours';
+
+  @override
+  String get createdBy => 'Created by';
+
+  @override
+  String get updatedAt => 'Updated at';
+
+  @override
+  String get createTask => 'Create Task';
+
+  @override
+  String get editTask => 'Edit Task';
+
+  @override
+  String get deleteTask => 'Delete Task';
+
+  @override
+  String get deleteTaskConfirm => 'Are you sure you want to delete this task?';
+
+  @override
+  String get todoColumn => 'To Do';
+
+  @override
+  String get doingColumn => 'Doing';
+
+  @override
+  String get doneColumn => 'Done';
+
+  @override
+  String taskCount(int count) {
+    return '$count tasks';
+  }
+
+  @override
+  String get noTasks => 'No tasks yet';
+
+  @override
+  String get addFirstTask => 'Add your first task to get started';
 }

@@ -12,7 +12,8 @@ part of 'task_node.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 TaskNode _$TaskNodeFromJson(Map<String, dynamic> json) {
   return _TaskNode.fromJson(json);
@@ -51,20 +52,21 @@ abstract class $TaskNodeCopyWith<$Res> {
   factory $TaskNodeCopyWith(TaskNode value, $Res Function(TaskNode) then) =
       _$TaskNodeCopyWithImpl<$Res, TaskNode>;
   @useResult
-  $Res call(
-      {String id,
-      String title,
-      String? description,
-      String? assigneeId,
-      DateTime? deadline,
-      int progress,
-      String priority,
-      String status,
-      @OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      int zIndex,
-      int version,
-      int color});
+  $Res call({
+    String id,
+    String title,
+    String? description,
+    String? assigneeId,
+    DateTime? deadline,
+    int progress,
+    String priority,
+    String status,
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    int zIndex,
+    int version,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -96,60 +98,63 @@ class _$TaskNodeCopyWithImpl<$Res, $Val extends TaskNode>
     Object? version = null,
     Object? color = null,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      title: null == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      assigneeId: freezed == assigneeId
-          ? _value.assigneeId
-          : assigneeId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      deadline: freezed == deadline
-          ? _value.deadline
-          : deadline // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      progress: null == progress
-          ? _value.progress
-          : progress // ignore: cast_nullable_to_non_nullable
-              as int,
-      priority: null == priority
-          ? _value.priority
-          : priority // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      zIndex: null == zIndex
-          ? _value.zIndex
-          : zIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as int,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            title: null == title
+                ? _value.title
+                : title // ignore: cast_nullable_to_non_nullable
+                      as String,
+            description: freezed == description
+                ? _value.description
+                : description // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assigneeId: freezed == assigneeId
+                ? _value.assigneeId
+                : assigneeId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            deadline: freezed == deadline
+                ? _value.deadline
+                : deadline // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            progress: null == progress
+                ? _value.progress
+                : progress // ignore: cast_nullable_to_non_nullable
+                      as int,
+            priority: null == priority
+                ? _value.priority
+                : priority // ignore: cast_nullable_to_non_nullable
+                      as String,
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String,
+            position: null == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as Offset,
+            size: null == size
+                ? _value.size
+                : size // ignore: cast_nullable_to_non_nullable
+                      as Size,
+            zIndex: null == zIndex
+                ? _value.zIndex
+                : zIndex // ignore: cast_nullable_to_non_nullable
+                      as int,
+            version: null == version
+                ? _value.version
+                : version // ignore: cast_nullable_to_non_nullable
+                      as int,
+            color: null == color
+                ? _value.color
+                : color // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -157,24 +162,26 @@ class _$TaskNodeCopyWithImpl<$Res, $Val extends TaskNode>
 abstract class _$$TaskNodeImplCopyWith<$Res>
     implements $TaskNodeCopyWith<$Res> {
   factory _$$TaskNodeImplCopyWith(
-          _$TaskNodeImpl value, $Res Function(_$TaskNodeImpl) then) =
-      __$$TaskNodeImplCopyWithImpl<$Res>;
+    _$TaskNodeImpl value,
+    $Res Function(_$TaskNodeImpl) then,
+  ) = __$$TaskNodeImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String id,
-      String title,
-      String? description,
-      String? assigneeId,
-      DateTime? deadline,
-      int progress,
-      String priority,
-      String status,
-      @OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      int zIndex,
-      int version,
-      int color});
+  $Res call({
+    String id,
+    String title,
+    String? description,
+    String? assigneeId,
+    DateTime? deadline,
+    int progress,
+    String priority,
+    String status,
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    int zIndex,
+    int version,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -182,8 +189,9 @@ class __$$TaskNodeImplCopyWithImpl<$Res>
     extends _$TaskNodeCopyWithImpl<$Res, _$TaskNodeImpl>
     implements _$$TaskNodeImplCopyWith<$Res> {
   __$$TaskNodeImplCopyWithImpl(
-      _$TaskNodeImpl _value, $Res Function(_$TaskNodeImpl) _then)
-      : super(_value, _then);
+    _$TaskNodeImpl _value,
+    $Res Function(_$TaskNodeImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of TaskNode
   /// with the given fields replaced by the non-null parameter values.
@@ -204,80 +212,83 @@ class __$$TaskNodeImplCopyWithImpl<$Res>
     Object? version = null,
     Object? color = null,
   }) {
-    return _then(_$TaskNodeImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      title: null == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      assigneeId: freezed == assigneeId
-          ? _value.assigneeId
-          : assigneeId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      deadline: freezed == deadline
-          ? _value.deadline
-          : deadline // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      progress: null == progress
-          ? _value.progress
-          : progress // ignore: cast_nullable_to_non_nullable
-              as int,
-      priority: null == priority
-          ? _value.priority
-          : priority // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      zIndex: null == zIndex
-          ? _value.zIndex
-          : zIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as int,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$TaskNodeImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        title: null == title
+            ? _value.title
+            : title // ignore: cast_nullable_to_non_nullable
+                  as String,
+        description: freezed == description
+            ? _value.description
+            : description // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assigneeId: freezed == assigneeId
+            ? _value.assigneeId
+            : assigneeId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        deadline: freezed == deadline
+            ? _value.deadline
+            : deadline // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        progress: null == progress
+            ? _value.progress
+            : progress // ignore: cast_nullable_to_non_nullable
+                  as int,
+        priority: null == priority
+            ? _value.priority
+            : priority // ignore: cast_nullable_to_non_nullable
+                  as String,
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String,
+        position: null == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as Offset,
+        size: null == size
+            ? _value.size
+            : size // ignore: cast_nullable_to_non_nullable
+                  as Size,
+        zIndex: null == zIndex
+            ? _value.zIndex
+            : zIndex // ignore: cast_nullable_to_non_nullable
+                  as int,
+        version: null == version
+            ? _value.version
+            : version // ignore: cast_nullable_to_non_nullable
+                  as int,
+        color: null == color
+            ? _value.color
+            : color // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$TaskNodeImpl implements _TaskNode {
-  const _$TaskNodeImpl(
-      {required this.id,
-      required this.title,
-      this.description,
-      this.assigneeId,
-      this.deadline,
-      this.progress = 0,
-      this.priority = 'medium',
-      this.status = 'todo',
-      @OffsetConverter() required this.position,
-      @SizeConverter() required this.size,
-      this.zIndex = 0,
-      this.version = 0,
-      this.color = 0xFFFFEB3B});
+  const _$TaskNodeImpl({
+    required this.id,
+    required this.title,
+    this.description,
+    this.assigneeId,
+    this.deadline,
+    this.progress = 0,
+    this.priority = 'medium',
+    this.status = 'todo',
+    @OffsetConverter() required this.position,
+    @SizeConverter() required this.size,
+    this.zIndex = 0,
+    this.version = 0,
+    this.color = 0xFFFFEB3B,
+  });
 
   factory _$TaskNodeImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskNodeImplFromJson(json);
@@ -351,20 +362,21 @@ class _$TaskNodeImpl implements _TaskNode {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      title,
-      description,
-      assigneeId,
-      deadline,
-      progress,
-      priority,
-      status,
-      position,
-      size,
-      zIndex,
-      version,
-      color);
+    runtimeType,
+    id,
+    title,
+    description,
+    assigneeId,
+    deadline,
+    progress,
+    priority,
+    status,
+    position,
+    size,
+    zIndex,
+    version,
+    color,
+  );
 
   /// Create a copy of TaskNode
   /// with the given fields replaced by the non-null parameter values.
@@ -376,27 +388,26 @@ class _$TaskNodeImpl implements _TaskNode {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$TaskNodeImplToJson(
-      this,
-    );
+    return _$$TaskNodeImplToJson(this);
   }
 }
 
 abstract class _TaskNode implements TaskNode {
-  const factory _TaskNode(
-      {required final String id,
-      required final String title,
-      final String? description,
-      final String? assigneeId,
-      final DateTime? deadline,
-      final int progress,
-      final String priority,
-      final String status,
-      @OffsetConverter() required final Offset position,
-      @SizeConverter() required final Size size,
-      final int zIndex,
-      final int version,
-      final int color}) = _$TaskNodeImpl;
+  const factory _TaskNode({
+    required final String id,
+    required final String title,
+    final String? description,
+    final String? assigneeId,
+    final DateTime? deadline,
+    final int progress,
+    final String priority,
+    final String status,
+    @OffsetConverter() required final Offset position,
+    @SizeConverter() required final Size size,
+    final int zIndex,
+    final int version,
+    final int color,
+  }) = _$TaskNodeImpl;
 
   factory _TaskNode.fromJson(Map<String, dynamic> json) =
       _$TaskNodeImpl.fromJson;

@@ -313,5 +313,41 @@
   "join": "Tham gia",
   "yourWorkspaces": "Không gian của bạn",
   "selectWorkspace": "Chọn một không gian để tiếp tục",
-  "enterWorkspaceName": "Nhập tên không gian"
+  "enterWorkspaceName": "Nhập tên không gian",
+  
+  "taskCard": "Thẻ công việc",
+  "untitled": "Chưa đặt tên",
+  "overdue": "Quá hạn",
+  "dueDate": "Hạn chót",
+  "assignees": "Người thực hiện",
+  "moreAssignees": "Còn {count} người",
+  "@moreAssignees": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "move": "Di chuyển",
+  "moveTask": "Di chuyển công việc",
+  "urgent": "Khẩn cấp",
+  "labels": "Nhãn",
+  "deadline": "Hạn chót",
+  "estimatedHours": "Thời gian ước tính",
+  "actualHours": "Thời gian thực tế",
+  "createdBy": "Tạo bởi",
+  "updatedAt": "Cập nhật lúc",
+  "createTask": "Tạo công việc",
+  "editTask": "Sửa công việc",
+  "deleteTask": "Xóa công việc",
+  "deleteTaskConfirm": "Bạn có chắc muốn xóa công việc này?",
+  "todoColumn": "Cần làm",
+  "doingColumn": "Đang làm",
+  "doneColumn": "Hoàn thành",
+  "taskCount": "{count} công việc",
+  "@taskCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noTasks": "Chưa có công việc nào",
+  "addFirstTask": "Thêm công việc đầu tiên để bắt đầu"
 }

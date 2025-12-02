@@ -12,7 +12,8 @@ part of 'peer.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 Peer _$PeerFromJson(Map<String, dynamic> json) {
   return _Peer.fromJson(json);
@@ -60,28 +61,32 @@ class _$PeerCopyWithImpl<$Res, $Val extends Peer>
     Object? userId = null,
     Object? connected = null,
   }) {
-    return _then(_value.copyWith(
-      socketId: null == socketId
-          ? _value.socketId
-          : socketId // ignore: cast_nullable_to_non_nullable
-              as String,
-      userId: null == userId
-          ? _value.userId
-          : userId // ignore: cast_nullable_to_non_nullable
-              as String,
-      connected: null == connected
-          ? _value.connected
-          : connected // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            socketId: null == socketId
+                ? _value.socketId
+                : socketId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            userId: null == userId
+                ? _value.userId
+                : userId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            connected: null == connected
+                ? _value.connected
+                : connected // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$PeerImplCopyWith<$Res> implements $PeerCopyWith<$Res> {
   factory _$$PeerImplCopyWith(
-          _$PeerImpl value, $Res Function(_$PeerImpl) then) =
-      __$$PeerImplCopyWithImpl<$Res>;
+    _$PeerImpl value,
+    $Res Function(_$PeerImpl) then,
+  ) = __$$PeerImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String socketId, String userId, bool connected});
@@ -92,7 +97,7 @@ class __$$PeerImplCopyWithImpl<$Res>
     extends _$PeerCopyWithImpl<$Res, _$PeerImpl>
     implements _$$PeerImplCopyWith<$Res> {
   __$$PeerImplCopyWithImpl(_$PeerImpl _value, $Res Function(_$PeerImpl) _then)
-      : super(_value, _then);
+    : super(_value, _then);
 
   /// Create a copy of Peer
   /// with the given fields replaced by the non-null parameter values.
@@ -103,28 +108,33 @@ class __$$PeerImplCopyWithImpl<$Res>
     Object? userId = null,
     Object? connected = null,
   }) {
-    return _then(_$PeerImpl(
-      socketId: null == socketId
-          ? _value.socketId
-          : socketId // ignore: cast_nullable_to_non_nullable
-              as String,
-      userId: null == userId
-          ? _value.userId
-          : userId // ignore: cast_nullable_to_non_nullable
-              as String,
-      connected: null == connected
-          ? _value.connected
-          : connected // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$PeerImpl(
+        socketId: null == socketId
+            ? _value.socketId
+            : socketId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        userId: null == userId
+            ? _value.userId
+            : userId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        connected: null == connected
+            ? _value.connected
+            : connected // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$PeerImpl implements _Peer {
-  const _$PeerImpl(
-      {required this.socketId, required this.userId, this.connected = false});
+  const _$PeerImpl({
+    required this.socketId,
+    required this.userId,
+    this.connected = false,
+  });
 
   factory _$PeerImpl.fromJson(Map<String, dynamic> json) =>
       _$$PeerImplFromJson(json);
@@ -168,17 +178,16 @@ class _$PeerImpl implements _Peer {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PeerImplToJson(
-      this,
-    );
+    return _$$PeerImplToJson(this);
   }
 }
 
 abstract class _Peer implements Peer {
-  const factory _Peer(
-      {required final String socketId,
-      required final String userId,
-      final bool connected}) = _$PeerImpl;
+  const factory _Peer({
+    required final String socketId,
+    required final String userId,
+    final bool connected,
+  }) = _$PeerImpl;
 
   factory _Peer.fromJson(Map<String, dynamic> json) = _$PeerImpl.fromJson;
 

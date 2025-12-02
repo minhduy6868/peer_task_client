@@ -14,6 +14,7 @@ import '../models/whiteboard_object/whiteboard_object.dart';
 import '../models/operation/operation.dart';
 import '../models/task_node/task_node.dart';
 import '../models/peer/peer.dart';
+import '../models/task_model.dart';
 
 // Services
 final storageServiceProvider = Provider<StorageService>((ref) {
@@ -605,5 +606,291 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   void dispose() {
     disconnect();
     super.dispose();
+  }
+}
+
+// Task provider - manages tasks separately from canvas objects
+final boardTasksProvider = StateNotifierProvider.family<BoardTasksNotifier, List<TaskModel>, String>(
+  (ref, boardId) {
+    return BoardTasksNotifier(ref, boardId);
+  },
+);
+
+class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
+  final Ref _ref;
+  final String _boardId;
+
+  BoardTasksNotifier(this._ref, this._boardId) : super([]) {
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    try {
+      final api = _ref.read(apiServiceProvider);
+      final tasksData = await api.getBoardTasks(_boardId);
+      
+      state = tasksData.map<TaskModel>((taskJson) {
+        return TaskModel(
+          id: taskJson['id'] as String,
+          boardId: _boardId,
+          title: taskJson['title'] as String? ?? 'Untitled',
+          description: taskJson['description'] as String?,
+          status: taskJson['status'] as String? ?? 'todo',
+          priority: taskJson['priority'] as String? ?? 'medium',
+          assignees: (taskJson['assignees'] as List?)?.cast<String>() ?? [],
+          assigneeList: (taskJson['assignee_list'] as List?)
+              ?.map((a) => AssigneeInfo(
+                    id: a['id'] as String,
+                    name: a['name'] as String,
+                    email: a['email'] as String?,
+                    avatar: null,
+                  ))
+              .toList() ??
+              [],
+          labels: (taskJson['labels'] as List?)?.cast<String>() ?? [],
+          deadline: taskJson['deadline'] != null
+              ? DateTime.tryParse(taskJson['deadline'] as String)
+              : null,
+          estimatedHours: taskJson['estimated_hours'] != null
+              ? double.tryParse(taskJson['estimated_hours'].toString())
+              : null,
+          actualHours: taskJson['actual_hours'] != null
+              ? double.tryParse(taskJson['actual_hours'].toString())
+              : null,
+          parentId: taskJson['parent_id'] as String?,
+          position: taskJson['position'] as int? ?? 0,
+          createdBy: taskJson['created_by'] as String,
+          creatorName: taskJson['creator_name'] as String?,
+          createdAt: DateTime.tryParse(taskJson['created_at'] as String? ?? '') ??
+              DateTime.now(),
+          updatedAt: DateTime.tryParse(taskJson['updated_at'] as String? ?? '') ??
+              DateTime.now(),
+        );
+      }).toList();
+      
+      debugPrint('✅ Loaded ${state.length} tasks for board $_boardId');
+    } catch (e) {
+      debugPrint('❌ Error loading tasks: $e');
+    }
+  }
+
+  Future<void> createTask({
+    required String title,
+    String? description,
+    required String priority,
+    required String status,
+    DateTime? deadline,
+    List<String>? assignees,
+    List<String>? labels,
+    double? estimatedHours,
+  }) async {
+    try {
+      final api = _ref.read(apiServiceProvider);
+      final response = await api.createTask(
+        boardId: _boardId,
+        title: title,
+        description: description,
+        assignees: assignees,
+        status: status,
+        priority: priority,
+        deadline: deadline,
+        parentId: null,
+        labels: labels,
+        estimatedHours: estimatedHours,
+      );
+
+      final newTask = TaskModel(
+        id: response['id'] as String,
+        boardId: _boardId,
+        title: response['title'] as String? ?? title,
+        description: response['description'] as String?,
+        status: response['status'] as String? ?? status,
+        priority: response['priority'] as String? ?? priority,
+        assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
+        assigneeList: (response['assignee_list'] as List?)
+            ?.map((a) => AssigneeInfo(
+                  id: a['id'] as String,
+                  name: a['name'] as String,
+                  email: a['email'] as String?,
+                  avatar: null,
+                ))
+            .toList() ??
+            [],
+        labels: (response['labels'] as List?)?.cast<String>() ?? [],
+        deadline: response['deadline'] != null
+            ? DateTime.tryParse(response['deadline'] as String)
+            : null,
+        estimatedHours: response['estimated_hours'] != null
+            ? double.tryParse(response['estimated_hours'].toString())
+            : null,
+        actualHours: response['actual_hours'] != null
+            ? double.tryParse(response['actual_hours'].toString())
+            : null,
+        parentId: response['parent_id'] as String?,
+        position: response['position'] as int? ?? 0,
+        createdBy: response['created_by'] as String,
+        creatorName: response['creator_name'] as String?,
+        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+            DateTime.now(),
+        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+            DateTime.now(),
+      );
+
+      state = [...state, newTask];
+      debugPrint('✅ Created task: ${newTask.id}');
+    } catch (e) {
+      debugPrint('❌ Error creating task: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateTask({
+    required String taskId,
+    String? title,
+    String? description,
+    String? priority,
+    String? status,
+    DateTime? deadline,
+    List<String>? assignees,
+    List<String>? labels,
+    double? estimatedHours,
+  }) async {
+    try {
+      final api = _ref.read(apiServiceProvider);
+      final response = await api.updateTask(
+        taskId: taskId,
+        title: title,
+        description: description,
+        assignees: assignees,
+        status: status,
+        priority: priority,
+        deadline: deadline,
+        labels: labels,
+        estimatedHours: estimatedHours,
+      );
+
+      final updatedTask = TaskModel(
+        id: response['id'] as String,
+        boardId: _boardId,
+        title: response['title'] as String? ?? 'Untitled',
+        description: response['description'] as String?,
+        status: response['status'] as String? ?? 'todo',
+        priority: response['priority'] as String? ?? 'medium',
+        assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
+        assigneeList: (response['assignee_list'] as List?)
+            ?.map((a) => AssigneeInfo(
+                  id: a['id'] as String,
+                  name: a['name'] as String,
+                  email: a['email'] as String?,
+                  avatar: null,
+                ))
+            .toList() ??
+            [],
+        labels: (response['labels'] as List?)?.cast<String>() ?? [],
+        deadline: response['deadline'] != null
+            ? DateTime.tryParse(response['deadline'] as String)
+            : null,
+        estimatedHours: response['estimated_hours'] != null
+            ? double.tryParse(response['estimated_hours'].toString())
+            : null,
+        actualHours: response['actual_hours'] != null
+            ? double.tryParse(response['actual_hours'].toString())
+            : null,
+        parentId: response['parent_id'] as String?,
+        position: response['position'] as int? ?? 0,
+        createdBy: response['created_by'] as String,
+        creatorName: response['creator_name'] as String?,
+        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+            DateTime.now(),
+        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+            DateTime.now(),
+      );
+
+      state = [
+        for (final task in state)
+          if (task.id == taskId) updatedTask else task
+      ];
+      
+      debugPrint('✅ Updated task: $taskId');
+    } catch (e) {
+      debugPrint('❌ Error updating task: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> moveTask(String taskId, String newStatus) async {
+    try {
+      final api = _ref.read(apiServiceProvider);
+      final response = await api.moveTask(
+        taskId: taskId,
+        status: newStatus,
+        boardId: _boardId,
+      );
+
+      final updatedTask = TaskModel(
+        id: response['id'] as String,
+        boardId: _boardId,
+        title: response['title'] as String? ?? 'Untitled',
+        description: response['description'] as String?,
+        status: response['status'] as String? ?? newStatus,
+        priority: response['priority'] as String? ?? 'medium',
+        assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
+        assigneeList: (response['assignee_list'] as List?)
+            ?.map((a) => AssigneeInfo(
+                  id: a['id'] as String,
+                  name: a['name'] as String,
+                  email: a['email'] as String?,
+                  avatar: null,
+                ))
+            .toList() ??
+            [],
+        labels: (response['labels'] as List?)?.cast<String>() ?? [],
+        deadline: response['deadline'] != null
+            ? DateTime.tryParse(response['deadline'] as String)
+            : null,
+        estimatedHours: response['estimated_hours'] != null
+            ? double.tryParse(response['estimated_hours'].toString())
+            : null,
+        actualHours: response['actual_hours'] != null
+            ? double.tryParse(response['actual_hours'].toString())
+            : null,
+        parentId: response['parent_id'] as String?,
+        position: response['position'] as int? ?? 0,
+        createdBy: response['created_by'] as String,
+        creatorName: response['creator_name'] as String?,
+        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+            DateTime.now(),
+        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+            DateTime.now(),
+      );
+
+      state = [
+        for (final task in state)
+          if (task.id == taskId) updatedTask else task
+      ];
+      
+      debugPrint('✅ Moved task $taskId to $newStatus');
+    } catch (e) {
+      debugPrint('❌ Error moving task: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    try {
+      final api = _ref.read(apiServiceProvider);
+      await api.deleteTask(taskId);
+
+      state = state.where((task) => task.id != taskId).toList();
+      
+      debugPrint('✅ Deleted task: $taskId');
+    } catch (e) {
+      debugPrint('❌ Error deleting task: $e');
+      rethrow;
+    }
+  }
+
+  void refresh() {
+    _loadTasks();
   }
 }

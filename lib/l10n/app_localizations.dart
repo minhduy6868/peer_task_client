@@ -1627,6 +1627,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter workspace name'**
   String get enterWorkspaceName;
+
+  /// No description provided for @taskCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Card'**
+  String get taskCard;
+
+  /// No description provided for @untitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get untitled;
+
+  /// No description provided for @overdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdue;
+
+  /// No description provided for @dueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get dueDate;
+
+  /// No description provided for @assignees.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignees'**
+  String get assignees;
+
+  /// No description provided for @moreAssignees.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String moreAssignees(int count);
+
+  /// No description provided for @move.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get move;
+
+  /// No description provided for @moveTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Task'**
+  String get moveTask;
+
+  /// No description provided for @urgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get urgent;
+
+  /// No description provided for @labels.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get labels;
+
+  /// No description provided for @deadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get deadline;
+
+  /// No description provided for @estimatedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Hours'**
+  String get estimatedHours;
+
+  /// No description provided for @actualHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Hours'**
+  String get actualHours;
+
+  /// No description provided for @createdBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by'**
+  String get createdBy;
+
+  /// No description provided for @updatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated at'**
+  String get updatedAt;
+
+  /// No description provided for @createTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Task'**
+  String get createTask;
+
+  /// No description provided for @editTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Task'**
+  String get editTask;
+
+  /// No description provided for @deleteTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Task'**
+  String get deleteTask;
+
+  /// No description provided for @deleteTaskConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this task?'**
+  String get deleteTaskConfirm;
+
+  /// No description provided for @todoColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'To Do'**
+  String get todoColumn;
+
+  /// No description provided for @doingColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Doing'**
+  String get doingColumn;
+
+  /// No description provided for @doneColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneColumn;
+
+  /// No description provided for @taskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tasks'**
+  String taskCount(int count);
+
+  /// No description provided for @noTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get noTasks;
+
+  /// No description provided for @addFirstTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first task to get started'**
+  String get addFirstTask;
 }
 
 class _AppLocalizationsDelegate

@@ -12,7 +12,8 @@ part of 'board.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$Board {
@@ -39,16 +40,17 @@ abstract class $BoardCopyWith<$Res> {
   factory $BoardCopyWith(Board value, $Res Function(Board) then) =
       _$BoardCopyWithImpl<$Res, Board>;
   @useResult
-  $Res call(
-      {String id,
-      String workspaceId,
-      String name,
-      String? description,
-      String? createdBy,
-      String? permission,
-      bool? isBoardOwner,
-      DateTime? createdAt,
-      DateTime? updatedAt});
+  $Res call({
+    String id,
+    String workspaceId,
+    String name,
+    String? description,
+    String? createdBy,
+    String? permission,
+    bool? isBoardOwner,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -76,64 +78,69 @@ class _$BoardCopyWithImpl<$Res, $Val extends Board>
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      workspaceId: null == workspaceId
-          ? _value.workspaceId
-          : workspaceId // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      createdBy: freezed == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String?,
-      permission: freezed == permission
-          ? _value.permission
-          : permission // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isBoardOwner: freezed == isBoardOwner
-          ? _value.isBoardOwner
-          : isBoardOwner // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      createdAt: freezed == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            workspaceId: null == workspaceId
+                ? _value.workspaceId
+                : workspaceId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            description: freezed == description
+                ? _value.description
+                : description // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            createdBy: freezed == createdBy
+                ? _value.createdBy
+                : createdBy // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            permission: freezed == permission
+                ? _value.permission
+                : permission // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            isBoardOwner: freezed == isBoardOwner
+                ? _value.isBoardOwner
+                : isBoardOwner // ignore: cast_nullable_to_non_nullable
+                      as bool?,
+            createdAt: freezed == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            updatedAt: freezed == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$BoardImplCopyWith<$Res> implements $BoardCopyWith<$Res> {
   factory _$$BoardImplCopyWith(
-          _$BoardImpl value, $Res Function(_$BoardImpl) then) =
-      __$$BoardImplCopyWithImpl<$Res>;
+    _$BoardImpl value,
+    $Res Function(_$BoardImpl) then,
+  ) = __$$BoardImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String id,
-      String workspaceId,
-      String name,
-      String? description,
-      String? createdBy,
-      String? permission,
-      bool? isBoardOwner,
-      DateTime? createdAt,
-      DateTime? updatedAt});
+  $Res call({
+    String id,
+    String workspaceId,
+    String name,
+    String? description,
+    String? createdBy,
+    String? permission,
+    bool? isBoardOwner,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -141,8 +148,9 @@ class __$$BoardImplCopyWithImpl<$Res>
     extends _$BoardCopyWithImpl<$Res, _$BoardImpl>
     implements _$$BoardImplCopyWith<$Res> {
   __$$BoardImplCopyWithImpl(
-      _$BoardImpl _value, $Res Function(_$BoardImpl) _then)
-      : super(_value, _then);
+    _$BoardImpl _value,
+    $Res Function(_$BoardImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of Board
   /// with the given fields replaced by the non-null parameter values.
@@ -159,60 +167,63 @@ class __$$BoardImplCopyWithImpl<$Res>
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_$BoardImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      workspaceId: null == workspaceId
-          ? _value.workspaceId
-          : workspaceId // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      createdBy: freezed == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String?,
-      permission: freezed == permission
-          ? _value.permission
-          : permission // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isBoardOwner: freezed == isBoardOwner
-          ? _value.isBoardOwner
-          : isBoardOwner // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      createdAt: freezed == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
+    return _then(
+      _$BoardImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        workspaceId: null == workspaceId
+            ? _value.workspaceId
+            : workspaceId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        description: freezed == description
+            ? _value.description
+            : description // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        createdBy: freezed == createdBy
+            ? _value.createdBy
+            : createdBy // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        permission: freezed == permission
+            ? _value.permission
+            : permission // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        isBoardOwner: freezed == isBoardOwner
+            ? _value.isBoardOwner
+            : isBoardOwner // ignore: cast_nullable_to_non_nullable
+                  as bool?,
+        createdAt: freezed == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        updatedAt: freezed == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$BoardImpl implements _Board {
-  const _$BoardImpl(
-      {required this.id,
-      required this.workspaceId,
-      required this.name,
-      this.description,
-      this.createdBy,
-      this.permission,
-      this.isBoardOwner,
-      this.createdAt,
-      this.updatedAt});
+  const _$BoardImpl({
+    required this.id,
+    required this.workspaceId,
+    required this.name,
+    this.description,
+    this.createdBy,
+    this.permission,
+    this.isBoardOwner,
+    this.createdAt,
+    this.updatedAt,
+  });
 
   @override
   final String id;
@@ -226,10 +237,10 @@ class _$BoardImpl implements _Board {
   final String? createdBy;
   @override
   final String? permission;
-// 'edit' or 'view' - user's permission on this board
+  // 'edit' or 'view' - user's permission on this board
   @override
   final bool? isBoardOwner;
-// Whether current user is the board owner
+  // Whether current user is the board owner
   @override
   final DateTime? createdAt;
   @override
@@ -264,8 +275,18 @@ class _$BoardImpl implements _Board {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, id, workspaceId, name,
-      description, createdBy, permission, isBoardOwner, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    workspaceId,
+    name,
+    description,
+    createdBy,
+    permission,
+    isBoardOwner,
+    createdAt,
+    updatedAt,
+  );
 
   /// Create a copy of Board
   /// with the given fields replaced by the non-null parameter values.
@@ -277,16 +298,17 @@ class _$BoardImpl implements _Board {
 }
 
 abstract class _Board implements Board {
-  const factory _Board(
-      {required final String id,
-      required final String workspaceId,
-      required final String name,
-      final String? description,
-      final String? createdBy,
-      final String? permission,
-      final bool? isBoardOwner,
-      final DateTime? createdAt,
-      final DateTime? updatedAt}) = _$BoardImpl;
+  const factory _Board({
+    required final String id,
+    required final String workspaceId,
+    required final String name,
+    final String? description,
+    final String? createdBy,
+    final String? permission,
+    final bool? isBoardOwner,
+    final DateTime? createdAt,
+    final DateTime? updatedAt,
+  }) = _$BoardImpl;
 
   @override
   String get id;

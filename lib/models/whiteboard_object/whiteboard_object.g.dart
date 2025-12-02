@@ -7,30 +7,30 @@ part of 'whiteboard_object.dart';
 // **************************************************************************
 
 _$WhiteboardObjectImpl _$$WhiteboardObjectImplFromJson(
-        Map<String, dynamic> json) =>
-    _$WhiteboardObjectImpl(
-      id: json['id'] as String,
-      type: $enumDecode(_$WhiteboardObjectTypeEnumMap, json['type']),
-      data: json['data'] as Map<String, dynamic>,
-      zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
-      version: (json['version'] as num?)?.toInt() ?? 0,
-      createdBy: json['createdBy'] as String,
-      createdAt: (json['createdAt'] as num).toInt(),
-      updatedAt: (json['updatedAt'] as num).toInt(),
-    );
+  Map<String, dynamic> json,
+) => _$WhiteboardObjectImpl(
+  id: json['id'] as String,
+  type: $enumDecode(_$WhiteboardObjectTypeEnumMap, json['type']),
+  data: json['data'] as Map<String, dynamic>,
+  zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
+  version: (json['version'] as num?)?.toInt() ?? 0,
+  createdBy: json['createdBy'] as String,
+  createdAt: (json['createdAt'] as num).toInt(),
+  updatedAt: (json['updatedAt'] as num).toInt(),
+);
 
 Map<String, dynamic> _$$WhiteboardObjectImplToJson(
-        _$WhiteboardObjectImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'type': _$WhiteboardObjectTypeEnumMap[instance.type]!,
-      'data': instance.data,
-      'zIndex': instance.zIndex,
-      'version': instance.version,
-      'createdBy': instance.createdBy,
-      'createdAt': instance.createdAt,
-      'updatedAt': instance.updatedAt,
-    };
+  _$WhiteboardObjectImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'type': _$WhiteboardObjectTypeEnumMap[instance.type]!,
+  'data': instance.data,
+  'zIndex': instance.zIndex,
+  'version': instance.version,
+  'createdBy': instance.createdBy,
+  'createdAt': instance.createdAt,
+  'updatedAt': instance.updatedAt,
+};
 
 const _$WhiteboardObjectTypeEnumMap = {
   WhiteboardObjectType.path: 'path',
@@ -60,10 +60,12 @@ Map<String, dynamic> _$$PathDataImplToJson(_$PathDataImpl instance) =>
 
 _$ShapeDataImpl _$$ShapeDataImplFromJson(Map<String, dynamic> json) =>
     _$ShapeDataImpl(
-      position: const OffsetConverter()
-          .fromJson(json['position'] as Map<String, dynamic>),
-      size:
-          const SizeConverter().fromJson(json['size'] as Map<String, dynamic>),
+      position: const OffsetConverter().fromJson(
+        json['position'] as Map<String, dynamic>,
+      ),
+      size: const SizeConverter().fromJson(
+        json['size'] as Map<String, dynamic>,
+      ),
       strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 2.0,
       strokeColor: (json['strokeColor'] as num?)?.toInt() ?? 0xFF000000,
       fillColor: (json['fillColor'] as num?)?.toInt(),
@@ -80,27 +82,30 @@ Map<String, dynamic> _$$ShapeDataImplToJson(_$ShapeDataImpl instance) =>
 
 _$StickyNoteDataImpl _$$StickyNoteDataImplFromJson(Map<String, dynamic> json) =>
     _$StickyNoteDataImpl(
-      position: const OffsetConverter()
-          .fromJson(json['position'] as Map<String, dynamic>),
-      size:
-          const SizeConverter().fromJson(json['size'] as Map<String, dynamic>),
+      position: const OffsetConverter().fromJson(
+        json['position'] as Map<String, dynamic>,
+      ),
+      size: const SizeConverter().fromJson(
+        json['size'] as Map<String, dynamic>,
+      ),
       text: json['text'] as String,
       color: (json['color'] as num?)?.toInt() ?? 0xFFFFF9C4,
     );
 
 Map<String, dynamic> _$$StickyNoteDataImplToJson(
-        _$StickyNoteDataImpl instance) =>
-    <String, dynamic>{
-      'position': const OffsetConverter().toJson(instance.position),
-      'size': const SizeConverter().toJson(instance.size),
-      'text': instance.text,
-      'color': instance.color,
-    };
+  _$StickyNoteDataImpl instance,
+) => <String, dynamic>{
+  'position': const OffsetConverter().toJson(instance.position),
+  'size': const SizeConverter().toJson(instance.size),
+  'text': instance.text,
+  'color': instance.color,
+};
 
 _$TextBoxDataImpl _$$TextBoxDataImplFromJson(Map<String, dynamic> json) =>
     _$TextBoxDataImpl(
-      position: const OffsetConverter()
-          .fromJson(json['position'] as Map<String, dynamic>),
+      position: const OffsetConverter().fromJson(
+        json['position'] as Map<String, dynamic>,
+      ),
       text: json['text'] as String,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
       color: (json['color'] as num?)?.toInt() ?? 0xFF000000,

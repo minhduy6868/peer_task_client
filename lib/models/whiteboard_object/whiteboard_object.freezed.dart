@@ -12,7 +12,8 @@ part of 'whiteboard_object.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 WhiteboardObject _$WhiteboardObjectFromJson(Map<String, dynamic> json) {
   return _WhiteboardObject.fromJson(json);
@@ -42,18 +43,20 @@ mixin _$WhiteboardObject {
 /// @nodoc
 abstract class $WhiteboardObjectCopyWith<$Res> {
   factory $WhiteboardObjectCopyWith(
-          WhiteboardObject value, $Res Function(WhiteboardObject) then) =
-      _$WhiteboardObjectCopyWithImpl<$Res, WhiteboardObject>;
+    WhiteboardObject value,
+    $Res Function(WhiteboardObject) then,
+  ) = _$WhiteboardObjectCopyWithImpl<$Res, WhiteboardObject>;
   @useResult
-  $Res call(
-      {String id,
-      WhiteboardObjectType type,
-      Map<String, dynamic> data,
-      int zIndex,
-      int version,
-      String createdBy,
-      int createdAt,
-      int updatedAt});
+  $Res call({
+    String id,
+    WhiteboardObjectType type,
+    Map<String, dynamic> data,
+    int zIndex,
+    int version,
+    String createdBy,
+    int createdAt,
+    int updatedAt,
+  });
 }
 
 /// @nodoc
@@ -80,69 +83,75 @@ class _$WhiteboardObjectCopyWithImpl<$Res, $Val extends WhiteboardObject>
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as WhiteboardObjectType,
-      data: null == data
-          ? _value.data
-          : data // ignore: cast_nullable_to_non_nullable
-              as Map<String, dynamic>,
-      zIndex: null == zIndex
-          ? _value.zIndex
-          : zIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as int,
-      createdBy: null == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as int,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as WhiteboardObjectType,
+            data: null == data
+                ? _value.data
+                : data // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>,
+            zIndex: null == zIndex
+                ? _value.zIndex
+                : zIndex // ignore: cast_nullable_to_non_nullable
+                      as int,
+            version: null == version
+                ? _value.version
+                : version // ignore: cast_nullable_to_non_nullable
+                      as int,
+            createdBy: null == createdBy
+                ? _value.createdBy
+                : createdBy // ignore: cast_nullable_to_non_nullable
+                      as String,
+            createdAt: null == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as int,
+            updatedAt: null == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$WhiteboardObjectImplCopyWith<$Res>
     implements $WhiteboardObjectCopyWith<$Res> {
-  factory _$$WhiteboardObjectImplCopyWith(_$WhiteboardObjectImpl value,
-          $Res Function(_$WhiteboardObjectImpl) then) =
-      __$$WhiteboardObjectImplCopyWithImpl<$Res>;
+  factory _$$WhiteboardObjectImplCopyWith(
+    _$WhiteboardObjectImpl value,
+    $Res Function(_$WhiteboardObjectImpl) then,
+  ) = __$$WhiteboardObjectImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String id,
-      WhiteboardObjectType type,
-      Map<String, dynamic> data,
-      int zIndex,
-      int version,
-      String createdBy,
-      int createdAt,
-      int updatedAt});
+  $Res call({
+    String id,
+    WhiteboardObjectType type,
+    Map<String, dynamic> data,
+    int zIndex,
+    int version,
+    String createdBy,
+    int createdAt,
+    int updatedAt,
+  });
 }
 
 /// @nodoc
 class __$$WhiteboardObjectImplCopyWithImpl<$Res>
     extends _$WhiteboardObjectCopyWithImpl<$Res, _$WhiteboardObjectImpl>
     implements _$$WhiteboardObjectImplCopyWith<$Res> {
-  __$$WhiteboardObjectImplCopyWithImpl(_$WhiteboardObjectImpl _value,
-      $Res Function(_$WhiteboardObjectImpl) _then)
-      : super(_value, _then);
+  __$$WhiteboardObjectImplCopyWithImpl(
+    _$WhiteboardObjectImpl _value,
+    $Res Function(_$WhiteboardObjectImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of WhiteboardObject
   /// with the given fields replaced by the non-null parameter values.
@@ -158,56 +167,58 @@ class __$$WhiteboardObjectImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
-    return _then(_$WhiteboardObjectImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as WhiteboardObjectType,
-      data: null == data
-          ? _value._data
-          : data // ignore: cast_nullable_to_non_nullable
-              as Map<String, dynamic>,
-      zIndex: null == zIndex
-          ? _value.zIndex
-          : zIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      version: null == version
-          ? _value.version
-          : version // ignore: cast_nullable_to_non_nullable
-              as int,
-      createdBy: null == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as int,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$WhiteboardObjectImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as WhiteboardObjectType,
+        data: null == data
+            ? _value._data
+            : data // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>,
+        zIndex: null == zIndex
+            ? _value.zIndex
+            : zIndex // ignore: cast_nullable_to_non_nullable
+                  as int,
+        version: null == version
+            ? _value.version
+            : version // ignore: cast_nullable_to_non_nullable
+                  as int,
+        createdBy: null == createdBy
+            ? _value.createdBy
+            : createdBy // ignore: cast_nullable_to_non_nullable
+                  as String,
+        createdAt: null == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as int,
+        updatedAt: null == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$WhiteboardObjectImpl implements _WhiteboardObject {
-  const _$WhiteboardObjectImpl(
-      {required this.id,
-      required this.type,
-      required final Map<String, dynamic> data,
-      this.zIndex = 0,
-      this.version = 0,
-      required this.createdBy,
-      required this.createdAt,
-      required this.updatedAt})
-      : _data = data;
+  const _$WhiteboardObjectImpl({
+    required this.id,
+    required this.type,
+    required final Map<String, dynamic> data,
+    this.zIndex = 0,
+    this.version = 0,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+  }) : _data = data;
 
   factory _$WhiteboardObjectImpl.fromJson(Map<String, dynamic> json) =>
       _$$WhiteboardObjectImplFromJson(json);
@@ -263,15 +274,16 @@ class _$WhiteboardObjectImpl implements _WhiteboardObject {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      type,
-      const DeepCollectionEquality().hash(_data),
-      zIndex,
-      version,
-      createdBy,
-      createdAt,
-      updatedAt);
+    runtimeType,
+    id,
+    type,
+    const DeepCollectionEquality().hash(_data),
+    zIndex,
+    version,
+    createdBy,
+    createdAt,
+    updatedAt,
+  );
 
   /// Create a copy of WhiteboardObject
   /// with the given fields replaced by the non-null parameter values.
@@ -280,26 +292,27 @@ class _$WhiteboardObjectImpl implements _WhiteboardObject {
   @pragma('vm:prefer-inline')
   _$$WhiteboardObjectImplCopyWith<_$WhiteboardObjectImpl> get copyWith =>
       __$$WhiteboardObjectImplCopyWithImpl<_$WhiteboardObjectImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$WhiteboardObjectImplToJson(
-      this,
-    );
+    return _$$WhiteboardObjectImplToJson(this);
   }
 }
 
 abstract class _WhiteboardObject implements WhiteboardObject {
-  const factory _WhiteboardObject(
-      {required final String id,
-      required final WhiteboardObjectType type,
-      required final Map<String, dynamic> data,
-      final int zIndex,
-      final int version,
-      required final String createdBy,
-      required final int createdAt,
-      required final int updatedAt}) = _$WhiteboardObjectImpl;
+  const factory _WhiteboardObject({
+    required final String id,
+    required final WhiteboardObjectType type,
+    required final Map<String, dynamic> data,
+    final int zIndex,
+    final int version,
+    required final String createdBy,
+    required final int createdAt,
+    required final int updatedAt,
+  }) = _$WhiteboardObjectImpl;
 
   factory _WhiteboardObject.fromJson(Map<String, dynamic> json) =
       _$WhiteboardObjectImpl.fromJson;
@@ -355,10 +368,11 @@ abstract class $PathDataCopyWith<$Res> {
   factory $PathDataCopyWith(PathData value, $Res Function(PathData) then) =
       _$PathDataCopyWithImpl<$Res, PathData>;
   @useResult
-  $Res call(
-      {@OffsetListConverter() List<Offset> points,
-      double strokeWidth,
-      int color});
+  $Res call({
+    @OffsetListConverter() List<Offset> points,
+    double strokeWidth,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -380,20 +394,23 @@ class _$PathDataCopyWithImpl<$Res, $Val extends PathData>
     Object? strokeWidth = null,
     Object? color = null,
   }) {
-    return _then(_value.copyWith(
-      points: null == points
-          ? _value.points
-          : points // ignore: cast_nullable_to_non_nullable
-              as List<Offset>,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            points: null == points
+                ? _value.points
+                : points // ignore: cast_nullable_to_non_nullable
+                      as List<Offset>,
+            strokeWidth: null == strokeWidth
+                ? _value.strokeWidth
+                : strokeWidth // ignore: cast_nullable_to_non_nullable
+                      as double,
+            color: null == color
+                ? _value.color
+                : color // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -401,14 +418,16 @@ class _$PathDataCopyWithImpl<$Res, $Val extends PathData>
 abstract class _$$PathDataImplCopyWith<$Res>
     implements $PathDataCopyWith<$Res> {
   factory _$$PathDataImplCopyWith(
-          _$PathDataImpl value, $Res Function(_$PathDataImpl) then) =
-      __$$PathDataImplCopyWithImpl<$Res>;
+    _$PathDataImpl value,
+    $Res Function(_$PathDataImpl) then,
+  ) = __$$PathDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {@OffsetListConverter() List<Offset> points,
-      double strokeWidth,
-      int color});
+  $Res call({
+    @OffsetListConverter() List<Offset> points,
+    double strokeWidth,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -416,8 +435,9 @@ class __$$PathDataImplCopyWithImpl<$Res>
     extends _$PathDataCopyWithImpl<$Res, _$PathDataImpl>
     implements _$$PathDataImplCopyWith<$Res> {
   __$$PathDataImplCopyWithImpl(
-      _$PathDataImpl _value, $Res Function(_$PathDataImpl) _then)
-      : super(_value, _then);
+    _$PathDataImpl _value,
+    $Res Function(_$PathDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of PathData
   /// with the given fields replaced by the non-null parameter values.
@@ -428,31 +448,33 @@ class __$$PathDataImplCopyWithImpl<$Res>
     Object? strokeWidth = null,
     Object? color = null,
   }) {
-    return _then(_$PathDataImpl(
-      points: null == points
-          ? _value._points
-          : points // ignore: cast_nullable_to_non_nullable
-              as List<Offset>,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$PathDataImpl(
+        points: null == points
+            ? _value._points
+            : points // ignore: cast_nullable_to_non_nullable
+                  as List<Offset>,
+        strokeWidth: null == strokeWidth
+            ? _value.strokeWidth
+            : strokeWidth // ignore: cast_nullable_to_non_nullable
+                  as double,
+        color: null == color
+            ? _value.color
+            : color // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$PathDataImpl implements _PathData {
-  const _$PathDataImpl(
-      {@OffsetListConverter() required final List<Offset> points,
-      this.strokeWidth = 2.0,
-      this.color = 0xFF000000})
-      : _points = points;
+  const _$PathDataImpl({
+    @OffsetListConverter() required final List<Offset> points,
+    this.strokeWidth = 2.0,
+    this.color = 0xFF000000,
+  }) : _points = points;
 
   factory _$PathDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$PathDataImplFromJson(json);
@@ -491,8 +513,12 @@ class _$PathDataImpl implements _PathData {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_points), strokeWidth, color);
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_points),
+    strokeWidth,
+    color,
+  );
 
   /// Create a copy of PathData
   /// with the given fields replaced by the non-null parameter values.
@@ -504,17 +530,16 @@ class _$PathDataImpl implements _PathData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PathDataImplToJson(
-      this,
-    );
+    return _$$PathDataImplToJson(this);
   }
 }
 
 abstract class _PathData implements PathData {
-  const factory _PathData(
-      {@OffsetListConverter() required final List<Offset> points,
-      final double strokeWidth,
-      final int color}) = _$PathDataImpl;
+  const factory _PathData({
+    @OffsetListConverter() required final List<Offset> points,
+    final double strokeWidth,
+    final int color,
+  }) = _$PathDataImpl;
 
   factory _PathData.fromJson(Map<String, dynamic> json) =
       _$PathDataImpl.fromJson;
@@ -564,12 +589,13 @@ abstract class $ShapeDataCopyWith<$Res> {
   factory $ShapeDataCopyWith(ShapeData value, $Res Function(ShapeData) then) =
       _$ShapeDataCopyWithImpl<$Res, ShapeData>;
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      double strokeWidth,
-      int strokeColor,
-      int? fillColor});
+  $Res call({
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    double strokeWidth,
+    int strokeColor,
+    int? fillColor,
+  });
 }
 
 /// @nodoc
@@ -593,28 +619,31 @@ class _$ShapeDataCopyWithImpl<$Res, $Val extends ShapeData>
     Object? strokeColor = null,
     Object? fillColor = freezed,
   }) {
-    return _then(_value.copyWith(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      strokeColor: null == strokeColor
-          ? _value.strokeColor
-          : strokeColor // ignore: cast_nullable_to_non_nullable
-              as int,
-      fillColor: freezed == fillColor
-          ? _value.fillColor
-          : fillColor // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            position: null == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as Offset,
+            size: null == size
+                ? _value.size
+                : size // ignore: cast_nullable_to_non_nullable
+                      as Size,
+            strokeWidth: null == strokeWidth
+                ? _value.strokeWidth
+                : strokeWidth // ignore: cast_nullable_to_non_nullable
+                      as double,
+            strokeColor: null == strokeColor
+                ? _value.strokeColor
+                : strokeColor // ignore: cast_nullable_to_non_nullable
+                      as int,
+            fillColor: freezed == fillColor
+                ? _value.fillColor
+                : fillColor // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -622,16 +651,18 @@ class _$ShapeDataCopyWithImpl<$Res, $Val extends ShapeData>
 abstract class _$$ShapeDataImplCopyWith<$Res>
     implements $ShapeDataCopyWith<$Res> {
   factory _$$ShapeDataImplCopyWith(
-          _$ShapeDataImpl value, $Res Function(_$ShapeDataImpl) then) =
-      __$$ShapeDataImplCopyWithImpl<$Res>;
+    _$ShapeDataImpl value,
+    $Res Function(_$ShapeDataImpl) then,
+  ) = __$$ShapeDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      double strokeWidth,
-      int strokeColor,
-      int? fillColor});
+  $Res call({
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    double strokeWidth,
+    int strokeColor,
+    int? fillColor,
+  });
 }
 
 /// @nodoc
@@ -639,8 +670,9 @@ class __$$ShapeDataImplCopyWithImpl<$Res>
     extends _$ShapeDataCopyWithImpl<$Res, _$ShapeDataImpl>
     implements _$$ShapeDataImplCopyWith<$Res> {
   __$$ShapeDataImplCopyWithImpl(
-      _$ShapeDataImpl _value, $Res Function(_$ShapeDataImpl) _then)
-      : super(_value, _then);
+    _$ShapeDataImpl _value,
+    $Res Function(_$ShapeDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of ShapeData
   /// with the given fields replaced by the non-null parameter values.
@@ -653,40 +685,43 @@ class __$$ShapeDataImplCopyWithImpl<$Res>
     Object? strokeColor = null,
     Object? fillColor = freezed,
   }) {
-    return _then(_$ShapeDataImpl(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      strokeColor: null == strokeColor
-          ? _value.strokeColor
-          : strokeColor // ignore: cast_nullable_to_non_nullable
-              as int,
-      fillColor: freezed == fillColor
-          ? _value.fillColor
-          : fillColor // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ));
+    return _then(
+      _$ShapeDataImpl(
+        position: null == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as Offset,
+        size: null == size
+            ? _value.size
+            : size // ignore: cast_nullable_to_non_nullable
+                  as Size,
+        strokeWidth: null == strokeWidth
+            ? _value.strokeWidth
+            : strokeWidth // ignore: cast_nullable_to_non_nullable
+                  as double,
+        strokeColor: null == strokeColor
+            ? _value.strokeColor
+            : strokeColor // ignore: cast_nullable_to_non_nullable
+                  as int,
+        fillColor: freezed == fillColor
+            ? _value.fillColor
+            : fillColor // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$ShapeDataImpl implements _ShapeData {
-  const _$ShapeDataImpl(
-      {@OffsetConverter() required this.position,
-      @SizeConverter() required this.size,
-      this.strokeWidth = 2.0,
-      this.strokeColor = 0xFF000000,
-      this.fillColor});
+  const _$ShapeDataImpl({
+    @OffsetConverter() required this.position,
+    @SizeConverter() required this.size,
+    this.strokeWidth = 2.0,
+    this.strokeColor = 0xFF000000,
+    this.fillColor,
+  });
 
   factory _$ShapeDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$ShapeDataImplFromJson(json);
@@ -730,7 +765,13 @@ class _$ShapeDataImpl implements _ShapeData {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, position, size, strokeWidth, strokeColor, fillColor);
+    runtimeType,
+    position,
+    size,
+    strokeWidth,
+    strokeColor,
+    fillColor,
+  );
 
   /// Create a copy of ShapeData
   /// with the given fields replaced by the non-null parameter values.
@@ -742,19 +783,18 @@ class _$ShapeDataImpl implements _ShapeData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$ShapeDataImplToJson(
-      this,
-    );
+    return _$$ShapeDataImplToJson(this);
   }
 }
 
 abstract class _ShapeData implements ShapeData {
-  const factory _ShapeData(
-      {@OffsetConverter() required final Offset position,
-      @SizeConverter() required final Size size,
-      final double strokeWidth,
-      final int strokeColor,
-      final int? fillColor}) = _$ShapeDataImpl;
+  const factory _ShapeData({
+    @OffsetConverter() required final Offset position,
+    @SizeConverter() required final Size size,
+    final double strokeWidth,
+    final int strokeColor,
+    final int? fillColor,
+  }) = _$ShapeDataImpl;
 
   factory _ShapeData.fromJson(Map<String, dynamic> json) =
       _$ShapeDataImpl.fromJson;
@@ -806,14 +846,16 @@ mixin _$StickyNoteData {
 /// @nodoc
 abstract class $StickyNoteDataCopyWith<$Res> {
   factory $StickyNoteDataCopyWith(
-          StickyNoteData value, $Res Function(StickyNoteData) then) =
-      _$StickyNoteDataCopyWithImpl<$Res, StickyNoteData>;
+    StickyNoteData value,
+    $Res Function(StickyNoteData) then,
+  ) = _$StickyNoteDataCopyWithImpl<$Res, StickyNoteData>;
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      String text,
-      int color});
+  $Res call({
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    String text,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -836,40 +878,45 @@ class _$StickyNoteDataCopyWithImpl<$Res, $Val extends StickyNoteData>
     Object? text = null,
     Object? color = null,
   }) {
-    return _then(_value.copyWith(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            position: null == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as Offset,
+            size: null == size
+                ? _value.size
+                : size // ignore: cast_nullable_to_non_nullable
+                      as Size,
+            text: null == text
+                ? _value.text
+                : text // ignore: cast_nullable_to_non_nullable
+                      as String,
+            color: null == color
+                ? _value.color
+                : color // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$StickyNoteDataImplCopyWith<$Res>
     implements $StickyNoteDataCopyWith<$Res> {
-  factory _$$StickyNoteDataImplCopyWith(_$StickyNoteDataImpl value,
-          $Res Function(_$StickyNoteDataImpl) then) =
-      __$$StickyNoteDataImplCopyWithImpl<$Res>;
+  factory _$$StickyNoteDataImplCopyWith(
+    _$StickyNoteDataImpl value,
+    $Res Function(_$StickyNoteDataImpl) then,
+  ) = __$$StickyNoteDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      @SizeConverter() Size size,
-      String text,
-      int color});
+  $Res call({
+    @OffsetConverter() Offset position,
+    @SizeConverter() Size size,
+    String text,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -877,8 +924,9 @@ class __$$StickyNoteDataImplCopyWithImpl<$Res>
     extends _$StickyNoteDataCopyWithImpl<$Res, _$StickyNoteDataImpl>
     implements _$$StickyNoteDataImplCopyWith<$Res> {
   __$$StickyNoteDataImplCopyWithImpl(
-      _$StickyNoteDataImpl _value, $Res Function(_$StickyNoteDataImpl) _then)
-      : super(_value, _then);
+    _$StickyNoteDataImpl _value,
+    $Res Function(_$StickyNoteDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of StickyNoteData
   /// with the given fields replaced by the non-null parameter values.
@@ -890,35 +938,38 @@ class __$$StickyNoteDataImplCopyWithImpl<$Res>
     Object? text = null,
     Object? color = null,
   }) {
-    return _then(_$StickyNoteDataImpl(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      size: null == size
-          ? _value.size
-          : size // ignore: cast_nullable_to_non_nullable
-              as Size,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$StickyNoteDataImpl(
+        position: null == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as Offset,
+        size: null == size
+            ? _value.size
+            : size // ignore: cast_nullable_to_non_nullable
+                  as Size,
+        text: null == text
+            ? _value.text
+            : text // ignore: cast_nullable_to_non_nullable
+                  as String,
+        color: null == color
+            ? _value.color
+            : color // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$StickyNoteDataImpl implements _StickyNoteData {
-  const _$StickyNoteDataImpl(
-      {@OffsetConverter() required this.position,
-      @SizeConverter() required this.size,
-      required this.text,
-      this.color = 0xFFFFF9C4});
+  const _$StickyNoteDataImpl({
+    @OffsetConverter() required this.position,
+    @SizeConverter() required this.size,
+    required this.text,
+    this.color = 0xFFFFF9C4,
+  });
 
   factory _$StickyNoteDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$StickyNoteDataImplFromJson(json);
@@ -963,22 +1014,23 @@ class _$StickyNoteDataImpl implements _StickyNoteData {
   @pragma('vm:prefer-inline')
   _$$StickyNoteDataImplCopyWith<_$StickyNoteDataImpl> get copyWith =>
       __$$StickyNoteDataImplCopyWithImpl<_$StickyNoteDataImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$StickyNoteDataImplToJson(
-      this,
-    );
+    return _$$StickyNoteDataImplToJson(this);
   }
 }
 
 abstract class _StickyNoteData implements StickyNoteData {
-  const factory _StickyNoteData(
-      {@OffsetConverter() required final Offset position,
-      @SizeConverter() required final Size size,
-      required final String text,
-      final int color}) = _$StickyNoteDataImpl;
+  const factory _StickyNoteData({
+    @OffsetConverter() required final Offset position,
+    @SizeConverter() required final Size size,
+    required final String text,
+    final int color,
+  }) = _$StickyNoteDataImpl;
 
   factory _StickyNoteData.fromJson(Map<String, dynamic> json) =
       _$StickyNoteDataImpl.fromJson;
@@ -1027,14 +1079,16 @@ mixin _$TextBoxData {
 /// @nodoc
 abstract class $TextBoxDataCopyWith<$Res> {
   factory $TextBoxDataCopyWith(
-          TextBoxData value, $Res Function(TextBoxData) then) =
-      _$TextBoxDataCopyWithImpl<$Res, TextBoxData>;
+    TextBoxData value,
+    $Res Function(TextBoxData) then,
+  ) = _$TextBoxDataCopyWithImpl<$Res, TextBoxData>;
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      String text,
-      double fontSize,
-      int color});
+  $Res call({
+    @OffsetConverter() Offset position,
+    String text,
+    double fontSize,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -1057,24 +1111,27 @@ class _$TextBoxDataCopyWithImpl<$Res, $Val extends TextBoxData>
     Object? fontSize = null,
     Object? color = null,
   }) {
-    return _then(_value.copyWith(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      fontSize: null == fontSize
-          ? _value.fontSize
-          : fontSize // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            position: null == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as Offset,
+            text: null == text
+                ? _value.text
+                : text // ignore: cast_nullable_to_non_nullable
+                      as String,
+            fontSize: null == fontSize
+                ? _value.fontSize
+                : fontSize // ignore: cast_nullable_to_non_nullable
+                      as double,
+            color: null == color
+                ? _value.color
+                : color // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -1082,15 +1139,17 @@ class _$TextBoxDataCopyWithImpl<$Res, $Val extends TextBoxData>
 abstract class _$$TextBoxDataImplCopyWith<$Res>
     implements $TextBoxDataCopyWith<$Res> {
   factory _$$TextBoxDataImplCopyWith(
-          _$TextBoxDataImpl value, $Res Function(_$TextBoxDataImpl) then) =
-      __$$TextBoxDataImplCopyWithImpl<$Res>;
+    _$TextBoxDataImpl value,
+    $Res Function(_$TextBoxDataImpl) then,
+  ) = __$$TextBoxDataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {@OffsetConverter() Offset position,
-      String text,
-      double fontSize,
-      int color});
+  $Res call({
+    @OffsetConverter() Offset position,
+    String text,
+    double fontSize,
+    int color,
+  });
 }
 
 /// @nodoc
@@ -1098,8 +1157,9 @@ class __$$TextBoxDataImplCopyWithImpl<$Res>
     extends _$TextBoxDataCopyWithImpl<$Res, _$TextBoxDataImpl>
     implements _$$TextBoxDataImplCopyWith<$Res> {
   __$$TextBoxDataImplCopyWithImpl(
-      _$TextBoxDataImpl _value, $Res Function(_$TextBoxDataImpl) _then)
-      : super(_value, _then);
+    _$TextBoxDataImpl _value,
+    $Res Function(_$TextBoxDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of TextBoxData
   /// with the given fields replaced by the non-null parameter values.
@@ -1111,35 +1171,38 @@ class __$$TextBoxDataImplCopyWithImpl<$Res>
     Object? fontSize = null,
     Object? color = null,
   }) {
-    return _then(_$TextBoxDataImpl(
-      position: null == position
-          ? _value.position
-          : position // ignore: cast_nullable_to_non_nullable
-              as Offset,
-      text: null == text
-          ? _value.text
-          : text // ignore: cast_nullable_to_non_nullable
-              as String,
-      fontSize: null == fontSize
-          ? _value.fontSize
-          : fontSize // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$TextBoxDataImpl(
+        position: null == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as Offset,
+        text: null == text
+            ? _value.text
+            : text // ignore: cast_nullable_to_non_nullable
+                  as String,
+        fontSize: null == fontSize
+            ? _value.fontSize
+            : fontSize // ignore: cast_nullable_to_non_nullable
+                  as double,
+        color: null == color
+            ? _value.color
+            : color // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$TextBoxDataImpl implements _TextBoxData {
-  const _$TextBoxDataImpl(
-      {@OffsetConverter() required this.position,
-      required this.text,
-      this.fontSize = 16.0,
-      this.color = 0xFF000000});
+  const _$TextBoxDataImpl({
+    @OffsetConverter() required this.position,
+    required this.text,
+    this.fontSize = 16.0,
+    this.color = 0xFF000000,
+  });
 
   factory _$TextBoxDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$TextBoxDataImplFromJson(json);
@@ -1188,18 +1251,17 @@ class _$TextBoxDataImpl implements _TextBoxData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$TextBoxDataImplToJson(
-      this,
-    );
+    return _$$TextBoxDataImplToJson(this);
   }
 }
 
 abstract class _TextBoxData implements TextBoxData {
-  const factory _TextBoxData(
-      {@OffsetConverter() required final Offset position,
-      required final String text,
-      final double fontSize,
-      final int color}) = _$TextBoxDataImpl;
+  const factory _TextBoxData({
+    @OffsetConverter() required final Offset position,
+    required final String text,
+    final double fontSize,
+    final int color,
+  }) = _$TextBoxDataImpl;
 
   factory _TextBoxData.fromJson(Map<String, dynamic> json) =
       _$TextBoxDataImpl.fromJson;
@@ -1245,8 +1307,9 @@ mixin _$StrokeData {
 /// @nodoc
 abstract class $StrokeDataCopyWith<$Res> {
   factory $StrokeDataCopyWith(
-          StrokeData value, $Res Function(StrokeData) then) =
-      _$StrokeDataCopyWithImpl<$Res, StrokeData>;
+    StrokeData value,
+    $Res Function(StrokeData) then,
+  ) = _$StrokeDataCopyWithImpl<$Res, StrokeData>;
   @useResult
   $Res call({List<double> points, double strokeWidth, int color});
 }
@@ -1270,20 +1333,23 @@ class _$StrokeDataCopyWithImpl<$Res, $Val extends StrokeData>
     Object? strokeWidth = null,
     Object? color = null,
   }) {
-    return _then(_value.copyWith(
-      points: null == points
-          ? _value.points
-          : points // ignore: cast_nullable_to_non_nullable
-              as List<double>,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            points: null == points
+                ? _value.points
+                : points // ignore: cast_nullable_to_non_nullable
+                      as List<double>,
+            strokeWidth: null == strokeWidth
+                ? _value.strokeWidth
+                : strokeWidth // ignore: cast_nullable_to_non_nullable
+                      as double,
+            color: null == color
+                ? _value.color
+                : color // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -1291,8 +1357,9 @@ class _$StrokeDataCopyWithImpl<$Res, $Val extends StrokeData>
 abstract class _$$StrokeDataImplCopyWith<$Res>
     implements $StrokeDataCopyWith<$Res> {
   factory _$$StrokeDataImplCopyWith(
-          _$StrokeDataImpl value, $Res Function(_$StrokeDataImpl) then) =
-      __$$StrokeDataImplCopyWithImpl<$Res>;
+    _$StrokeDataImpl value,
+    $Res Function(_$StrokeDataImpl) then,
+  ) = __$$StrokeDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<double> points, double strokeWidth, int color});
@@ -1303,8 +1370,9 @@ class __$$StrokeDataImplCopyWithImpl<$Res>
     extends _$StrokeDataCopyWithImpl<$Res, _$StrokeDataImpl>
     implements _$$StrokeDataImplCopyWith<$Res> {
   __$$StrokeDataImplCopyWithImpl(
-      _$StrokeDataImpl _value, $Res Function(_$StrokeDataImpl) _then)
-      : super(_value, _then);
+    _$StrokeDataImpl _value,
+    $Res Function(_$StrokeDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of StrokeData
   /// with the given fields replaced by the non-null parameter values.
@@ -1315,31 +1383,33 @@ class __$$StrokeDataImplCopyWithImpl<$Res>
     Object? strokeWidth = null,
     Object? color = null,
   }) {
-    return _then(_$StrokeDataImpl(
-      points: null == points
-          ? _value._points
-          : points // ignore: cast_nullable_to_non_nullable
-              as List<double>,
-      strokeWidth: null == strokeWidth
-          ? _value.strokeWidth
-          : strokeWidth // ignore: cast_nullable_to_non_nullable
-              as double,
-      color: null == color
-          ? _value.color
-          : color // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
+    return _then(
+      _$StrokeDataImpl(
+        points: null == points
+            ? _value._points
+            : points // ignore: cast_nullable_to_non_nullable
+                  as List<double>,
+        strokeWidth: null == strokeWidth
+            ? _value.strokeWidth
+            : strokeWidth // ignore: cast_nullable_to_non_nullable
+                  as double,
+        color: null == color
+            ? _value.color
+            : color // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$StrokeDataImpl implements _StrokeData {
-  const _$StrokeDataImpl(
-      {required final List<double> points,
-      this.strokeWidth = 3.0,
-      this.color = 0xFF000000})
-      : _points = points;
+  const _$StrokeDataImpl({
+    required final List<double> points,
+    this.strokeWidth = 3.0,
+    this.color = 0xFF000000,
+  }) : _points = points;
 
   factory _$StrokeDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$StrokeDataImplFromJson(json);
@@ -1377,8 +1447,12 @@ class _$StrokeDataImpl implements _StrokeData {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_points), strokeWidth, color);
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_points),
+    strokeWidth,
+    color,
+  );
 
   /// Create a copy of StrokeData
   /// with the given fields replaced by the non-null parameter values.
@@ -1390,17 +1464,16 @@ class _$StrokeDataImpl implements _StrokeData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$StrokeDataImplToJson(
-      this,
-    );
+    return _$$StrokeDataImplToJson(this);
   }
 }
 
 abstract class _StrokeData implements StrokeData {
-  const factory _StrokeData(
-      {required final List<double> points,
-      final double strokeWidth,
-      final int color}) = _$StrokeDataImpl;
+  const factory _StrokeData({
+    required final List<double> points,
+    final double strokeWidth,
+    final int color,
+  }) = _$StrokeDataImpl;
 
   factory _StrokeData.fromJson(Map<String, dynamic> json) =
       _$StrokeDataImpl.fromJson;
@@ -1471,24 +1544,27 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
     Object? status = null,
     Object? timestamp = freezed,
   }) {
-    return _then(_value.copyWith(
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-      assignee: freezed == assignee
-          ? _value.assignee
-          : assignee // ignore: cast_nullable_to_non_nullable
-              as String?,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      timestamp: freezed == timestamp
-          ? _value.timestamp
-          : timestamp // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            title: freezed == title
+                ? _value.title
+                : title // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignee: freezed == assignee
+                ? _value.assignee
+                : assignee // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String,
+            timestamp: freezed == timestamp
+                ? _value.timestamp
+                : timestamp // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -1496,8 +1572,9 @@ class _$TaskDataCopyWithImpl<$Res, $Val extends TaskData>
 abstract class _$$TaskDataImplCopyWith<$Res>
     implements $TaskDataCopyWith<$Res> {
   factory _$$TaskDataImplCopyWith(
-          _$TaskDataImpl value, $Res Function(_$TaskDataImpl) then) =
-      __$$TaskDataImplCopyWithImpl<$Res>;
+    _$TaskDataImpl value,
+    $Res Function(_$TaskDataImpl) then,
+  ) = __$$TaskDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String? title, String? assignee, String status, int? timestamp});
@@ -1508,8 +1585,9 @@ class __$$TaskDataImplCopyWithImpl<$Res>
     extends _$TaskDataCopyWithImpl<$Res, _$TaskDataImpl>
     implements _$$TaskDataImplCopyWith<$Res> {
   __$$TaskDataImplCopyWithImpl(
-      _$TaskDataImpl _value, $Res Function(_$TaskDataImpl) _then)
-      : super(_value, _then);
+    _$TaskDataImpl _value,
+    $Res Function(_$TaskDataImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
@@ -1521,42 +1599,48 @@ class __$$TaskDataImplCopyWithImpl<$Res>
     Object? status = null,
     Object? timestamp = freezed,
   }) {
-    return _then(_$TaskDataImpl(
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-      assignee: freezed == assignee
-          ? _value.assignee
-          : assignee // ignore: cast_nullable_to_non_nullable
-              as String?,
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String,
-      timestamp: freezed == timestamp
-          ? _value.timestamp
-          : timestamp // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ));
+    return _then(
+      _$TaskDataImpl(
+        title: freezed == title
+            ? _value.title
+            : title // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignee: freezed == assignee
+            ? _value.assignee
+            : assignee // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String,
+        timestamp: freezed == timestamp
+            ? _value.timestamp
+            : timestamp // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$TaskDataImpl implements _TaskData {
-  const _$TaskDataImpl(
-      {this.title, this.assignee, this.status = 'todo', this.timestamp});
+  const _$TaskDataImpl({
+    this.title,
+    this.assignee,
+    this.status = 'todo',
+    this.timestamp,
+  });
 
   factory _$TaskDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$TaskDataImplFromJson(json);
 
   @override
   final String? title;
-// Made nullable for backwards compatibility
+  // Made nullable for backwards compatibility
   @override
   final String? assignee;
-// Deprecated, kept for backwards compatibility
+  // Deprecated, kept for backwards compatibility
   @override
   @JsonKey()
   final String status;
@@ -1596,18 +1680,17 @@ class _$TaskDataImpl implements _TaskData {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$TaskDataImplToJson(
-      this,
-    );
+    return _$$TaskDataImplToJson(this);
   }
 }
 
 abstract class _TaskData implements TaskData {
-  const factory _TaskData(
-      {final String? title,
-      final String? assignee,
-      final String status,
-      final int? timestamp}) = _$TaskDataImpl;
+  const factory _TaskData({
+    final String? title,
+    final String? assignee,
+    final String status,
+    final int? timestamp,
+  }) = _$TaskDataImpl;
 
   factory _TaskData.fromJson(Map<String, dynamic> json) =
       _$TaskDataImpl.fromJson;

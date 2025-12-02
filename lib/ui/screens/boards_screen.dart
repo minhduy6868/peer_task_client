@@ -646,7 +646,7 @@ class _BoardCardState extends State<_BoardCard> with SingleTickerProviderStateMi
                           overflow: TextOverflow.ellipsis,
                         ),
                       
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       
                       // Badges and date
                       Row(

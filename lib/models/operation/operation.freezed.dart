@@ -12,7 +12,8 @@ part of 'operation.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 Operation _$OperationFromJson(Map<String, dynamic> json) {
   return _Operation.fromJson(json);
@@ -42,13 +43,14 @@ abstract class $OperationCopyWith<$Res> {
   factory $OperationCopyWith(Operation value, $Res Function(Operation) then) =
       _$OperationCopyWithImpl<$Res, Operation>;
   @useResult
-  $Res call(
-      {String opId,
-      String actor,
-      int timestamp,
-      OperationType type,
-      Map<String, dynamic> payload,
-      bool applied});
+  $Res call({
+    String opId,
+    String actor,
+    int timestamp,
+    OperationType type,
+    Map<String, dynamic> payload,
+    bool applied,
+  });
 }
 
 /// @nodoc
@@ -73,32 +75,35 @@ class _$OperationCopyWithImpl<$Res, $Val extends Operation>
     Object? payload = null,
     Object? applied = null,
   }) {
-    return _then(_value.copyWith(
-      opId: null == opId
-          ? _value.opId
-          : opId // ignore: cast_nullable_to_non_nullable
-              as String,
-      actor: null == actor
-          ? _value.actor
-          : actor // ignore: cast_nullable_to_non_nullable
-              as String,
-      timestamp: null == timestamp
-          ? _value.timestamp
-          : timestamp // ignore: cast_nullable_to_non_nullable
-              as int,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as OperationType,
-      payload: null == payload
-          ? _value.payload
-          : payload // ignore: cast_nullable_to_non_nullable
-              as Map<String, dynamic>,
-      applied: null == applied
-          ? _value.applied
-          : applied // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            opId: null == opId
+                ? _value.opId
+                : opId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            actor: null == actor
+                ? _value.actor
+                : actor // ignore: cast_nullable_to_non_nullable
+                      as String,
+            timestamp: null == timestamp
+                ? _value.timestamp
+                : timestamp // ignore: cast_nullable_to_non_nullable
+                      as int,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as OperationType,
+            payload: null == payload
+                ? _value.payload
+                : payload // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>,
+            applied: null == applied
+                ? _value.applied
+                : applied // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -106,17 +111,19 @@ class _$OperationCopyWithImpl<$Res, $Val extends Operation>
 abstract class _$$OperationImplCopyWith<$Res>
     implements $OperationCopyWith<$Res> {
   factory _$$OperationImplCopyWith(
-          _$OperationImpl value, $Res Function(_$OperationImpl) then) =
-      __$$OperationImplCopyWithImpl<$Res>;
+    _$OperationImpl value,
+    $Res Function(_$OperationImpl) then,
+  ) = __$$OperationImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String opId,
-      String actor,
-      int timestamp,
-      OperationType type,
-      Map<String, dynamic> payload,
-      bool applied});
+  $Res call({
+    String opId,
+    String actor,
+    int timestamp,
+    OperationType type,
+    Map<String, dynamic> payload,
+    bool applied,
+  });
 }
 
 /// @nodoc
@@ -124,8 +131,9 @@ class __$$OperationImplCopyWithImpl<$Res>
     extends _$OperationCopyWithImpl<$Res, _$OperationImpl>
     implements _$$OperationImplCopyWith<$Res> {
   __$$OperationImplCopyWithImpl(
-      _$OperationImpl _value, $Res Function(_$OperationImpl) _then)
-      : super(_value, _then);
+    _$OperationImpl _value,
+    $Res Function(_$OperationImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of Operation
   /// with the given fields replaced by the non-null parameter values.
@@ -139,46 +147,48 @@ class __$$OperationImplCopyWithImpl<$Res>
     Object? payload = null,
     Object? applied = null,
   }) {
-    return _then(_$OperationImpl(
-      opId: null == opId
-          ? _value.opId
-          : opId // ignore: cast_nullable_to_non_nullable
-              as String,
-      actor: null == actor
-          ? _value.actor
-          : actor // ignore: cast_nullable_to_non_nullable
-              as String,
-      timestamp: null == timestamp
-          ? _value.timestamp
-          : timestamp // ignore: cast_nullable_to_non_nullable
-              as int,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as OperationType,
-      payload: null == payload
-          ? _value._payload
-          : payload // ignore: cast_nullable_to_non_nullable
-              as Map<String, dynamic>,
-      applied: null == applied
-          ? _value.applied
-          : applied // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$OperationImpl(
+        opId: null == opId
+            ? _value.opId
+            : opId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        actor: null == actor
+            ? _value.actor
+            : actor // ignore: cast_nullable_to_non_nullable
+                  as String,
+        timestamp: null == timestamp
+            ? _value.timestamp
+            : timestamp // ignore: cast_nullable_to_non_nullable
+                  as int,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as OperationType,
+        payload: null == payload
+            ? _value._payload
+            : payload // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>,
+        applied: null == applied
+            ? _value.applied
+            : applied // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$OperationImpl implements _Operation {
-  const _$OperationImpl(
-      {required this.opId,
-      required this.actor,
-      required this.timestamp,
-      required this.type,
-      required final Map<String, dynamic> payload,
-      this.applied = false})
-      : _payload = payload;
+  const _$OperationImpl({
+    required this.opId,
+    required this.actor,
+    required this.timestamp,
+    required this.type,
+    required final Map<String, dynamic> payload,
+    this.applied = false,
+  }) : _payload = payload;
 
   factory _$OperationImpl.fromJson(Map<String, dynamic> json) =>
       _$$OperationImplFromJson(json);
@@ -224,8 +234,15 @@ class _$OperationImpl implements _Operation {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, opId, actor, timestamp, type,
-      const DeepCollectionEquality().hash(_payload), applied);
+  int get hashCode => Object.hash(
+    runtimeType,
+    opId,
+    actor,
+    timestamp,
+    type,
+    const DeepCollectionEquality().hash(_payload),
+    applied,
+  );
 
   /// Create a copy of Operation
   /// with the given fields replaced by the non-null parameter values.
@@ -237,20 +254,19 @@ class _$OperationImpl implements _Operation {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$OperationImplToJson(
-      this,
-    );
+    return _$$OperationImplToJson(this);
   }
 }
 
 abstract class _Operation implements Operation {
-  const factory _Operation(
-      {required final String opId,
-      required final String actor,
-      required final int timestamp,
-      required final OperationType type,
-      required final Map<String, dynamic> payload,
-      final bool applied}) = _$OperationImpl;
+  const factory _Operation({
+    required final String opId,
+    required final String actor,
+    required final int timestamp,
+    required final OperationType type,
+    required final Map<String, dynamic> payload,
+    final bool applied,
+  }) = _$OperationImpl;
 
   factory _Operation.fromJson(Map<String, dynamic> json) =
       _$OperationImpl.fromJson;

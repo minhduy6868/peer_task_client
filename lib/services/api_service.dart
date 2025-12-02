@@ -895,6 +895,7 @@ class ApiService {
   Future<Map<String, dynamic>> moveTask({
     required String taskId,
     required String status,
+    String? boardId,
     int? position,
   }) async {
     final response = await http.post(
@@ -902,6 +903,7 @@ class ApiService {
       headers: _headers,
       body: json.encode({
         'status': status,
+        if (boardId != null) 'boardId': boardId,
         if (position != null) 'position': position,
       }),
     );

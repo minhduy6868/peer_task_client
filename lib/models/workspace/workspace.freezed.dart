@@ -12,7 +12,8 @@ part of 'workspace.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$Workspace {
@@ -35,13 +36,14 @@ abstract class $WorkspaceCopyWith<$Res> {
   factory $WorkspaceCopyWith(Workspace value, $Res Function(Workspace) then) =
       _$WorkspaceCopyWithImpl<$Res, Workspace>;
   @useResult
-  $Res call(
-      {String id,
-      String name,
-      String ownerId,
-      String? role,
-      DateTime? createdAt,
-      DateTime? updatedAt});
+  $Res call({
+    String id,
+    String name,
+    String ownerId,
+    String? role,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -66,32 +68,35 @@ class _$WorkspaceCopyWithImpl<$Res, $Val extends Workspace>
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      ownerId: null == ownerId
-          ? _value.ownerId
-          : ownerId // ignore: cast_nullable_to_non_nullable
-              as String,
-      role: freezed == role
-          ? _value.role
-          : role // ignore: cast_nullable_to_non_nullable
-              as String?,
-      createdAt: freezed == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            ownerId: null == ownerId
+                ? _value.ownerId
+                : ownerId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            role: freezed == role
+                ? _value.role
+                : role // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            createdAt: freezed == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            updatedAt: freezed == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -99,17 +104,19 @@ class _$WorkspaceCopyWithImpl<$Res, $Val extends Workspace>
 abstract class _$$WorkspaceImplCopyWith<$Res>
     implements $WorkspaceCopyWith<$Res> {
   factory _$$WorkspaceImplCopyWith(
-          _$WorkspaceImpl value, $Res Function(_$WorkspaceImpl) then) =
-      __$$WorkspaceImplCopyWithImpl<$Res>;
+    _$WorkspaceImpl value,
+    $Res Function(_$WorkspaceImpl) then,
+  ) = __$$WorkspaceImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String id,
-      String name,
-      String ownerId,
-      String? role,
-      DateTime? createdAt,
-      DateTime? updatedAt});
+  $Res call({
+    String id,
+    String name,
+    String ownerId,
+    String? role,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -117,8 +124,9 @@ class __$$WorkspaceImplCopyWithImpl<$Res>
     extends _$WorkspaceCopyWithImpl<$Res, _$WorkspaceImpl>
     implements _$$WorkspaceImplCopyWith<$Res> {
   __$$WorkspaceImplCopyWithImpl(
-      _$WorkspaceImpl _value, $Res Function(_$WorkspaceImpl) _then)
-      : super(_value, _then);
+    _$WorkspaceImpl _value,
+    $Res Function(_$WorkspaceImpl) _then,
+  ) : super(_value, _then);
 
   /// Create a copy of Workspace
   /// with the given fields replaced by the non-null parameter values.
@@ -132,45 +140,48 @@ class __$$WorkspaceImplCopyWithImpl<$Res>
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_$WorkspaceImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      ownerId: null == ownerId
-          ? _value.ownerId
-          : ownerId // ignore: cast_nullable_to_non_nullable
-              as String,
-      role: freezed == role
-          ? _value.role
-          : role // ignore: cast_nullable_to_non_nullable
-              as String?,
-      createdAt: freezed == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      updatedAt: freezed == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
+    return _then(
+      _$WorkspaceImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        ownerId: null == ownerId
+            ? _value.ownerId
+            : ownerId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        role: freezed == role
+            ? _value.role
+            : role // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        createdAt: freezed == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        updatedAt: freezed == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$WorkspaceImpl implements _Workspace {
-  const _$WorkspaceImpl(
-      {required this.id,
-      required this.name,
-      required this.ownerId,
-      this.role,
-      this.createdAt,
-      this.updatedAt});
+  const _$WorkspaceImpl({
+    required this.id,
+    required this.name,
+    required this.ownerId,
+    this.role,
+    this.createdAt,
+    this.updatedAt,
+  });
 
   @override
   final String id;
@@ -219,13 +230,14 @@ class _$WorkspaceImpl implements _Workspace {
 }
 
 abstract class _Workspace implements Workspace {
-  const factory _Workspace(
-      {required final String id,
-      required final String name,
-      required final String ownerId,
-      final String? role,
-      final DateTime? createdAt,
-      final DateTime? updatedAt}) = _$WorkspaceImpl;
+  const factory _Workspace({
+    required final String id,
+    required final String name,
+    required final String ownerId,
+    final String? role,
+    final DateTime? createdAt,
+    final DateTime? updatedAt,
+  }) = _$WorkspaceImpl;
 
   @override
   String get id;

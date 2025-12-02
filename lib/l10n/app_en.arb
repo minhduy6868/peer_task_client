@@ -313,5 +313,41 @@
   "join": "Join",
   "yourWorkspaces": "Your Workspaces",
   "selectWorkspace": "Select a workspace to continue",
-  "enterWorkspaceName": "Enter workspace name"
+  "enterWorkspaceName": "Enter workspace name",
+  
+  "taskCard": "Task Card",
+  "untitled": "Untitled",
+  "overdue": "Overdue",
+  "dueDate": "Due date",
+  "assignees": "Assignees",
+  "moreAssignees": "{count} more",
+  "@moreAssignees": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "move": "Move",
+  "moveTask": "Move Task",
+  "urgent": "Urgent",
+  "labels": "Labels",
+  "deadline": "Deadline",
+  "estimatedHours": "Estimated Hours",
+  "actualHours": "Actual Hours",
+  "createdBy": "Created by",
+  "updatedAt": "Updated at",
+  "createTask": "Create Task",
+  "editTask": "Edit Task",
+  "deleteTask": "Delete Task",
+  "deleteTaskConfirm": "Are you sure you want to delete this task?",
+  "todoColumn": "To Do",
+  "doingColumn": "Doing",
+  "doneColumn": "Done",
+  "taskCount": "{count} tasks",
+  "@taskCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noTasks": "No tasks yet",
+  "addFirstTask": "Add your first task to get started"
 }
