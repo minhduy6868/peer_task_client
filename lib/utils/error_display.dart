@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/api_error.dart';
 import '../ui/widgets/app_toast.dart';
-import '../l10n/app_localizations.dart';
 
 /// Utilities for displaying errors in UI
 class ErrorDisplay {

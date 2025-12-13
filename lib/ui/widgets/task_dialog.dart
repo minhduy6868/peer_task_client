@@ -107,7 +107,7 @@ class _TaskDialogState extends State<TaskDialog> {
               child: Row(
                 children: [
                   Icon(
-                    isEdit ? Icons.edit : Icons.add_task,
+                    isEdit ? Icons.edit_rounded : Icons.add_task_rounded,
                     color: Theme.of(context).primaryColor,
                   ),
                   const SizedBox(width: 12),
@@ -120,7 +120,7 @@ class _TaskDialogState extends State<TaskDialog> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -162,7 +162,7 @@ class _TaskDialogState extends State<TaskDialog> {
                           labelText: 'Description',
                           hintText: 'Add more details...',
                           border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.description),
+                          prefixIcon: Icon(Icons.description_rounded),
                         ),
                         maxLines: 3,
                       ),
@@ -226,7 +226,7 @@ class _TaskDialogState extends State<TaskDialog> {
                                 decoration: const InputDecoration(
                                   labelText: 'Deadline',
                                   border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.calendar_today),
+                                  prefixIcon: Icon(Icons.calendar_today_rounded),
                                 ),
                                 child: Text(
                                   _deadline != null
@@ -292,7 +292,7 @@ class _TaskDialogState extends State<TaskDialog> {
                           children: _labels.map((label) {
                             return Chip(
                               label: Text(label),
-                              deleteIcon: const Icon(Icons.close, size: 16),
+                              deleteIcon: const Icon(Icons.close_rounded, size: 16),
                               onDeleted: () {
                                 setState(() => _labels.remove(label));
                               },
@@ -324,7 +324,7 @@ class _TaskDialogState extends State<TaskDialog> {
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _handleSave,
-                    icon: Icon(isEdit ? Icons.save : Icons.add),
+                    icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
                     label: Text(isEdit ? 'Save' : 'Create'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -421,7 +421,7 @@ class _TaskDialogState extends State<TaskDialog> {
             decoration: const InputDecoration(
               hintText: 'Add a label',
               border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.label),
+              prefixIcon: Icon(Icons.label_rounded),
             ),
             onSubmitted: _addLabel,
           ),
@@ -429,7 +429,7 @@ class _TaskDialogState extends State<TaskDialog> {
         const SizedBox(width: 8),
         IconButton.filled(
           onPressed: () => _addLabel(_labelController.text),
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add_rounded),
         ),
       ],
     );

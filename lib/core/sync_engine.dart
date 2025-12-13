@@ -124,8 +124,9 @@ class SyncEngine {
     final objectType = operation.payload['type'] as String?;
     final canvasTypes = ['stroke', 'text', 'rectangle', 'circle', 'line', 'cursor'];
     
-    // Canvas objects are handled directly from operations
-    if (canvasTypes.contains(objectType)) {
+    // Canvas objects and tasks are handled directly from operations in UI
+    if (canvasTypes.contains(objectType) || objectType == 'task') {
+      // Still processed - callback will be called at the end of _applyOperation
       return;
     }
     
@@ -155,6 +156,14 @@ class SyncEngine {
 
   void _handleDeleteObject(Operation operation) {
     final objectId = operation.payload['id'] as String;
+    final objectType = operation.payload['type'] as String?;
+    
+    // Tasks and canvas objects are handled in UI - still allow operation to be applied
+    if (objectType == 'task' || objectType == 'stroke' || objectType == 'text') {
+      // Operation will still trigger onOperationApplied callback
+      return;
+    }
+    
     _objects.remove(objectId);
   }
 

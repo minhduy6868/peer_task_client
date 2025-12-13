@@ -7,6 +7,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     letterSpacing: -0.25,
     height: 1.2,
+    inherit: true,
   );
   
   static const displayMedium = TextStyle(
@@ -14,6 +15,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     letterSpacing: 0,
     height: 1.2,
+    inherit: true,
   );
   
   static const displaySmall = TextStyle(
@@ -21,6 +23,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     letterSpacing: 0,
     height: 1.2,
+    inherit: true,
   );
   
   // Headline styles
@@ -29,6 +32,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     letterSpacing: 0,
     height: 1.25,
+    inherit: true,
   );
   
   static const headlineMedium = TextStyle(
@@ -36,6 +40,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     letterSpacing: 0,
     height: 1.3,
+    inherit: true,
   );
   
   static const headlineSmall = TextStyle(
@@ -43,6 +48,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     letterSpacing: 0,
     height: 1.3,
+    inherit: true,
   );
   
   // Title styles
@@ -51,6 +57,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     letterSpacing: 0,
     height: 1.4,
+    inherit: true,
   );
   
   static const titleMedium = TextStyle(
@@ -58,6 +65,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.15,
     height: 1.5,
+    inherit: true,
   );
   
   static const titleSmall = TextStyle(
@@ -65,6 +73,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
     height: 1.4,
+    inherit: true,
   );
   
   // Body styles
@@ -73,6 +82,7 @@ class AppTextStyles {
     fontWeight: FontWeight.normal,
     letterSpacing: 0.5,
     height: 1.5,
+    inherit: true,
   );
   
   static const bodyMedium = TextStyle(
@@ -80,6 +90,7 @@ class AppTextStyles {
     fontWeight: FontWeight.normal,
     letterSpacing: 0.25,
     height: 1.5,
+    inherit: true,
   );
   
   static const bodySmall = TextStyle(
@@ -87,6 +98,7 @@ class AppTextStyles {
     fontWeight: FontWeight.normal,
     letterSpacing: 0.4,
     height: 1.5,
+    inherit: true,
   );
   
   // Label styles
@@ -95,6 +107,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
     height: 1.4,
+    inherit: true,
   );
   
   static const labelMedium = TextStyle(
@@ -102,6 +115,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
     height: 1.3,
+    inherit: true,
   );
   
   static const labelSmall = TextStyle(
@@ -109,5 +123,6 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
     height: 1.3,
+    inherit: true,
   );
 }

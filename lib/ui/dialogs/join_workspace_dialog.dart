@@ -45,7 +45,6 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
   Future<void> _joinWithLink() async {
     final token = _extractToken(_linkController.text);
     if (token == null || token.isEmpty) {
-      final l10n = AppLocalizations.of(context);
       context.showWarningMessage('Please enter a valid invite link');
       return;
     }
@@ -123,7 +122,7 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.green,
               tabs: const [
-                Tab(icon: Icon(Icons.link), text: 'Invite Link'),
+                Tab(icon: Icon(Icons.link_rounded), text: 'Invite Link'),
                 Tab(icon: Icon(Icons.qr_code_scanner), text: 'Scan QR'),
               ],
             ),

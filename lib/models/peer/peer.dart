@@ -9,6 +9,9 @@ class Peer with _$Peer {
     required String socketId,
     required String userId,
     @Default(false) bool connected,
+    String? userName,  // Tên hiển thị thật của người dùng
+    String? avatar,    // URL avatar
+    @Default(false) bool isMuted,  // Trạng thái mic
   }) = _Peer;
 
   factory Peer.fromJson(Map<String, dynamic> json) => _$PeerFromJson(json);

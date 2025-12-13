@@ -62,17 +62,26 @@ class MyApp extends ConsumerWidget {
     }
 
     final router = GoRouter(
+      initialLocation: '/',
       refreshListenable: _AuthStateNotifier(ref),
       redirect: (context, state) {
         final isAuthenticated = authState.isAuthenticated;
-        final isLoggingIn = state.matchedLocation == '/login';
+        final path = state.matchedLocation;
+        
+        // Allow public routes
+        if (path == '/login' || 
+            path == '/forgot-password' || 
+            path.startsWith('/reset-password')) {
+          return null;
+        }
 
-        if (!isAuthenticated && !isLoggingIn) {
+        // Require auth for other routes
+        if (!isAuthenticated) {
           return '/login';
         }
 
-        if (isAuthenticated && isLoggingIn) {
-          // Check if there's a last workspace to navigate to
+        // Redirect root to workspaces or last workspace
+        if (path == '/') {
           final storage = ref.read(storageServiceProvider);
           final lastWorkspaceId = storage.getLastWorkspace();
           if (lastWorkspaceId != null) {
@@ -86,18 +95,7 @@ class MyApp extends ConsumerWidget {
       routes: [
         GoRoute(
           path: '/',
-          redirect: (context, state) {
-            final isAuthenticated = authState.isAuthenticated;
-            if (isAuthenticated) {
-              final storage = ref.read(storageServiceProvider);
-              final lastWorkspaceId = storage.getLastWorkspace();
-              if (lastWorkspaceId != null) {
-                return '/workspace/$lastWorkspaceId/boards';
-              }
-              return '/workspaces';
-            }
-            return '/login';
-          },
+          builder: (context, state) => const WorkspaceSelectionScreen(),
         ),
         GoRoute(
           path: '/workspaces',

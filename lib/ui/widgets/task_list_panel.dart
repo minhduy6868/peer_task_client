@@ -42,7 +42,7 @@ class TaskListPanel extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.task_alt, color: Colors.white, size: 20),
+                const Icon(Icons.task_alt_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -55,7 +55,7 @@ class TaskListPanel extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+                  icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
                   onPressed: onAddTask,
                   tooltip: 'Add Task',
                 ),
@@ -241,7 +241,7 @@ class _TaskListItem extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const Icon(Icons.close_rounded, size: 18),
                     onPressed: onDelete,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),

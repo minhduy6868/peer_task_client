@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/models/board/board.dart';
 import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
+import '../theme/app_colors.dart';
 
 final workspaceBoardsProvider = FutureProvider.family<List<Board>, String>((ref, workspaceId) async {
   final api = ref.watch(apiServiceProvider);
@@ -74,7 +76,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
-                              Icons.add_circle_outline,
+                              Icons.add_circle_outline_rounded,
                               color: Colors.white,
                               size: MediaQuery.of(context).size.width > 600 ? 28 : 24,
                             ),
@@ -100,7 +102,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                         decoration: InputDecoration(
                           labelText: 'Board Name',
                           hintText: 'Enter a creative name...',
-                          prefixIcon: const Icon(Icons.label_outline, color: Color(0xFF667EEA)),
+                          prefixIcon: const Icon(Icons.label_outline_rounded, color: Color(0xFF667EEA)),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -201,64 +203,34 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('📋 My Boards', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        title: Text('My Boards', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        backgroundColor: AppColors.surface,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        scrolledUnderElevation: 1,
+        shadowColor: Colors.black.withOpacity(0.05),
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
+            onPressed: () {},
+            tooltip: 'Search boards',
           ),
-        ),
+          const SizedBox(width: 8),
+        ],
       ),
       floatingActionButton: canCreateBoard
-          ? MediaQuery.of(context).size.width > 600
-              ? FloatingActionButton.extended(
-                  onPressed: _showCreateBoardDialog,
-                  backgroundColor: const Color(0xFF667EEA),
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                  label: const Text('New Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  elevation: 8,
-                )
-              : FloatingActionButton(
-                  onPressed: _showCreateBoardDialog,
-                  backgroundColor: const Color(0xFF667EEA),
-                  child: const Icon(Icons.add, color: Colors.white),
-                  elevation: 8,
-                )
+          ? FloatingActionButton.extended(
+              onPressed: _showCreateBoardDialog,
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: const Text('New Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              elevation: 2,
+            )
           : null,
       body: boardsAsync.when(
-        loading: () => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF667EEA).withOpacity(0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Color(0xFF667EEA)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text('Loading boards...', style: TextStyle(fontSize: 16, color: Colors.grey)),
-            ],
-          ),
-        ),
+        loading: () => _buildLoadingSkeleton(context),
         error: (error, stack) => Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 32 : 16),
@@ -279,7 +251,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.red),
+                  Icon(Icons.error_outline_rounded, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.red),
                   SizedBox(height: MediaQuery.of(context).size.width > 600 ? 16 : 12),
                   Text('Oops! Something went wrong', 
                     style: TextStyle(fontSize: MediaQuery.of(context).size.width > 600 ? 18 : 16, fontWeight: FontWeight.bold),
@@ -344,7 +316,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                           ),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.dashboard_customize, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.white),
+                        child: Icon(Icons.dashboard_customize_rounded, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.white),
                       ),
                       SizedBox(height: MediaQuery.of(context).size.width > 600 ? 24 : 16),
                       Text(
@@ -376,7 +348,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 8,
                           ),
-                          icon: Icon(Icons.add_circle_outline, size: MediaQuery.of(context).size.width > 600 ? 24 : 20),
+                          icon: Icon(Icons.add_circle_outline_rounded, size: MediaQuery.of(context).size.width > 600 ? 24 : 20),
                           label: Text('Create Board', style: TextStyle(fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14, fontWeight: FontWeight.bold)),
                         ),
                       ],
@@ -466,20 +438,44 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
     );
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final now = DateTime.now();
-    final diff = now.difference(date);
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    final isLargeScreen = MediaQuery.of(context).size.width > 600;
+    final padding = isLargeScreen ? 24.0 : 16.0;
 
-    if (diff.inDays > 7) {
-      return '${date.day}/${date.month}/${date.year}';
-    } else if (diff.inDays > 0) {
-      return '${diff.inDays}d ago';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours}h ago';
-    } else {
-      return 'just now';
-    }
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(padding),
+            sliver: SliverToBoxAdapter(
+              child: Container(width: 150, height: 28, color: Colors.white),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: padding),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: isLargeScreen ? 350 : double.infinity,
+                crossAxisSpacing: isLargeScreen ? 20 : 16,
+                mainAxisSpacing: isLargeScreen ? 20 : 16,
+                childAspectRatio: isLargeScreen ? 1.4 : 1.3,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                childCount: 6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -500,224 +496,115 @@ class _BoardCard extends StatefulWidget {
   State<_BoardCard> createState() => _BoardCardState();
 }
 
-class _BoardCardState extends State<_BoardCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+class _BoardCardState extends State<_BoardCard> {
   bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) {
-        setState(() => _isHovered = true);
-        _controller.forward();
-      },
-      onExit: (_) {
-        setState(() => _isHovered = false);
-        _controller.reverse();
-      },
-      child: ScaleTransition(
-        scale: _scaleAnimation,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
         child: GestureDetector(
           onTap: widget.onTap,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: widget.gradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: widget.gradient[0].withOpacity(_isHovered ? 0.5 : 0.3),
-                  blurRadius: _isHovered ? 25 : 15,
-                  spreadRadius: _isHovered ? 3 : 0,
-                  offset: const Offset(0, 8),
+                  color: _isHovered 
+                      ? AppColors.primary.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: _isHovered ? 12 : 6,
+                  offset: Offset(0, _isHovered ? 4 : 2),
                 ),
               ],
             ),
-            child: Stack(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Decorative circles
-                Positioned(
-                  top: -20,
-                  right: -20,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -30,
-                  left: -30,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                
-                // Settings button
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: widget.onSettings,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.settings, color: Colors.white, size: 20),
+                // Header with icon and settings
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.dashboard_rounded,
+                        color: AppColors.primary,
+                        size: 24,
                       ),
                     ),
-                  ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+                      onPressed: widget.onSettings,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      iconSize: 20,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
                 
-                // Content
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Board name
+                Text(
+                  widget.board.name,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                
+                // Description or placeholder
+                Text(
+                  widget.board.description?.isNotEmpty == true
+                      ? widget.board.description!
+                      : 'No description',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                
+                // Footer with date
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Board icon
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.dashboard_customize, color: Colors.white, size: 32),
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: AppColors.textSecondary,
                       ),
-                      const SizedBox(height: 12),
-                      
-                      // Board name
+                      const SizedBox(width: 4),
                       Text(
-                        widget.board.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        _formatDate(widget.board.updatedAt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Description
-                      if (widget.board.description != null && widget.board.description!.isNotEmpty)
-                        Text(
-                          widget.board.description!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      
-                      const SizedBox(height: 12),
-                      
-                      // Badges and date
-                      Row(
-                        children: [
-                          if (widget.board.isBoardOwner == true)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.star, size: 14, color: Colors.white),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    'Owner',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if (widget.board.isBoardOwner == true && widget.board.permission != null)
-                            const SizedBox(width: 6),
-                          if (widget.board.permission != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    widget.board.permission == 'edit' ? Icons.edit : Icons.visibility,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    widget.board.permission == 'edit' ? 'Editor' : 'Viewer',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.access_time, size: 14, color: Colors.white.withOpacity(0.8)),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatDate(widget.board.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),

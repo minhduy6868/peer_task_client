@@ -454,6 +454,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  textStyle: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -469,12 +475,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       )
                                     : Text(
                                         _isRegisterMode ? l10n.signUp : l10n.signIn,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
-                                        ),
                                       ),
                               ),
                             ),
@@ -504,52 +504,99 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      // TODO: Google login
-                                    },
+                                    onPressed: null, // Disabled for now
                                     style: OutlinedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(vertical: 14),
                                       side: BorderSide(color: Colors.grey.shade300),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ),
-                                    icon: Icon(Icons.g_mobiledata, color: AppColors.textPrimary, size: 24),
-                                    label: Text(
-                                      l10n.google,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                      foregroundColor: AppColors.textPrimary,
+                                      textStyle: const TextStyle(
+                                        inherit: true,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
+                                    icon: Icon(Icons.g_mobiledata, color: AppColors.textPrimary, size: 24),
+                                    label: Text(l10n.google),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      // TODO: Facebook login
-                                    },
+                                    onPressed: null, // Disabled for now
                                     style: OutlinedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(vertical: 14),
                                       side: BorderSide(color: Colors.grey.shade300),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ),
-                                    icon: Icon(Icons.facebook, color: AppColors.textPrimary, size: 20),
-                                    label: Text(
-                                      l10n.facebook,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                      foregroundColor: AppColors.textPrimary,
+                                      textStyle: const TextStyle(
+                                        inherit: true,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
+                                    icon: Icon(Icons.facebook, color: AppColors.textPrimary, size: 20),
+                                    label: const Text('Facebook'),
                                   ),
                                 ),
                               ],
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Divider
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(child: Divider(color: AppColors.border)),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'OR',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: AppColors.border)),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Continue Offline Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: OutlinedButton.icon(
+                                onPressed: authState.isLoading
+                                    ? null
+                                    : () {
+                                        context.go('/offline-board');
+                                      },
+                                icon: const Icon(Icons.offline_bolt_rounded),
+                                label: Text(
+                                  'Continue Offline',
+                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.secondary,
+                                  side: BorderSide(color: AppColors.secondary, width: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
                             ),
                             
                             const SizedBox(height: 24),
@@ -574,14 +621,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             _formKey.currentState?.reset();
                                           });
                                         },
-                                  child: Text(
-                                    _isRegisterMode ? l10n.signIn : l10n.signUp,
-                                    style: TextStyle(
+                                  style: TextButton.styleFrom(
+                                    textStyle: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
                                     ),
+                                    foregroundColor: AppColors.primary,
+                                    disabledForegroundColor: AppColors.textTertiary,
                                   ),
+                                  child: Text(_isRegisterMode ? l10n.signIn : l10n.signUp),
                                 ),
                               ],
                             ),

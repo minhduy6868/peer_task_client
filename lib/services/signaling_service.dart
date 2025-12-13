@@ -16,6 +16,7 @@ class SignalingService {
   final Function(Peer)? onPeerLeft;
   final Function(String from, Map<String, dynamic> signal)? onSignal;
   final Function()? onReconnected;
+  final Function(String socketId, bool isMuted)? onPeerMicUpdated;
 
   SignalingService({
     required this.serverUrl,
@@ -24,6 +25,7 @@ class SignalingService {
     this.onPeerLeft,
     this.onSignal,
     this.onReconnected,
+    this.onPeerMicUpdated,
   });
 
   void connect(String token) {
@@ -89,6 +91,13 @@ class SignalingService {
       onSignal?.call(data['from'] as String, data['signal'] as Map<String, dynamic>);
     });
 
+    _socket!.on('peer_mic_updated', (data) {
+      debugPrint('📥 Peer mic updated: $data');
+      final socketId = data['socketId'] as String;
+      final isMuted = data['isMuted'] as bool;
+      onPeerMicUpdated?.call(socketId, isMuted);
+    });
+
     _socket!.on('error', (error) {
       debugPrint('❌ Signaling error: $error');
     });
@@ -129,6 +138,18 @@ class SignalingService {
       'signal': signal,
     });
     debugPrint('📤 Sent signal to $to');
+  }
+
+  void updateMicStatus(bool isMuted) {
+    if (_socket == null || !_socket!.connected) {
+      debugPrint('❌ Cannot update mic status: not connected');
+      return;
+    }
+
+    _socket!.emit('update_mic_status', {
+      'isMuted': isMuted,
+    });
+    debugPrint('📤 Updated mic status: ${isMuted ? 'muted' : 'unmuted'}');
   }
 
   void disconnect() {

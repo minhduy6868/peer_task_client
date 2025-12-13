@@ -64,13 +64,13 @@ class AppToast {
   static IconData _getIcon(ToastType type) {
     switch (type) {
       case ToastType.success:
-        return Icons.check_circle;
+        return Icons.check_circle_rounded;
       case ToastType.error:
-        return Icons.error;
+        return Icons.error_rounded;
       case ToastType.warning:
-        return Icons.warning;
+        return Icons.warning_rounded;
       case ToastType.info:
-        return Icons.info;
+        return Icons.info_rounded;
     }
   }
 }

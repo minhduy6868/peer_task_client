@@ -208,6 +208,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Clear auth state
     state = AuthState();
   }
+
+  Future<void> refreshUser() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final userInfo = await api.getCurrentUser();
+      final user = User.fromJson(userInfo);
+      
+      final storage = ref.read(storageServiceProvider);
+      await storage.saveUser(userInfo);
+      
+      state = state.copyWith(user: user);
+    } catch (e) {
+      debugPrint('Error refreshing user: $e');
+      rethrow;
+    }
+  }
 }
 
 // Workspaces
@@ -306,6 +322,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   SignalingService? _signaling;
   WebRTCService? _webrtc;
   SyncEngine? _syncEngine;
+  String? _currentBoardId;
 
   WhiteboardNotifier(this.ref) : super(WhiteboardState());
 
@@ -333,6 +350,17 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     String boardId, [
     void Function(Operation)? onRemoteOperation,
   ]) async {
+    // Disconnect from previous board if connected
+    if (_currentBoardId != null && _currentBoardId != boardId) {
+      debugPrint('🔄 Switching from board $_currentBoardId to $boardId');
+      disconnect();
+    } else if (_currentBoardId == boardId && state.isConnected) {
+      debugPrint('⚠️  Already connected to board $boardId, skipping reconnect');
+      return;
+    }
+
+    _currentBoardId = boardId;
+    
     final authState = ref.read(authStateProvider);
     if (!authState.isAuthenticated || authState.accessToken == null) {
       throw Exception('Not authenticated');
@@ -340,6 +368,8 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
     final api = ref.read(apiServiceProvider);
     String? _boardId = boardId; // Store boardId for callbacks
+
+    debugPrint('🚀 Connecting to board: $boardId');
 
     // Initialize sync engine
     _syncEngine = SyncEngine(
@@ -438,6 +468,17 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         _webrtc!.handleSignal(from, signal, (responseSignal) {
           _signaling!.sendSignal(from, responseSignal);
         });
+      },
+      onPeerMicUpdated: (socketId, isMuted) {
+        debugPrint('🎤 Peer $socketId mic updated: ${isMuted ? 'muted' : 'unmuted'}');
+        // Update peer state
+        final updatedPeers = state.peers.map((peer) {
+          if (peer.socketId == socketId) {
+            return peer.copyWith(isMuted: isMuted);
+          }
+          return peer;
+        }).toList();
+        state = state.copyWith(peers: updatedPeers);
       },
       onReconnected: () async {
         // When reconnected, sync operations from backend
@@ -596,9 +637,19 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     state = state.copyWith(pan: pan);
   }
 
+  void updateMicStatus(bool isMuted) {
+    debugPrint('🎤 Updating my mic status: ${isMuted ? 'muted' : 'unmuted'}');
+    _signaling?.updateMicStatus(isMuted);
+  }
+
   void disconnect() {
+    debugPrint('🔌 Disconnecting from board: $_currentBoardId');
     _signaling?.disconnect();
     _webrtc?.closeAllConnections();
+    _syncEngine = null;
+    _signaling = null;
+    _webrtc = null;
+    _currentBoardId = null;
     state = WhiteboardState();
   }
 

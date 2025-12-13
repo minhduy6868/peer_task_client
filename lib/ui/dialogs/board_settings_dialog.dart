@@ -34,7 +34,7 @@ class _BoardSettingsDialogState extends ConsumerState<BoardSettingsDialog> {
           children: [
             Row(
               children: [
-                const Icon(Icons.settings),
+                const Icon(Icons.settings_rounded),
                 const SizedBox(width: 8),
                 Text(
                   'Board Settings',
@@ -172,7 +172,6 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 }
               } catch (e) {
                 if (mounted) {
-                  final l10n = AppLocalizations.of(context)!;
                   context.showErrorSnackBar(e);
                 }
               }
@@ -228,7 +227,6 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 }
               } catch (e) {
                 if (mounted) {
-                  final l10n = AppLocalizations.of(context)!;
                   context.showErrorSnackBar(e);
                 }
               }
@@ -279,7 +277,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -299,7 +296,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -317,7 +313,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
           padding: const EdgeInsets.all(16),
           child: ElevatedButton.icon(
             onPressed: _workspaceId != null ? _showAddMemberDialog : null,
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(Icons.person_add_rounded),
             label: const Text('Add Collaborator'),
           ),
         ),
@@ -459,7 +455,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -518,7 +513,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       if (mounted) Navigator.pop(context);
       
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -539,7 +533,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -559,7 +552,6 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         context.showErrorSnackBar(e);
       }
     }
@@ -677,7 +669,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 const ButtonSegment(
                   value: 'view',
                   label: Text('View Only'),
-                  icon: Icon(Icons.visibility),
+                  icon: Icon(Icons.visibility_rounded),
                 ),
                 ButtonSegment(
                   value: 'edit',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/error_display.dart';
@@ -52,7 +53,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              prefixIcon: const Icon(Icons.workspaces),
+              prefixIcon: const Icon(Icons.workspaces_rounded),
             ),
             validator: ValidatorsL10n.workspaceName(context),
             autofocus: true,
@@ -121,245 +122,446 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.selectWorkspace),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: workspacesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-              const SizedBox(height: 16),
-              Text('${l10n.error}: $error'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(workspacesProvider),
-                child: Text(l10n.loading),
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          // Modern App Bar
+          SliverAppBar.large(
+            expandedHeight: 160,
+            pinned: true,
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                l10n.selectWorkspace,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.accent.withOpacity(0.05),
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.workspaces_rounded,
+                    size: 60,
+                    color: AppColors.primary.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout_rounded),
+                tooltip: 'Logout',
+                onPressed: () {
+                  ref.read(authStateProvider.notifier).logout();
+                  context.go('/login');
+                },
               ),
             ],
           ),
-        ),
-        data: (workspaces) {
-          if (workspaces.isEmpty) {
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32),
+          
+          // Content
+          workspacesAsync.when(
+            loading: () => SliverToBoxAdapter(
+              child: _buildLoadingSkeleton(),
+            ),
+            error: (error, stack) => SliverFillRemaining(
+              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 120,
-                      height: 120,
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        gradient: AppColors.gradientPrimary,
+                        color: AppColors.errorLight.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.workspaces,
-                        size: 60,
-                        color: Colors.white,
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        size: 64,
+                        color: AppColors.error,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     Text(
-                      l10n.welcome,
-                      style: AppTextStyles.headlineMedium,
-                      textAlign: TextAlign.center,
+                      '${l10n.error}!',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Text(
-                      l10n.createOrJoinWorkspace,
-                      style: AppTextStyles.bodyMedium.copyWith(
+                      error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: _showCreateWorkspaceDialog,
-                      icon: const Icon(Icons.add),
-                      label: Text(l10n.createWorkspace),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: _showJoinWorkspaceDialog,
-                      icon: const Icon(Icons.login),
-                      label: Text(l10n.joinWorkspace),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        side: const BorderSide(color: AppColors.primary, width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+                      onPressed: () => ref.invalidate(workspacesProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l10n.loading),
                     ),
                   ],
                 ),
               ),
-            );
-          }
-
-          return Column(
-            children: [
-              // Header with actions
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.yourWorkspaces,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
+            ),
+            data: (workspaces) {
+              if (workspaces.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _showCreateWorkspaceDialog,
-                              icon: const Icon(Icons.add, size: 20),
-                              label: Text(l10n.create),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColors.primary,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
+                          Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.gradientPrimary,
+                              shape: BoxShape.circle,
+                              boxShadow: AppColors.elegantCardShadow,
+                            ),
+                            child: const Icon(
+                              Icons.workspaces_rounded,
+                              size: 70,
+                              color: Colors.white,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _showJoinWorkspaceDialog,
-                              icon: const Icon(Icons.login, size: 20),
-                              label: Text(l10n.join),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white, width: 2),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
+                          const SizedBox(height: 40),
+                          Text(
+                            l10n.welcome,
+                            style: AppTextStyles.headlineMedium.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Workspace list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: workspaces.length,
-                  itemBuilder: (context, index) {
-                    final workspace = workspaces[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: InkWell(
-                        onTap: () async {
-                          final storage = ref.read(storageServiceProvider);
-                          await storage.saveLastWorkspace(workspace.id);
-                          context.go('/workspace/${workspace.id}/boards');
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.createOrJoinWorkspace,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 48),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.gradientPrimary,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    workspace.name.substring(0, 1).toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              ElevatedButton.icon(
+                                onPressed: _showCreateWorkspaceDialog,
+                                icon: const Icon(Icons.add_rounded, size: 22),
+                                label: Text(l10n.createWorkspace),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                    vertical: 18,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      workspace.name,
-                                      style: AppTextStyles.titleMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${l10n.role}: ${_getRoleDisplay(workspace.role)}',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
+                              OutlinedButton.icon(
+                                onPressed: _showJoinWorkspaceDialog,
+                                icon: const Icon(Icons.group_add_rounded, size: 22),
+                                label: Text(l10n.joinWorkspace),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                    vertical: 18,
+                                  ),
                                 ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.grey[400],
-                                size: 20,
                               ),
                             ],
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.all(20),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 380,
+                    childAspectRatio: 1.5,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final workspace = workspaces[index];
+                      return _buildWorkspaceCard(workspace);
+                    },
+                    childCount: workspaces.length,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'join',
+            onPressed: _showJoinWorkspaceDialog,
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.primary,
+            icon: const Icon(Icons.group_add_rounded),
+            label: Text(l10n.joinWorkspace),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'create',
+            onPressed: _showCreateWorkspaceDialog,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(l10n.createWorkspace),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceCard(workspace) {
+    final gradientIndex = workspace.name.hashCode % AppColors.boardGradients.length;
+    final gradient = AppColors.boardGradients[gradientIndex];
+    
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: AppColors.border.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () async {
+          final storage = ref.read(storageServiceProvider);
+          await storage.saveLastWorkspace(workspace.id);
+          context.go('/workspace/${workspace.id}/boards');
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                AppColors.surfaceLight,
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: gradient,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          workspace.name.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getRoleIcon(workspace.role),
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getRoleDisplay(workspace.role),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const Spacer(),
+                Text(
+                  workspace.name,
+                  style: AppTextStyles.titleLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Open workspace',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getRoleIcon(String? role) {
+    switch (role) {
+      case 'owner':
+        return Icons.admin_panel_settings_rounded;
+      case 'editor':
+        return Icons.edit_rounded;
+      case 'viewer':
+        return Icons.visibility_rounded;
+      default:
+        return Icons.person_rounded;
+    }
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 380,
+            childAspectRatio: 1.5,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: 6,
+          itemBuilder: (context, index) => Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 60,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: double.infinity,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 100,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
       ),
     );
   }

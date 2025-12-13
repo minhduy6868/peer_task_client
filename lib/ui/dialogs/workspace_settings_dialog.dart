@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
-
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../../utils/error_display.dart';
 
 class WorkspaceSettingsDialog extends ConsumerStatefulWidget {
@@ -39,7 +40,7 @@ class _WorkspaceSettingsDialogState extends ConsumerState<WorkspaceSettingsDialo
           children: [
             Row(
               children: [
-                const Icon(Icons.settings),
+                const Icon(Icons.settings_rounded),
                 const SizedBox(width: 8),
                 Text(
                   l10n.workspaceSettings,
@@ -47,7 +48,7 @@ class _WorkspaceSettingsDialogState extends ConsumerState<WorkspaceSettingsDialo
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -64,7 +65,7 @@ class _WorkspaceSettingsDialogState extends ConsumerState<WorkspaceSettingsDialo
                     labelType: NavigationRailLabelType.all,
                     destinations: [
                       NavigationRailDestination(
-                        icon: const Icon(Icons.info_outline),
+                        icon: const Icon(Icons.info_outline_rounded),
                         label: Text(l10n.general),
                       ),
                       NavigationRailDestination(
@@ -72,7 +73,7 @@ class _WorkspaceSettingsDialogState extends ConsumerState<WorkspaceSettingsDialo
                         label: Text(l10n.members),
                       ),
                       NavigationRailDestination(
-                        icon: const Icon(Icons.link),
+                        icon: const Icon(Icons.link_rounded),
                         label: Text(l10n.invites),
                       ),
                     ],
@@ -185,7 +186,7 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                 }
               }
             },
-            icon: const Icon(Icons.save),
+            icon: const Icon(Icons.save_rounded),
             label: Text(l10n.saveChanges),
           ),
           const SizedBox(height: 24),
@@ -329,7 +330,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
                 final l10n = AppLocalizations.of(context)!;
                 context.showInfoMessage(l10n.useInviteLinkToAdd);
               },
-              icon: const Icon(Icons.person_add),
+              icon: const Icon(Icons.person_add_rounded),
               label: Text(l10n.addMember),
             ),
           ),
@@ -587,123 +588,279 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
           context: context,
           builder: (dialogContext) {
             final inviteL10n = AppLocalizations.of(dialogContext)!;
-            return AlertDialog(
-              title: Text(inviteL10n.inviteCodeCreated),
-              content: SizedBox(
-                width: 320,
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.surface,
+                      AppColors.surface.withOpacity(0.95),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (token.isNotEmpty) ...[
-                      // Instructions
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientPrimary,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.link_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    inviteL10n.shareCodeToInvite,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
+                                Text(
+                                  inviteL10n.inviteCodeCreated,
+                                  style: AppTextStyles.headlineSmall.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  inviteL10n.shareCodeToInvite,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Content
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (token.isNotEmpty) ...[
+                            // Info Banner
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.info.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.info.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                    color: AppColors.info,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      inviteL10n.scanQROrCopy,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.info,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // QR Code
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: QrImageView(
+                                  data: token,
+                                  version: QrVersions.auto,
+                                  size: 220.0,
+                                  backgroundColor: Colors.white,
+                                  eyeStyle: QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: AppColors.primary,
+                                  ),
+                                  dataModuleStyle: QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Divider
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(
+                                    color: AppColors.border,
+                                    thickness: 1,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'OR',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(
+                                    color: AppColors.border,
+                                    thickness: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Token text
                             Text(
-                              inviteL10n.scanQROrCopy,
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              'Invite Code:',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.05),
+                                    AppColors.secondary.withOpacity(0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: SelectableText(
+                                token,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontFamily: 'monospace',
+                                  letterSpacing: 1,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Copy button with gradient
+                            Container(
+                              height: 52,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.gradientPrimary,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: token));
+                                  final inviteL10n = AppLocalizations.of(dialogContext)!;
+                                  ErrorHandler.showSuccess(dialogContext, inviteL10n.codeCopied);
+                                },
+                                icon: const Icon(Icons.copy_all_rounded, color: Colors.white),
+                                label: Text(
+                                  inviteL10n.copyCode,
+                                  style: AppTextStyles.labelLarge.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Close button
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              child: Text(
+                                inviteL10n.close,
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                    
-                    // QR Code
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300, width: 2),
-                        ),
-                        child: QrImageView(
-                          data: token,
-                          version: QrVersions.auto,
-                          size: 200.0,
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // Token text
-                    Text(
-                      'Invite Code:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: SelectableText(
-                        token,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
-                          letterSpacing: 0.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Copy button
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: token));
-                          final inviteL10n = AppLocalizations.of(dialogContext)!;
-                          ErrorHandler.showSuccess(dialogContext, inviteL10n.codeCopied);
-                        },
-                        icon: const Icon(Icons.copy),
-                        label: Text(inviteL10n.copyCode),
-                        style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        ],
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(inviteL10n.close),
-              ),
-            ],
-          );
-        },
+            );
+          },
         );
       }
     } catch (e) {
@@ -711,6 +868,287 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
         context.showErrorSnackBar(e);
       }
     }
+  }
+
+  void _showInviteDetails(String inviteId) {
+    if (!mounted) return;
+    
+    final inviteL10n = AppLocalizations.of(context)!;
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.surface,
+                  AppColors.surface.withOpacity(0.95),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.gradientPrimary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.link_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Invite Link',
+                              style: AppTextStyles.headlineSmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              inviteL10n.shareCodeToInvite,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Info Banner
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.info.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.info.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.qr_code_scanner_rounded,
+                              color: AppColors.info,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                inviteL10n.scanQROrCopy,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.info,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // QR Code
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.1),
+                              width: 2,
+                            ),
+                          ),
+                          child: QrImageView(
+                            data: inviteId,
+                            version: QrVersions.auto,
+                            size: 220.0,
+                            backgroundColor: Colors.white,
+                            eyeStyle: QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: AppColors.primary,
+                            ),
+                            dataModuleStyle: QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Divider
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: AppColors.border,
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: AppColors.border,
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Token text
+                      Text(
+                        'Invite Code:',
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary.withOpacity(0.05),
+                              AppColors.secondary.withOpacity(0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: SelectableText(
+                          inviteId,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontFamily: 'monospace',
+                            letterSpacing: 1,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Copy button with gradient
+                      Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.gradientPrimary,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: inviteId));
+                            ErrorHandler.showSuccess(dialogContext, inviteL10n.codeCopied);
+                          },
+                          icon: const Icon(Icons.copy_all_rounded, color: Colors.white),
+                          label: Text(
+                            inviteL10n.copyCode,
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Close button
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          inviteL10n.close,
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -734,8 +1172,27 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
           ),
         Expanded(
           child: _invites.isEmpty
-              ? Center(child: Text(l10n.noActiveInvites))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.link_off_rounded,
+                        size: 64,
+                        color: AppColors.textSecondary.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.noActiveInvites,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: _invites.length,
                   itemBuilder: (context, index) {
                     final invite = _invites[index];
@@ -744,50 +1201,179 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                     final isExpired = expiresAt.isBefore(DateTime.now());
                     final inviteId = invite['id']?.toString() ?? 'unknown';
                     final inviteCode = inviteId.length > 8 ? inviteId.substring(0, 8) : inviteId;
+                    final uses = invite['uses']?.toString() ?? '0';
+                    final maxUses = invite['max_uses']?.toString() ?? '0';
 
-                    return ListTile(
-                      leading: Icon(
-                        Icons.link,
-                        color: isExpired ? Colors.grey : Colors.blue,
-                      ),
-                      title: Text('${l10n.invite} #$inviteCode'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${l10n.uses}: ${invite['uses']}/${invite['max_uses']}'),
-                          Text(
-                            isExpired
-                                ? l10n.expired
-                                : '${l10n.expires}: ${_formatDate(expiresAt)}',
-                            style: TextStyle(
-                              color: isExpired ? Colors.red : null,
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isExpired 
+                                ? AppColors.error.withOpacity(0.3)
+                                : AppColors.primary.withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: isExpired ? null : () => _showInviteDetails(inviteId),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  // Icon
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      gradient: isExpired 
+                                          ? LinearGradient(
+                                              colors: [
+                                                AppColors.error.withOpacity(0.2),
+                                                AppColors.error.withOpacity(0.1),
+                                              ],
+                                            )
+                                          : AppColors.gradientPrimary,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      isExpired ? Icons.link_off_rounded : Icons.link_rounded,
+                                      color: isExpired ? AppColors.error : Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  
+                                  // Info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '${l10n.invite} #$inviteCode',
+                                              style: AppTextStyles.titleMedium.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: isExpired 
+                                                    ? AppColors.textSecondary
+                                                    : AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            if (isExpired) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.error.withOpacity(0.2),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  l10n.expired,
+                                                  style: AppTextStyles.labelSmall.copyWith(
+                                                    color: AppColors.error,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.people_outline_rounded,
+                                              size: 16,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Uses: $uses/$maxUses',
+                                              style: AppTextStyles.bodySmall.copyWith(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              size: 16,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              isExpired
+                                                  ? l10n.expired
+                                                  : 'Expires: ${_formatDate(expiresAt)}',
+                                              style: AppTextStyles.bodySmall.copyWith(
+                                                color: isExpired 
+                                                    ? AppColors.error
+                                                    : AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Actions
+                                  if (_canManageInvites) ...[
+                                    if (!isExpired)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.qr_code_rounded,
+                                          color: AppColors.primary,
+                                        ),
+                                        tooltip: 'View QR Code',
+                                        onPressed: () => _showInviteDetails(inviteId),
+                                      ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: AppColors.error,
+                                      ),
+                                      tooltip: 'Delete',
+                                      onPressed: () async {
+                                        try {
+                                          final api = ref.read(apiServiceProvider);
+                                          await api.revokeInviteLink(
+                                            workspaceId: widget.workspaceId,
+                                            inviteId: invite['id'],
+                                          );
+                                          await _loadInvites();
+                                          if (mounted) {
+                                            final l10nMsg = AppLocalizations.of(context)!;
+                                            context.showSuccessMessage(l10nMsg.inviteRevoked);
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            context.showErrorSnackBar(e);
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                      trailing: _canManageInvites
-                          ? IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () async {
-                                try {
-                                  final api = ref.read(apiServiceProvider);
-                                  await api.revokeInviteLink(
-                                    workspaceId: widget.workspaceId,
-                                    inviteId: invite['id'],
-                                  );
-                                  await _loadInvites();
-                                  if (mounted) {
-                                    final l10nMsg = AppLocalizations.of(context)!;
-                                    context.showSuccessMessage(l10nMsg.inviteRevoked);
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    context.showErrorSnackBar(e);
-                                  }
-                                }
-                              },
-                            )
-                          : null,
                     );
                   },
                 ),

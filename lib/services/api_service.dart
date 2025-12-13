@@ -241,6 +241,22 @@ class ApiService {
     ));
   }
 
+  Future<http.Response> _post(String endpoint, Map<String, dynamic> body) async {
+    return _requestWithRetry(() => http.post(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+      body: json.encode(body),
+    ));
+  }
+
+  Future<http.Response> _put(String endpoint, Map<String, dynamic> body) async {
+    return _requestWithRetry(() => http.put(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+      body: json.encode(body),
+    ));
+  }
+
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
@@ -335,6 +351,29 @@ class ApiService {
   Future<Map<String, dynamic>> getCurrentUser() async {
     final response = await _get('/auth/me');
     return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    String? name,
+    String? avatar,
+  }) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (avatar != null) body['avatar'] = avatar;
+
+    final response = await _put('/auth/profile', body);
+    return _handleResponse(response);
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _post('/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+    _handleResponse(response, expectData: false);
   }
 
   Future<void> forgotPassword({required String email}) async {

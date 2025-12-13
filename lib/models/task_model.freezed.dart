@@ -345,16 +345,16 @@ class _$TaskModelImpl implements _TaskModel {
     required this.boardId,
     required this.title,
     this.description,
-    this.status = 'todo',
-    this.priority = 'medium',
-    final List<String> assignees = const [],
-    final List<AssigneeInfo> assigneeList = const [],
-    final List<String> labels = const [],
+    required this.status,
+    required this.priority,
+    required final List<String> assignees,
+    required final List<AssigneeInfo> assigneeList,
+    required final List<String> labels,
     this.deadline,
     this.estimatedHours,
     this.actualHours,
     this.parentId,
-    this.position = 0,
+    required this.position,
     required this.createdBy,
     this.creatorName,
     required this.createdAt,
@@ -375,17 +375,14 @@ class _$TaskModelImpl implements _TaskModel {
   @override
   final String? description;
   @override
-  @JsonKey()
   final String status;
   // 'todo', 'doing', 'done'
   @override
-  @JsonKey()
   final String priority;
   // 'low', 'medium', 'high', 'urgent'
   final List<String> _assignees;
   // 'low', 'medium', 'high', 'urgent'
   @override
-  @JsonKey()
   List<String> get assignees {
     if (_assignees is EqualUnmodifiableListView) return _assignees;
     // ignore: implicit_dynamic_type
@@ -396,7 +393,6 @@ class _$TaskModelImpl implements _TaskModel {
   final List<AssigneeInfo> _assigneeList;
   // User IDs
   @override
-  @JsonKey()
   List<AssigneeInfo> get assigneeList {
     if (_assigneeList is EqualUnmodifiableListView) return _assigneeList;
     // ignore: implicit_dynamic_type
@@ -407,7 +403,6 @@ class _$TaskModelImpl implements _TaskModel {
   final List<String> _labels;
   // Full user info
   @override
-  @JsonKey()
   List<String> get labels {
     if (_labels is EqualUnmodifiableListView) return _labels;
     // ignore: implicit_dynamic_type
@@ -424,7 +419,6 @@ class _$TaskModelImpl implements _TaskModel {
   @override
   final String? parentId;
   @override
-  @JsonKey()
   final int position;
   @override
   final String createdBy;
@@ -526,16 +520,16 @@ abstract class _TaskModel implements TaskModel {
     required final String boardId,
     required final String title,
     final String? description,
-    final String status,
-    final String priority,
-    final List<String> assignees,
-    final List<AssigneeInfo> assigneeList,
-    final List<String> labels,
+    required final String status,
+    required final String priority,
+    required final List<String> assignees,
+    required final List<AssigneeInfo> assigneeList,
+    required final List<String> labels,
     final DateTime? deadline,
     final double? estimatedHours,
     final double? actualHours,
     final String? parentId,
-    final int position,
+    required final int position,
     required final String createdBy,
     final String? creatorName,
     required final DateTime createdAt,

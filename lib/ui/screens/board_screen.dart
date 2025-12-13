@@ -4,8 +4,11 @@ import 'dart:ui' as ui;
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
+import '../../models/peer/peer.dart';
 import '../../utils/error_display.dart';
 import '../widgets/task_dialog.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
 enum DrawingTool { pen, eraser, text }
 
@@ -61,15 +64,36 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   final _taskController = TextEditingController();
   bool _showKanban = true;
   List<Map<String, dynamic>> _boardMembers = [];
+  String? _currentBoardId;
+  
+  // Voice call state
+  bool _isVoiceEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    _currentBoardId = widget.boardId;
     _initBoard();
   }
 
   @override
+  void didUpdateWidget(BoardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If board ID changed, disconnect from old board and connect to new one
+    if (oldWidget.boardId != widget.boardId) {
+      debugPrint('🔄 Board changed: ${oldWidget.boardId} -> ${widget.boardId}');
+      ref.read(whiteboardProvider.notifier).disconnect();
+      _currentBoardId = widget.boardId;
+      _boardMembers = [];
+      _initBoard();
+    }
+  }
+
+  @override
   void dispose() {
+    // Disconnect from P2P when leaving board
+    debugPrint('🚪 Leaving board: $_currentBoardId');
+    ref.read(whiteboardProvider.notifier).disconnect();
     _taskController.dispose();
     _textController.dispose();
     super.dispose();
@@ -78,6 +102,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   Future<void> _initBoard() async {
     await Future.delayed(Duration.zero);
     if (!mounted) return;
+    
+    debugPrint('🎯 Initializing board: ${widget.boardId}');
     
     // Connect to P2P first
     ref.read(whiteboardProvider.notifier).connectToBoard(widget.boardId);
@@ -566,6 +592,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     try {
       // Update via API
       final api = ref.read(apiServiceProvider);
+      debugPrint('📤 Updating task $taskId via API...');
       final response = await api.updateTask(
         taskId: taskId,
         title: title,
@@ -577,6 +604,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         labels: labels,
         estimatedHours: estimatedHours,
       );
+      
+      debugPrint('📥 Received update response: ${response.keys}');
       
       // Broadcast P2P (without backend save)
       final notifier = ref.read(whiteboardProvider.notifier);
@@ -643,6 +672,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     try {
       // Delete via API
       final api = ref.read(apiServiceProvider);
+      debugPrint('🗑️ Deleting task $taskId via API...');
       await api.deleteTask(taskId);
       
       // Broadcast P2P (without backend save)
@@ -659,6 +689,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       debugPrint('✅ Deleted task: $taskId');
     } catch (e) {
       debugPrint('❌ Error deleting task: $e');
+      if (mounted) {
+        context.showErrorSnackBar(e);
+      }
     }
   }
 
@@ -728,6 +761,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
         });
       } else if (type == 'task') {
+        // Handle both create and update for tasks
         tasks.removeWhere((t) => t['id'] == id);
         tasks.add({
           'id': id,
@@ -741,8 +775,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final doneTasks = tasks.where((t) => t['status'] == 'done').toList();
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Board - Canvas + Kanban'),
+        title: const Text('Canvas + Kanban'),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        centerTitle: false,
         actions: [
           IconButton(
             icon: Icon(_showKanban ? Icons.view_sidebar : Icons.view_sidebar_outlined),
@@ -750,16 +789,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             tooltip: 'Toggle Kanban',
           ),
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: const Icon(Icons.info_outline_rounded),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('P2P Status'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Text('P2P Status', style: TextStyle(color: AppColors.textPrimary)),
                   content: Text(
                     'Strokes: ${strokes.length}\n'
                     'Texts: ${texts.length}\n'
                     'Tasks: ${tasks.length}',
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                   actions: [
                     TextButton(
@@ -773,16 +816,23 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ),
         ],
       ),
-      body: Row(
+      body: Stack(
         children: [
-          // Canvas area
-          Expanded(
+          Row(
+            children: [
+              // Canvas area
+              Expanded(
             child: Column(
               children: [
                 // Color picker and tools
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: Colors.grey[200],
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 1),
+                    ),
+                  ),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -791,21 +841,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.blue[100],
+                            color: AppColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.person, size: 16, color: Colors.blue),
+                              Icon(Icons.person_rounded, size: 16, color: AppColors.primary),
                               const SizedBox(width: 4),
                               Text(
                                 ref.watch(authStateProvider).user?.name?.isNotEmpty == true
                                     ? ref.watch(authStateProvider).user!.name!
                                     : ref.watch(authStateProvider).user?.email ?? 'You',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ],
@@ -815,19 +866,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       
                         // Drawing tools
                         _ToolButton(
-                          icon: Icons.edit,
+                          icon: Icons.edit_rounded,
                           label: 'Pen',
                           isSelected: _selectedTool == DrawingTool.pen,
                           onTap: () => setState(() => _selectedTool = DrawingTool.pen),
                         ),
                         _ToolButton(
-                          icon: Icons.cleaning_services,
+                          icon: Icons.auto_fix_high_rounded,
                           label: 'Eraser',
                           isSelected: _selectedTool == DrawingTool.eraser,
                           onTap: () => setState(() => _selectedTool = DrawingTool.eraser),
                         ),
                         _ToolButton(
-                          icon: Icons.text_fields,
+                          icon: Icons.text_fields_rounded,
                           label: 'Text',
                           isSelected: _selectedTool == DrawingTool.text,
                           onTap: () => setState(() => _selectedTool = DrawingTool.text),
@@ -837,7 +888,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         
                         // Undo button
                         IconButton(
-                          icon: const Icon(Icons.undo),
+                          icon: const Icon(Icons.undo_rounded),
                           onPressed: _undoStack.isEmpty ? null : _undo,
                           tooltip: 'Undo (${_undoStack.length})',
                         ),
@@ -959,7 +1010,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () => _showTaskDialog(),
-                        icon: const Icon(Icons.add_circle, size: 20),
+                        icon: const Icon(Icons.add_circle_rounded, size: 20),
                         label: const Text('Create Task'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -1061,9 +1112,50 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 ],
               ),
             ),
+            ],
+          ),
+          
+          // Active Users & Voice Call Panel (floating)
+          Positioned(
+            right: _showKanban ? 370 : 20,
+            top: 20,
+            child: _ActiveUsersPanel(
+              peers: state.peers,
+              isVoiceEnabled: _isVoiceEnabled,
+              onVoiceToggle: _toggleVoice,
+              currentUserId: ref.watch(authStateProvider).user?.id,
+            ),
+          ),
         ],
       ),
     );
+  }
+  
+  void _toggleVoice() {
+    setState(() {
+      _isVoiceEnabled = !_isVoiceEnabled;
+    });
+    
+    if (_isVoiceEnabled) {
+      _startVoiceCall();
+    } else {
+      _stopVoiceCall();
+    }
+  }
+  
+  Future<void> _startVoiceCall() async {
+    debugPrint('🎤 Starting voice call...');
+    // TODO: Implement WebRTC audio stream
+    // This would involve:
+    // 1. Get local audio stream: getUserMedia(audio: true)
+    // 2. Add audio tracks to peer connections
+    // 3. Handle remote audio streams
+  }
+  
+  void _stopVoiceCall() {
+    debugPrint('🔇 Stopping voice call...');
+    // TODO: Stop local audio tracks
+    // Remove audio tracks from peer connections
   }
 
   Color _getColor(String name) {
@@ -1447,35 +1539,29 @@ class _TaskColumn extends StatelessWidget {
                                     children: [
                                       ...assigneeList.take(3).map((assignee) {
                                         final name = assignee['name'] as String? ?? '?';
-                                        return Tooltip(
-                                          message: name,
-                                          child: CircleAvatar(
-                                            radius: 12,
-                                            backgroundColor: Colors.blue,
-                                            child: Text(
-                                              name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                        return CircleAvatar(
+                                          radius: 12,
+                                          backgroundColor: Colors.blue,
+                                          child: Text(
+                                            name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         );
                                       }),
                                       if (assigneeList.length > 3)
-                                        Tooltip(
-                                          message: '${assigneeList.length - 3} more',
-                                          child: CircleAvatar(
-                                            radius: 12,
-                                            backgroundColor: Colors.grey[400],
-                                            child: Text(
-                                              '+${assigneeList.length - 3}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                        CircleAvatar(
+                                          radius: 12,
+                                          backgroundColor: Colors.grey[400],
+                                          child: Text(
+                                            '+${assigneeList.length - 3}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ),
@@ -1500,7 +1586,7 @@ class _TaskColumn extends StatelessWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          Icons.calendar_today,
+                                          Icons.calendar_today_rounded,
                                           size: 12,
                                           color: isOverdue ? Colors.red[700] : Colors.blue[700],
                                         ),
@@ -1542,7 +1628,7 @@ class _TaskColumn extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 // Delete button
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 18),
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
                                   onPressed: () => onDelete(taskId),
                                   padding: const EdgeInsets.all(6),
                                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -1604,39 +1690,420 @@ class _ToolButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue[100] : Colors.transparent,
-            border: Border.all(
-              color: isSelected ? Colors.blue : Colors.grey[300]!,
-              width: isSelected ? 2 : 1,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? Colors.blue : Colors.grey[700],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
               ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.blue : Colors.grey[700],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ===== ACTIVE USERS PANEL =====
+
+class _ActiveUsersPanel extends StatelessWidget {
+  final List<Peer> peers;
+  final bool isVoiceEnabled;
+  final VoidCallback onVoiceToggle;
+  final String? currentUserId;
+
+  const _ActiveUsersPanel({
+    required this.peers,
+    required this.isVoiceEnabled,
+    required this.onVoiceToggle,
+    this.currentUserId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 280),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.people_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active Users',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${peers.length + 1} online',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Users list
+          Container(
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Current user (You)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final currentUser = ref.watch(authStateProvider).user;
+                      return _UserItem(
+                        name: currentUser?.name ?? currentUser?.email ?? 'You',
+                        isCurrentUser: true,
+                        isConnected: true,
+                        avatar: currentUser?.avatar,
+                        isMuted: false, // Current user mic status - will be controlled by voice call
+                        isVoiceEnabled: isVoiceEnabled,
+                      );
+                    },
+                  ),
+                  
+                  if (peers.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...peers.map((peer) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _UserItem(
+                          name: peer.userName ?? peer.userId,
+                          isCurrentUser: false,
+                          isConnected: peer.connected,
+                          avatar: peer.avatar,
+                          isMuted: peer.isMuted,
+                          isVoiceEnabled: isVoiceEnabled,
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          
+          // Voice call controls
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: isVoiceEnabled 
+                        ? LinearGradient(
+                            colors: [
+                              AppColors.error,
+                              AppColors.error.withOpacity(0.8),
+                            ],
+                          )
+                        : AppColors.gradientPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isVoiceEnabled ? AppColors.error : AppColors.primary)
+                            .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: onVoiceToggle,
+                    icon: Icon(
+                      isVoiceEnabled ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      isVoiceEnabled ? 'End Voice Call' : 'Start Voice Call',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                if (isVoiceEnabled) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.success.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.graphic_eq_rounded,
+                          size: 16,
+                          color: AppColors.success,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Voice call active',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===== USER ITEM WIDGET =====
+
+class _UserItem extends StatelessWidget {
+  final String name;
+  final bool isCurrentUser;
+  final bool isConnected;
+  final String? avatar;
+  final bool isMuted;
+  final bool isVoiceEnabled;
+
+  const _UserItem({
+    required this.name,
+    required this.isCurrentUser,
+    required this.isConnected,
+    this.avatar,
+    this.isMuted = false,
+    this.isVoiceEnabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isCurrentUser 
+            ? AppColors.primary.withOpacity(0.1)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isCurrentUser 
+              ? AppColors.primary.withOpacity(0.3)
+              : AppColors.border,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Stack(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: isCurrentUser
+                      ? AppColors.gradientPrimary
+                      : LinearGradient(
+                          colors: [
+                            AppColors.secondary,
+                            AppColors.secondary.withOpacity(0.7),
+                          ],
+                        ),
+                ),
+                child: avatar != null && avatar!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          avatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                name.substring(0, 1).toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          name.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+              ),
+              // Online status indicator
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isConnected ? AppColors.success : Colors.grey,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.surface,
+                      width: 2,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(width: 12),
+          
+          // Name
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (isCurrentUser)
+                  Text(
+                    '(You)',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          
+          // Mic status (only show when voice is enabled)
+          if (isVoiceEnabled) ...[
+            Icon(
+              isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+              size: 18,
+              color: isMuted ? AppColors.error : AppColors.success,
+            ),
+            const SizedBox(width: 8),
+          ],
+          
+          // Status
+          Icon(
+            isConnected ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 16,
+            color: isConnected ? AppColors.success : Colors.grey,
+          ),
+        ],
       ),
     );
   }

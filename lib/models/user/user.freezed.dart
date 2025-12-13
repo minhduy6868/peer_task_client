@@ -20,7 +20,9 @@ mixin _$User {
   String get id => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
   String? get name => throw _privateConstructorUsedError;
+  String? get avatar => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -33,7 +35,14 @@ abstract class $UserCopyWith<$Res> {
   factory $UserCopyWith(User value, $Res Function(User) then) =
       _$UserCopyWithImpl<$Res, User>;
   @useResult
-  $Res call({String id, String email, String? name, DateTime? createdAt});
+  $Res call({
+    String id,
+    String email,
+    String? name,
+    String? avatar,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -54,7 +63,9 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? id = null,
     Object? email = null,
     Object? name = freezed,
+    Object? avatar = freezed,
     Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -70,9 +81,17 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
                       as String?,
+            avatar: freezed == avatar
+                ? _value.avatar
+                : avatar // ignore: cast_nullable_to_non_nullable
+                      as String?,
             createdAt: freezed == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            updatedAt: freezed == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
           )
           as $Val,
@@ -88,7 +107,14 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
   ) = __$$UserImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String email, String? name, DateTime? createdAt});
+  $Res call({
+    String id,
+    String email,
+    String? name,
+    String? avatar,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  });
 }
 
 /// @nodoc
@@ -106,7 +132,9 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? id = null,
     Object? email = null,
     Object? name = freezed,
+    Object? avatar = freezed,
     Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(
       _$UserImpl(
@@ -122,9 +150,17 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
                   as String?,
+        avatar: freezed == avatar
+            ? _value.avatar
+            : avatar // ignore: cast_nullable_to_non_nullable
+                  as String?,
         createdAt: freezed == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        updatedAt: freezed == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
       ),
     );
@@ -138,7 +174,9 @@ class _$UserImpl implements _User {
     required this.id,
     required this.email,
     this.name,
+    this.avatar,
     this.createdAt,
+    this.updatedAt,
   });
 
   @override
@@ -148,11 +186,15 @@ class _$UserImpl implements _User {
   @override
   final String? name;
   @override
+  final String? avatar;
+  @override
   final DateTime? createdAt;
+  @override
+  final DateTime? updatedAt;
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, name: $name, createdAt: $createdAt)';
+    return 'User(id: $id, email: $email, name: $name, avatar: $avatar, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -163,12 +205,16 @@ class _$UserImpl implements _User {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.avatar, avatar) || other.avatar == avatar) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, id, email, name, createdAt);
+  int get hashCode =>
+      Object.hash(runtimeType, id, email, name, avatar, createdAt, updatedAt);
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -184,7 +230,9 @@ abstract class _User implements User {
     required final String id,
     required final String email,
     final String? name,
+    final String? avatar,
     final DateTime? createdAt,
+    final DateTime? updatedAt,
   }) = _$UserImpl;
 
   @override
@@ -194,7 +242,11 @@ abstract class _User implements User {
   @override
   String? get name;
   @override
+  String? get avatar;
+  @override
   DateTime? get createdAt;
+  @override
+  DateTime? get updatedAt;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.

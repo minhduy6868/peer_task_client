@@ -34,18 +34,59 @@ class ProfileScreen extends ConsumerWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                gradient: AppColors.gradientPrimary,
                 shape: BoxShape.circle,
+                gradient: user.avatar != null && user.avatar!.isNotEmpty
+                    ? null
+                    : AppColors.gradientPrimary,
               ),
-              child: Center(
-                child: Text(
-                  user.name?.substring(0, 1).toUpperCase() ?? 
-                  user.email.substring(0, 1).toUpperCase(),
-                  style: AppTextStyles.displayMedium.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              child: user.avatar != null && user.avatar!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        user.avatar!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to initial if image fails to load
+                          return Container(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.gradientPrimary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                user.name?.substring(0, 1).toUpperCase() ?? 
+                                user.email.substring(0, 1).toUpperCase(),
+                                style: AppTextStyles.displayMedium.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: AppColors.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        user.name?.substring(0, 1).toUpperCase() ?? 
+                        user.email.substring(0, 1).toUpperCase(),
+                        style: AppTextStyles.displayMedium.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 16),
             
@@ -73,19 +114,19 @@ class ProfileScreen extends ConsumerWidget {
                   Text('Account Information', style: AppTextStyles.titleMedium),
                   const SizedBox(height: 16),
                   _InfoRow(
-                    icon: Icons.email_outlined,
+                    icon: Icons.email_rounded,
                     label: 'Email',
                     value: user.email,
                   ),
                   const Divider(height: 24),
                   _InfoRow(
-                    icon: Icons.person_outline,
+                    icon: Icons.person_outline_rounded,
                     label: 'User ID',
                     value: user.id,
                   ),
                   const Divider(height: 24),
                   _InfoRow(
-                    icon: Icons.calendar_today_outlined,
+                    icon: Icons.calendar_today_rounded,
                     label: 'Member since',
                     value: _formatDate(user.createdAt ?? DateTime.now()),
                   ),

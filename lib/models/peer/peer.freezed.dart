@@ -24,6 +24,10 @@ mixin _$Peer {
   String get socketId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   bool get connected => throw _privateConstructorUsedError;
+  String? get userName =>
+      throw _privateConstructorUsedError; // Tên hiển thị thật của người dùng
+  String? get avatar => throw _privateConstructorUsedError; // URL avatar
+  bool get isMuted => throw _privateConstructorUsedError;
 
   /// Serializes this Peer to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -39,7 +43,14 @@ abstract class $PeerCopyWith<$Res> {
   factory $PeerCopyWith(Peer value, $Res Function(Peer) then) =
       _$PeerCopyWithImpl<$Res, Peer>;
   @useResult
-  $Res call({String socketId, String userId, bool connected});
+  $Res call({
+    String socketId,
+    String userId,
+    bool connected,
+    String? userName,
+    String? avatar,
+    bool isMuted,
+  });
 }
 
 /// @nodoc
@@ -60,6 +71,9 @@ class _$PeerCopyWithImpl<$Res, $Val extends Peer>
     Object? socketId = null,
     Object? userId = null,
     Object? connected = null,
+    Object? userName = freezed,
+    Object? avatar = freezed,
+    Object? isMuted = null,
   }) {
     return _then(
       _value.copyWith(
@@ -75,6 +89,18 @@ class _$PeerCopyWithImpl<$Res, $Val extends Peer>
                 ? _value.connected
                 : connected // ignore: cast_nullable_to_non_nullable
                       as bool,
+            userName: freezed == userName
+                ? _value.userName
+                : userName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            avatar: freezed == avatar
+                ? _value.avatar
+                : avatar // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            isMuted: null == isMuted
+                ? _value.isMuted
+                : isMuted // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -89,7 +115,14 @@ abstract class _$$PeerImplCopyWith<$Res> implements $PeerCopyWith<$Res> {
   ) = __$$PeerImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String socketId, String userId, bool connected});
+  $Res call({
+    String socketId,
+    String userId,
+    bool connected,
+    String? userName,
+    String? avatar,
+    bool isMuted,
+  });
 }
 
 /// @nodoc
@@ -107,6 +140,9 @@ class __$$PeerImplCopyWithImpl<$Res>
     Object? socketId = null,
     Object? userId = null,
     Object? connected = null,
+    Object? userName = freezed,
+    Object? avatar = freezed,
+    Object? isMuted = null,
   }) {
     return _then(
       _$PeerImpl(
@@ -122,6 +158,18 @@ class __$$PeerImplCopyWithImpl<$Res>
             ? _value.connected
             : connected // ignore: cast_nullable_to_non_nullable
                   as bool,
+        userName: freezed == userName
+            ? _value.userName
+            : userName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        avatar: freezed == avatar
+            ? _value.avatar
+            : avatar // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        isMuted: null == isMuted
+            ? _value.isMuted
+            : isMuted // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -134,6 +182,9 @@ class _$PeerImpl implements _Peer {
     required this.socketId,
     required this.userId,
     this.connected = false,
+    this.userName,
+    this.avatar,
+    this.isMuted = false,
   });
 
   factory _$PeerImpl.fromJson(Map<String, dynamic> json) =>
@@ -146,10 +197,19 @@ class _$PeerImpl implements _Peer {
   @override
   @JsonKey()
   final bool connected;
+  @override
+  final String? userName;
+  // Tên hiển thị thật của người dùng
+  @override
+  final String? avatar;
+  // URL avatar
+  @override
+  @JsonKey()
+  final bool isMuted;
 
   @override
   String toString() {
-    return 'Peer(socketId: $socketId, userId: $userId, connected: $connected)';
+    return 'Peer(socketId: $socketId, userId: $userId, connected: $connected, userName: $userName, avatar: $avatar, isMuted: $isMuted)';
   }
 
   @override
@@ -161,12 +221,24 @@ class _$PeerImpl implements _Peer {
                 other.socketId == socketId) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.connected, connected) ||
-                other.connected == connected));
+                other.connected == connected) &&
+            (identical(other.userName, userName) ||
+                other.userName == userName) &&
+            (identical(other.avatar, avatar) || other.avatar == avatar) &&
+            (identical(other.isMuted, isMuted) || other.isMuted == isMuted));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, socketId, userId, connected);
+  int get hashCode => Object.hash(
+    runtimeType,
+    socketId,
+    userId,
+    connected,
+    userName,
+    avatar,
+    isMuted,
+  );
 
   /// Create a copy of Peer
   /// with the given fields replaced by the non-null parameter values.
@@ -187,6 +259,9 @@ abstract class _Peer implements Peer {
     required final String socketId,
     required final String userId,
     final bool connected,
+    final String? userName,
+    final String? avatar,
+    final bool isMuted,
   }) = _$PeerImpl;
 
   factory _Peer.fromJson(Map<String, dynamic> json) = _$PeerImpl.fromJson;
@@ -197,6 +272,12 @@ abstract class _Peer implements Peer {
   String get userId;
   @override
   bool get connected;
+  @override
+  String? get userName; // Tên hiển thị thật của người dùng
+  @override
+  String? get avatar; // URL avatar
+  @override
+  bool get isMuted;
 
   /// Create a copy of Peer
   /// with the given fields replaced by the non-null parameter values.

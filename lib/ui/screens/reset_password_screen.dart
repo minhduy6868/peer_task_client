@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
-import '../../l10n/app_localizations.dart';
+import '../theme/app_colors.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String token;
@@ -57,8 +57,12 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Reset Password'),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -70,10 +74,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.lock_open,
+                  Icon(
+                    Icons.lock_open_rounded,
                     size: 80,
-                    color: Colors.blue,
+                    color: AppColors.primary,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -93,9 +97,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     decoration: InputDecoration(
                       labelText: 'New Password',
                       border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.lock),
+                      prefixIcon: const Icon(Icons.lock_rounded),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                        icon: Icon(_obscurePassword ? Icons.visibility_rounded : Icons.visibility_off_rounded),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                     ),
@@ -109,9 +113,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     decoration: InputDecoration(
                       labelText: 'Confirm Password',
                       border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscureConfirm ? Icons.visibility : Icons.visibility_off),
+                        icon: Icon(_obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded),
                         onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                       ),
                     ),

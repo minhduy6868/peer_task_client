@@ -100,7 +100,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               children: [
                 _NavItem(
                   icon: Icons.dashboard_outlined,
-                  selectedIcon: Icons.dashboard,
+                  selectedIcon: Icons.dashboard_rounded,
                   label: l10n.boards,
                   isSelected: currentTab == 0,
                   onTap: () => ref.read(_currentTabProvider.notifier).state = 0,
@@ -113,8 +113,8 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
                   onTap: _showWorkspaceMenu,
                 ),
                 _NavItem(
-                  icon: Icons.person_outline,
-                  selectedIcon: Icons.person,
+                  icon: Icons.person_outline_rounded,
+                  selectedIcon: Icons.person_rounded,
                   label: authState.user?.name?.substring(0, 1).toUpperCase() ?? 
                          authState.user?.email.substring(0, 1).toUpperCase() ?? 'U',
                   isAvatar: true,
