@@ -165,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               padding: const EdgeInsets.all(16),
                               child: Image.asset(
-                                'assets/images/logo.png',
+                                'assets/logo_peer.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   padding: EdgeInsets.all(isTablet ? 22 : 18),
                                   child: Image.asset(
-                                    'assets/images/logo.png',
+                                    'assets/logo_peer.png',
                                     fit: BoxFit.contain,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Icon(
@@ -577,7 +577,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 onPressed: authState.isLoading
                                     ? null
                                     : () {
-                                        context.go('/offline-board');
+                                        context.go('/offline-username');
                                       },
                                 icon: const Icon(Icons.offline_bolt_rounded),
                                 label: Text(

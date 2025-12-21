@@ -75,11 +75,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _loadAuthFromStorage() async {
     final storage = ref.read(storageServiceProvider);
     final api = ref.read(apiServiceProvider);
-    
+
     try {
       // Load tokens from storage
       await api.loadTokens();
-      
+
       if (api.accessToken != null) {
         // Try to load user from storage first
         final userJson = storage.getUser();
@@ -93,13 +93,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
           return;
         }
-        
+
         // If no cached user, fetch from API
         try {
           final userInfo = await api.getCurrentUser();
           final user = User.fromJson(userInfo);
           await storage.saveUser(userInfo);
-          
+
           state = state.copyWith(
             user: user,
             accessToken: api.accessToken,
@@ -143,15 +143,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
       );
     } on ApiError catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.userMessage,
-      );
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -169,7 +163,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = User.fromJson(response['user']);
       final accessToken = response['accessToken'];
       final refreshToken = response['refreshToken'];
-      
+
       final storage = ref.read(storageServiceProvider);
       await storage.saveUserId(user.id);
       await storage.saveUser(response['user']);
@@ -181,15 +175,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
       );
     } on ApiError catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.userMessage,
-      );
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -200,11 +188,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       debugPrint('Error disconnecting whiteboard: $e');
     }
-    
+
     // Logout from API (clears tokens from storage)
     final api = ref.read(apiServiceProvider);
     await api.logout();
-    
+
     // Clear auth state
     state = AuthState();
   }
@@ -214,10 +202,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final api = ref.read(apiServiceProvider);
       final userInfo = await api.getCurrentUser();
       final user = User.fromJson(userInfo);
-      
+
       final storage = ref.read(storageServiceProvider);
       await storage.saveUser(userInfo);
-      
+
       state = state.copyWith(user: user);
     } catch (e) {
       debugPrint('Error refreshing user: $e');
@@ -227,9 +215,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 // Workspaces
-final workspacesProvider = StateNotifierProvider<WorkspacesNotifier, AsyncValue<List<Workspace>>>((ref) {
-  return WorkspacesNotifier(ref);
-});
+final workspacesProvider =
+    StateNotifierProvider<WorkspacesNotifier, AsyncValue<List<Workspace>>>((
+      ref,
+    ) {
+      return WorkspacesNotifier(ref);
+    });
 
 class WorkspacesNotifier extends StateNotifier<AsyncValue<List<Workspace>>> {
   final Ref ref;
@@ -273,9 +264,10 @@ final currentBoardProvider = FutureProvider<Board?>((ref) async {
 });
 
 // Whiteboard state
-final whiteboardProvider = StateNotifierProvider<WhiteboardNotifier, WhiteboardState>((ref) {
-  return WhiteboardNotifier(ref);
-});
+final whiteboardProvider =
+    StateNotifierProvider<WhiteboardNotifier, WhiteboardState>((ref) {
+      return WhiteboardNotifier(ref);
+    });
 
 class WhiteboardState {
   final List<Operation> operations;
@@ -326,6 +318,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
   WhiteboardNotifier(this.ref) : super(WhiteboardState());
 
+  // Getter to access WebRTC service
+  WebRTCService? get webrtc => _webrtc;
+
   // Save operation to backend database
   Future<void> _saveOperationToBackend(
     String boardId,
@@ -360,7 +355,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     }
 
     _currentBoardId = boardId;
-    
+
     final authState = ref.read(authStateProvider);
     if (!authState.isAuthenticated || authState.accessToken == null) {
       throw Exception('Not authenticated');
@@ -376,9 +371,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       userId: authState.user!.id,
       onOperationApplied: (op) {
         // Update state when operation is applied
-        state = state.copyWith(
-          operations: [...state.operations, op],
-        );
+        state = state.copyWith(operations: [...state.operations, op]);
       },
       onOperationBroadcast: (op) {
         // Save to backend ONLY if shouldSaveBackend flag is true
@@ -389,7 +382,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         } else {
           debugPrint('⏭️  Skipping backend save for: ${op.type.name}');
         }
-        
+
         // Always broadcast via WebRTC to peers for realtime sync
         debugPrint('📡 Broadcasting operation via WebRTC: ${op.type.name}');
         _webrtc?.sendOperation(op);
@@ -400,24 +393,33 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     _webrtc = WebRTCService(
       userId: authState.user!.id,
       onOperationReceived: (peerId, operation) {
-        debugPrint('📥 Received operation from $peerId: ${operation.type.name}');
+        debugPrint(
+          '📥 Received operation from $peerId: ${operation.type.name}',
+        );
         _syncEngine?.receiveOperation(operation);
         // Call custom callback if provided
         onRemoteOperation?.call(operation);
       },
       onPeerConnected: (peerId) {
         debugPrint('✅ Peer CONNECTED and ready: $peerId');
-        debugPrint('📊 Total connected peers: ${_webrtc?.connectedPeersCount ?? 0}');
+        debugPrint(
+          '📊 Total connected peers: ${_webrtc?.connectedPeersCount ?? 0}',
+        );
       },
       onPeerDisconnected: (peerId) {
         debugPrint('Peer disconnected: $peerId');
+      },
+      onRemoteAudioStream: (peerId, stream) {
+        debugPrint('🎵 Received remote audio stream from $peerId');
+        // You can store this stream or play it directly
+        // For now, just log it - implement audio playback in UI later
       },
     );
 
     // Initialize signaling
     final serverUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000';
     debugPrint('🌐 Signaling server URL: $serverUrl');
-    
+
     _signaling = SignalingService(
       serverUrl: serverUrl,
       onRoomJoined: (peers) {
@@ -426,36 +428,46 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
           debugPrint('   - Peer: ${peer.socketId} (user: ${peer.userId})');
         }
         state = state.copyWith(peers: peers, isConnected: true);
-        
+
         // Initiate WebRTC connections with existing peers
         // Perfect negotiation: only peer with higher userId creates offer
         final myUserId = authState.user!.id;
         for (final peer in peers) {
           final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
           if (shouldInitiate) {
-            debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)');
+            debugPrint(
+              '🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)',
+            );
             _webrtc!.initPeerConnection(peer.socketId, (signal) {
               _signaling!.sendSignal(peer.socketId, signal);
             });
           } else {
-            debugPrint('⏳ Waiting for offer from ${peer.socketId} (they are initiator)');
+            debugPrint(
+              '⏳ Waiting for offer from ${peer.socketId} (they are initiator)',
+            );
           }
         }
       },
       onPeerJoined: (peer) {
-        debugPrint('📥 New peer joined: ${peer.socketId} (user: ${peer.userId})');
+        debugPrint(
+          '📥 New peer joined: ${peer.socketId} (user: ${peer.userId})',
+        );
         state = state.copyWith(peers: [...state.peers, peer]);
-        
+
         // Perfect negotiation: only peer with higher userId creates offer
         final myUserId = authState.user!.id;
         final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
         if (shouldInitiate) {
-          debugPrint('🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)');
+          debugPrint(
+            '🚀 Initiating WebRTC connection with ${peer.socketId} (we are initiator)',
+          );
           _webrtc!.initPeerConnection(peer.socketId, (signal) {
             _signaling!.sendSignal(peer.socketId, signal);
           });
         } else {
-          debugPrint('⏳ Waiting for offer from ${peer.socketId} (they are initiator)');
+          debugPrint(
+            '⏳ Waiting for offer from ${peer.socketId} (they are initiator)',
+          );
         }
       },
       onPeerLeft: (peer) {
@@ -470,7 +482,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         });
       },
       onPeerMicUpdated: (socketId, isMuted) {
-        debugPrint('🎤 Peer $socketId mic updated: ${isMuted ? 'muted' : 'unmuted'}');
+        debugPrint(
+          '🎤 Peer $socketId mic updated: ${isMuted ? 'muted' : 'unmuted'}',
+        );
         // Update peer state
         final updatedPeers = state.peers.map((peer) {
           if (peer.socketId == socketId) {
@@ -538,9 +552,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   }
 
   void addObject(WhiteboardObject object) {
-    state = state.copyWith(
-      objects: [...state.objects, object],
-    );
+    state = state.copyWith(objects: [...state.objects, object]);
     // Create operation to sync across peers
     createOperation(OperationType.createObject, {
       'objectType': 'whiteboardObject',
@@ -551,7 +563,8 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   void updateObject(String objectId, Map<String, dynamic> updates) {
     final objects = state.objects.map((obj) {
       if (obj.id == objectId) {
-        final updatedData = Map<String, dynamic>.from(obj.data)..addAll(updates);
+        final updatedData = Map<String, dynamic>.from(obj.data)
+          ..addAll(updates);
         return obj.copyWith(
           data: updatedData,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -560,7 +573,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       }
       return obj;
     }).toList();
-    
+
     state = state.copyWith(objects: objects);
     createOperation(OperationType.updateObject, {
       'objectType': 'whiteboardObject',
@@ -580,9 +593,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   }
 
   void addTaskNode(TaskNode taskNode) {
-    state = state.copyWith(
-      taskNodes: [...state.taskNodes, taskNode],
-    );
+    state = state.copyWith(taskNodes: [...state.taskNodes, taskNode]);
     createOperation(OperationType.createObject, {
       'objectType': 'taskNode',
       'taskNode': taskNode.toJson(),
@@ -600,7 +611,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       }
       return node;
     }).toList();
-    
+
     state = state.copyWith(taskNodes: taskNodes);
     createOperation(OperationType.updateObject, {
       'objectType': 'taskNode',
@@ -611,7 +622,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
   void deleteTaskNode(String taskNodeId) {
     state = state.copyWith(
-      taskNodes: state.taskNodes.where((node) => node.id != taskNodeId).toList(),
+      taskNodes: state.taskNodes
+          .where((node) => node.id != taskNodeId)
+          .toList(),
     );
     createOperation(OperationType.deleteObject, {
       'objectType': 'taskNode',
@@ -620,13 +633,8 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   }
 
   void clearAll() {
-    state = state.copyWith(
-      objects: [],
-      taskNodes: [],
-    );
-    createOperation(OperationType.deleteObject, {
-      'objectType': 'all',
-    });
+    state = state.copyWith(objects: [], taskNodes: []);
+    createOperation(OperationType.deleteObject, {'objectType': 'all'});
   }
 
   void setZoom(double zoom) {
@@ -661,11 +669,13 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 }
 
 // Task provider - manages tasks separately from canvas objects
-final boardTasksProvider = StateNotifierProvider.family<BoardTasksNotifier, List<TaskModel>, String>(
-  (ref, boardId) {
-    return BoardTasksNotifier(ref, boardId);
-  },
-);
+final boardTasksProvider =
+    StateNotifierProvider.family<BoardTasksNotifier, List<TaskModel>, String>((
+      ref,
+      boardId,
+    ) {
+      return BoardTasksNotifier(ref, boardId);
+    });
 
 class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
   final Ref _ref;
@@ -679,7 +689,7 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
     try {
       final api = _ref.read(apiServiceProvider);
       final tasksData = await api.getBoardTasks(_boardId);
-      
+
       state = tasksData.map<TaskModel>((taskJson) {
         return TaskModel(
           id: taskJson['id'] as String,
@@ -689,14 +699,17 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
           status: taskJson['status'] as String? ?? 'todo',
           priority: taskJson['priority'] as String? ?? 'medium',
           assignees: (taskJson['assignees'] as List?)?.cast<String>() ?? [],
-          assigneeList: (taskJson['assignee_list'] as List?)
-              ?.map((a) => AssigneeInfo(
-                    id: a['id'] as String,
-                    name: a['name'] as String,
-                    email: a['email'] as String?,
-                    avatar: null,
-                  ))
-              .toList() ??
+          assigneeList:
+              (taskJson['assignee_list'] as List?)
+                  ?.map(
+                    (a) => AssigneeInfo(
+                      id: a['id'] as String,
+                      name: a['name'] as String,
+                      email: a['email'] as String?,
+                      avatar: null,
+                    ),
+                  )
+                  .toList() ??
               [],
           labels: (taskJson['labels'] as List?)?.cast<String>() ?? [],
           deadline: taskJson['deadline'] != null
@@ -712,13 +725,15 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
           position: taskJson['position'] as int? ?? 0,
           createdBy: taskJson['created_by'] as String,
           creatorName: taskJson['creator_name'] as String?,
-          createdAt: DateTime.tryParse(taskJson['created_at'] as String? ?? '') ??
+          createdAt:
+              DateTime.tryParse(taskJson['created_at'] as String? ?? '') ??
               DateTime.now(),
-          updatedAt: DateTime.tryParse(taskJson['updated_at'] as String? ?? '') ??
+          updatedAt:
+              DateTime.tryParse(taskJson['updated_at'] as String? ?? '') ??
               DateTime.now(),
         );
       }).toList();
-      
+
       debugPrint('✅ Loaded ${state.length} tasks for board $_boardId');
     } catch (e) {
       debugPrint('❌ Error loading tasks: $e');
@@ -758,14 +773,17 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         status: response['status'] as String? ?? status,
         priority: response['priority'] as String? ?? priority,
         assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
-        assigneeList: (response['assignee_list'] as List?)
-            ?.map((a) => AssigneeInfo(
-                  id: a['id'] as String,
-                  name: a['name'] as String,
-                  email: a['email'] as String?,
-                  avatar: null,
-                ))
-            .toList() ??
+        assigneeList:
+            (response['assignee_list'] as List?)
+                ?.map(
+                  (a) => AssigneeInfo(
+                    id: a['id'] as String,
+                    name: a['name'] as String,
+                    email: a['email'] as String?,
+                    avatar: null,
+                  ),
+                )
+                .toList() ??
             [],
         labels: (response['labels'] as List?)?.cast<String>() ?? [],
         deadline: response['deadline'] != null
@@ -781,9 +799,11 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         position: response['position'] as int? ?? 0,
         createdBy: response['created_by'] as String,
         creatorName: response['creator_name'] as String?,
-        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(response['created_at'] as String? ?? '') ??
             DateTime.now(),
-        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+        updatedAt:
+            DateTime.tryParse(response['updated_at'] as String? ?? '') ??
             DateTime.now(),
       );
 
@@ -828,14 +848,17 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         status: response['status'] as String? ?? 'todo',
         priority: response['priority'] as String? ?? 'medium',
         assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
-        assigneeList: (response['assignee_list'] as List?)
-            ?.map((a) => AssigneeInfo(
-                  id: a['id'] as String,
-                  name: a['name'] as String,
-                  email: a['email'] as String?,
-                  avatar: null,
-                ))
-            .toList() ??
+        assigneeList:
+            (response['assignee_list'] as List?)
+                ?.map(
+                  (a) => AssigneeInfo(
+                    id: a['id'] as String,
+                    name: a['name'] as String,
+                    email: a['email'] as String?,
+                    avatar: null,
+                  ),
+                )
+                .toList() ??
             [],
         labels: (response['labels'] as List?)?.cast<String>() ?? [],
         deadline: response['deadline'] != null
@@ -851,17 +874,19 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         position: response['position'] as int? ?? 0,
         createdBy: response['created_by'] as String,
         creatorName: response['creator_name'] as String?,
-        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(response['created_at'] as String? ?? '') ??
             DateTime.now(),
-        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+        updatedAt:
+            DateTime.tryParse(response['updated_at'] as String? ?? '') ??
             DateTime.now(),
       );
 
       state = [
         for (final task in state)
-          if (task.id == taskId) updatedTask else task
+          if (task.id == taskId) updatedTask else task,
       ];
-      
+
       debugPrint('✅ Updated task: $taskId');
     } catch (e) {
       debugPrint('❌ Error updating task: $e');
@@ -886,14 +911,17 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         status: response['status'] as String? ?? newStatus,
         priority: response['priority'] as String? ?? 'medium',
         assignees: (response['assignees'] as List?)?.cast<String>() ?? [],
-        assigneeList: (response['assignee_list'] as List?)
-            ?.map((a) => AssigneeInfo(
-                  id: a['id'] as String,
-                  name: a['name'] as String,
-                  email: a['email'] as String?,
-                  avatar: null,
-                ))
-            .toList() ??
+        assigneeList:
+            (response['assignee_list'] as List?)
+                ?.map(
+                  (a) => AssigneeInfo(
+                    id: a['id'] as String,
+                    name: a['name'] as String,
+                    email: a['email'] as String?,
+                    avatar: null,
+                  ),
+                )
+                .toList() ??
             [],
         labels: (response['labels'] as List?)?.cast<String>() ?? [],
         deadline: response['deadline'] != null
@@ -909,17 +937,19 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
         position: response['position'] as int? ?? 0,
         createdBy: response['created_by'] as String,
         creatorName: response['creator_name'] as String?,
-        createdAt: DateTime.tryParse(response['created_at'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(response['created_at'] as String? ?? '') ??
             DateTime.now(),
-        updatedAt: DateTime.tryParse(response['updated_at'] as String? ?? '') ??
+        updatedAt:
+            DateTime.tryParse(response['updated_at'] as String? ?? '') ??
             DateTime.now(),
       );
 
       state = [
         for (final task in state)
-          if (task.id == taskId) updatedTask else task
+          if (task.id == taskId) updatedTask else task,
       ];
-      
+
       debugPrint('✅ Moved task $taskId to $newStatus');
     } catch (e) {
       debugPrint('❌ Error moving task: $e');
@@ -933,7 +963,7 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
       await api.deleteTask(taskId);
 
       state = state.where((task) => task.id != taskId).toList();
-      
+
       debugPrint('✅ Deleted task: $taskId');
     } catch (e) {
       debugPrint('❌ Error deleting task: $e');

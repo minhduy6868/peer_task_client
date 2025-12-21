@@ -1,22 +1,20 @@
 import 'package:flutter/foundation.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../models/peer/peer.dart';
 
 class SignalingService {
   final String serverUrl;
-  io.Socket? _socket;
-  String? _currentRoom;
-  String? _pendingRoom; // Room to join after connection
-  // ignore: unused_field
-  String? _currentToken; // Stored for potential future reconnection logic
-  bool _isReconnecting = false;
-
-  final Function(List<Peer>)? onRoomJoined;
-  final Function(Peer)? onPeerJoined;
-  final Function(Peer)? onPeerLeft;
-  final Function(String from, Map<String, dynamic> signal)? onSignal;
-  final Function()? onReconnected;
+  final Function(List<Peer> peers)? onRoomJoined;
+  final Function(Peer peer)? onPeerJoined;
+  final Function(Peer peer)? onPeerLeft;
+  final Function(String peerId, Map<String, dynamic> signal)? onSignal;
   final Function(String socketId, bool isMuted)? onPeerMicUpdated;
+  final Function()? onDisconnected;
+  final Function()? onReconnected;
+
+  IO.Socket? _socket;
+  bool _isConnected = false;
+  String? _currentBoardId;
 
   SignalingService({
     required this.serverUrl,
@@ -24,140 +22,111 @@ class SignalingService {
     this.onPeerJoined,
     this.onPeerLeft,
     this.onSignal,
-    this.onReconnected,
     this.onPeerMicUpdated,
+    this.onDisconnected,
+    this.onReconnected,
   });
 
+  bool get isConnected => _isConnected;
+
   void connect(String token) {
-    _currentToken = token;
-    _socket = io.io(
-      serverUrl,
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .enableAutoConnect()
-          .setAuth({'token': token})
-          .build(),
-    );
+    debugPrint('🔌 Connecting to signaling server: $serverUrl');
+    
+    _socket = IO.io(serverUrl, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+      'auth': {'token': token},
+    });
 
     _socket!.onConnect((_) {
-      debugPrint('✅ Connected to signaling server (socketId: ${_socket!.id})');
-      
-      // Join pending room if any
-      if (_pendingRoom != null && !_isReconnecting) {
-        final room = _pendingRoom!;
-        _pendingRoom = null;
-        debugPrint('🚪 Auto-joining pending room: $room');
-        joinRoom(room);
+      debugPrint('✅ Connected to signaling server');
+      _isConnected = true;
+      if (_currentBoardId != null) {
+        _socket!.emit('join-room', {'boardId': _currentBoardId});
       }
-      
-      // If we were reconnecting and had a room, rejoin it
-      if (_isReconnecting && _currentRoom != null) {
-        _isReconnecting = false;
-        debugPrint('♻️ Rejoining room after reconnection: $_currentRoom');
-        _socket!.emit('join_room', _currentRoom);
-        onReconnected?.call();
-      }
+    });
+
+    _socket!.on('room-joined', (data) {
+      debugPrint('📥 Room joined event received');
+      final peers = (data['peers'] as List?)
+          ?.map((p) => Peer.fromJson(p as Map<String, dynamic>))
+          .toList() ?? [];
+      onRoomJoined?.call(peers);
+    });
+
+    _socket!.on('peer-joined', (data) {
+      debugPrint('📥 Peer joined: ${data['socketId']}');
+      onPeerJoined?.call(Peer.fromJson(data as Map<String, dynamic>));
+    });
+
+    _socket!.on('peer-left', (data) {
+      debugPrint('📤 Peer left: ${data['socketId']}');
+      onPeerLeft?.call(Peer.fromJson(data as Map<String, dynamic>));
+    });
+
+    _socket!.on('signal', (data) {
+      final peerId = data['from'] as String;
+      final signal = data['signal'] as Map<String, dynamic>;
+      debugPrint('📡 Signal received from $peerId');
+      onSignal?.call(peerId, signal);
+    });
+
+    _socket!.on('peer-mic-updated', (data) {
+      final socketId = data['socketId'] as String;
+      final isMuted = data['isMuted'] as bool;
+      debugPrint('🎤 Peer mic updated: $socketId -> ${isMuted ? "muted" : "unmuted"}');
+      onPeerMicUpdated?.call(socketId, isMuted);
     });
 
     _socket!.onDisconnect((_) {
       debugPrint('❌ Disconnected from signaling server');
-      if (_currentRoom != null) {
-        _isReconnecting = true;
-      }
+      _isConnected = false;
+      onDisconnected?.call();
     });
 
-    _socket!.on('room_joined', (data) {
-      debugPrint('📥 Room joined: $data');
-      final peers = (data['peers'] as List)
-          .map((p) => Peer.fromJson(p as Map<String, dynamic>))
-          .toList();
-      onRoomJoined?.call(peers);
+    _socket!.onReconnect((_) {
+      debugPrint('♻️ Reconnected to signaling server');
+      _isConnected = true;
+      onReconnected?.call();
     });
 
-    _socket!.on('peer_joined', (data) {
-      debugPrint('📥 Peer joined: $data');
-      final peer = Peer.fromJson(data as Map<String, dynamic>);
-      onPeerJoined?.call(peer);
+    _socket!.onError((error) {
+      debugPrint('❌ Socket error: $error');
     });
 
-    _socket!.on('peer_left', (data) {
-      debugPrint('📥 Peer left: $data');
-      final peer = Peer.fromJson(data as Map<String, dynamic>);
-      onPeerLeft?.call(peer);
-    });
-
-    _socket!.on('signal', (data) {
-      debugPrint('📥 Signal from ${data['from']}');
-      onSignal?.call(data['from'] as String, data['signal'] as Map<String, dynamic>);
-    });
-
-    _socket!.on('peer_mic_updated', (data) {
-      debugPrint('📥 Peer mic updated: $data');
-      final socketId = data['socketId'] as String;
-      final isMuted = data['isMuted'] as bool;
-      onPeerMicUpdated?.call(socketId, isMuted);
-    });
-
-    _socket!.on('error', (error) {
-      debugPrint('❌ Signaling error: $error');
-    });
+    _socket!.connect();
   }
 
-  void joinRoom(String roomId) {
-    if (_socket == null) {
-      debugPrint('❌ Cannot join room: socket is null');
-      throw Exception('Socket not initialized');
+  void joinRoom(String boardId) {
+    _currentBoardId = boardId;
+    if (_isConnected) {
+      debugPrint('🚪 Joining room: $boardId');
+      _socket?.emit('join-room', {'boardId': boardId});
     }
-    
-    if (!_socket!.connected) {
-      debugPrint('⏳ Socket not connected yet, queuing room join: $roomId');
-      _pendingRoom = roomId;
+  }
+
+  void sendSignal(String targetPeerId, Map<String, dynamic> signal) {
+    if (!_isConnected) {
+      debugPrint('⚠️ Cannot send signal: not connected');
       return;
     }
-
-    _currentRoom = roomId;
-    debugPrint('📤 Joining room: $roomId (socketId: ${_socket!.id})');
-    _socket!.emit('join_room', roomId);
-  }
-
-  void leaveRoom() {
-    if (_socket != null && _currentRoom != null) {
-      _socket!.emit('leave_room');
-      _currentRoom = null;
-      debugPrint('📤 Left room');
-    }
-  }
-
-  void sendSignal(String to, Map<String, dynamic> signal) {
-    if (_socket == null || !_socket!.connected) {
-      throw Exception('Not connected to signaling server');
-    }
-
-    _socket!.emit('signal', {
-      'to': to,
+    _socket?.emit('signal', {
+      'to': targetPeerId,
       'signal': signal,
     });
-    debugPrint('📤 Sent signal to $to');
   }
 
   void updateMicStatus(bool isMuted) {
-    if (_socket == null || !_socket!.connected) {
-      debugPrint('❌ Cannot update mic status: not connected');
-      return;
-    }
-
-    _socket!.emit('update_mic_status', {
-      'isMuted': isMuted,
-    });
-    debugPrint('📤 Updated mic status: ${isMuted ? 'muted' : 'unmuted'}');
+    if (!_isConnected) return;
+    _socket?.emit('update-mic-status', {'isMuted': isMuted});
   }
 
   void disconnect() {
-    leaveRoom();
+    debugPrint('🔌 Disconnecting from signaling server');
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
+    _isConnected = false;
+    _currentBoardId = null;
   }
-
-  bool get isConnected => _socket?.connected ?? false;
 }

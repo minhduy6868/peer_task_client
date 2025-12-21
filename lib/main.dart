@@ -12,6 +12,9 @@ import 'ui/screens/reset_password_screen.dart';
 import 'ui/screens/workspace_selection_screen.dart';
 import 'ui/screens/workspace_home_screen.dart';
 import 'ui/screens/board_screen.dart';
+import 'ui/screens/offline_username_screen.dart';
+import 'ui/screens/offline_boards_screen.dart';
+import 'ui/screens/offline_board_screen.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() async {
@@ -62,7 +65,7 @@ class MyApp extends ConsumerWidget {
     }
 
     final router = GoRouter(
-      initialLocation: '/',
+      initialLocation: _getInitialLocation(ref),
       refreshListenable: _AuthStateNotifier(ref),
       redirect: (context, state) {
         final isAuthenticated = authState.isAuthenticated;
@@ -75,13 +78,20 @@ class MyApp extends ConsumerWidget {
           return null;
         }
 
+        // Allow offline routes without auth
+        if (path == '/offline-username' ||
+            path == '/offline-boards' ||
+            path.startsWith('/offline-board/')) {
+          return null;
+        }
+
         // Require auth for other routes
         if (!isAuthenticated) {
           return '/login';
         }
 
         // Redirect root to workspaces or last workspace
-        if (path == '/') {
+        if (path == '/' || path == '/login') {
           final storage = ref.read(storageServiceProvider);
           final lastWorkspaceId = storage.getLastWorkspace();
           if (lastWorkspaceId != null) {
@@ -130,6 +140,21 @@ class MyApp extends ConsumerWidget {
             return BoardScreen(boardId: boardId);
           },
         ),
+        GoRoute(
+          path: '/offline-username',
+          builder: (context, state) => const OfflineUsernameScreen(),
+        ),
+        GoRoute(
+          path: '/offline-boards',
+          builder: (context, state) => const OfflineBoardsScreen(),
+        ),
+        GoRoute(
+          path: '/offline-board/:id',
+          builder: (context, state) {
+            final boardId = state.pathParameters['id']!;
+            return OfflineBoardScreen(boardId: boardId);
+          },
+        ),
       ],
     );
 
@@ -150,6 +175,11 @@ class MyApp extends ConsumerWidget {
       ],
       routerConfig: router,
     );
+  }
+
+  String _getInitialLocation(WidgetRef ref) {
+    // Always start from login screen
+    return '/login';
   }
 }
 

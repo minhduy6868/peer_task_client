@@ -1,0 +1,25 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="80" fill="url(#grad)"/>
+  
+  <!-- P2P Icon - Three connected circles -->
+  <circle cx="150" cy="256" r="60" fill="white" opacity="0.9"/>
+  <circle cx="362" cy="256" r="60" fill="white" opacity="0.9"/>
+  <circle cx="256" cy="180" r="50" fill="#A5B4FC" opacity="0.8"/>
+  
+  <!-- Connection lines -->
+  <line x1="150" y1="256" x2="362" y2="256" stroke="#A5B4FC" stroke-width="12" opacity="0.6"/>
+  <line x1="150" y1="256" x2="256" y2="180" stroke="#A5B4FC" stroke-width="12" opacity="0.6"/>
+  <line x1="362" y1="256" x2="256" y2="180" stroke="#A5B4FC" stroke-width="12" opacity="0.6"/>
+  
+  <!-- Text P2P -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white" text-anchor="middle">P2P</text>
+</svg>

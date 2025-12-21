@@ -108,7 +108,7 @@ void main() {
 
     test('Should apply Last-Write-Wins (LWW) conflict resolution', () {
       // User A creates stroke
-      final createOp = syncEngineA.createOperation(
+      syncEngineA.createOperation(
         type: OperationType.createObject,
         payload: {
           'id': 'stroke-1',
@@ -126,7 +126,7 @@ void main() {
       Future.delayed(const Duration(milliseconds: 10));
 
       // User A updates (newer timestamp)
-      final updateOp = syncEngineA.createOperation(
+      syncEngineA.createOperation(
         type: OperationType.updateObject,
         payload: {
           'id': 'stroke-1',

@@ -8,7 +8,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../dialogs/workspace_menu_dialog.dart';
 import 'boards_screen.dart';
-import 'settings_screen.dart';
 
 final _currentTabProvider = StateProvider<int>((ref) => 0);
 final _currentWorkspaceProvider = StateProvider<Workspace?>((ref) => null);
@@ -71,9 +70,8 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
     final authState = ref.watch(authStateProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    final screens = [
+    final screens = <Widget>[
       BoardsScreen(workspaceId: widget.workspaceId),
-      SettingsScreen(),
     ];
 
     return Scaffold(
