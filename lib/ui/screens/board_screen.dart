@@ -5,11 +5,9 @@ import 'dart:ui' as ui;
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
-import '../../models/peer/peer.dart';
 import '../../utils/error_display.dart';
 import '../widgets/task_dialog.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
 
 enum DrawingTool { pen, eraser, text }
 
@@ -64,14 +62,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   // Kanban state
   final _taskController = TextEditingController();
   bool _showKanban = true;
+  double _kanbanWidth = 350.0; // Resizable width
   List<Map<String, dynamic>> _boardMembers = [];
   String? _currentBoardId;
 
   // Voice call state
   bool _isVoiceEnabled = false;
-
-  // Active Users panel state
-  bool _showActiveUsers = true;
 
   @override
   void initState() {
@@ -97,7 +93,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   void dispose() {
     // Disconnect from P2P when leaving board
     debugPrint('🚪 Leaving board: $_currentBoardId');
-    ref.read(whiteboardProvider.notifier).disconnect();
     _taskController.dispose();
     _textController.dispose();
     super.dispose();
@@ -135,9 +130,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         };
       }).toList();
 
-      setState(() {
-        _boardMembers = mappedMembers;
-      });
+      if (mounted) {
+        setState(() {
+          _boardMembers = mappedMembers;
+        });
+      }
       debugPrint('✅ Loaded ${members.length} board members');
     } catch (e) {
       debugPrint('❌ Error loading board members: $e');
@@ -218,15 +215,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final strokeWidth = isEraser ? _strokeWidth * 3 : _strokeWidth;
 
     // Track active stroke for realtime display
-    setState(() {
-      _activeStrokes[_currentStrokeId!] = _ActiveStroke(
+    if (mounted) {
+      setState(() {
+        _activeStrokes[_currentStrokeId!] = _ActiveStroke(
         points: [point],
         color: strokeColor,
         width: strokeWidth,
         userName: displayName,
         isEraser: isEraser,
       );
-    });
+      });
+    }
 
     // Create initial stroke - SAVE to backend
     notifier.createOperation(OperationType.createObject, {
@@ -250,10 +249,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   void _onPanUpdate(Offset point) {
     if (_currentStrokeId == null || _selectedTool == DrawingTool.text) return;
 
-    setState(() {
-      _currentPoints.add(point);
-      _activeStrokes[_currentStrokeId!]?.points.add(point);
-    });
+    if (mounted) {
+      setState(() {
+        _currentPoints.add(point);
+        _activeStrokes[_currentStrokeId!]?.points.add(point);
+      });
+    }
 
     final notifier = ref.read(whiteboardProvider.notifier);
     final authState = ref.read(authStateProvider);
@@ -361,9 +362,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   void _onCanvasTap(Offset position) {
     if (_selectedTool != DrawingTool.text) return;
 
-    setState(() {
-      _textPosition = position;
-    });
+    if (mounted) {
+      setState(() {
+        _textPosition = position;
+      });
+    }
 
     showDialog(
       context: context,
@@ -770,39 +773,281 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             tooltip: 'Toggle Kanban',
           ),
           IconButton(
-            icon: Icon(_showActiveUsers ? Icons.people : Icons.people_outline),
-            onPressed: () =>
-                setState(() => _showActiveUsers = !_showActiveUsers),
-            tooltip: 'Toggle Active Users',
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
+            icon: const Icon(Icons.people_rounded),
             onPressed: () {
+              // Capture state here before showDialog
+              final peers = state.peers;
+              final strokeCount = strokes.length;
+              final textCount = texts.length;
+              final taskCount = tasks.length;
+              
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
+                builder: (dialogContext) => Dialog(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  title: Text(
-                    'P2P Status',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  content: Text(
-                    'Strokes: ${strokes.length}\n'
-                    'Texts: ${texts.length}\n'
-                    'Tasks: ${tasks.length}',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
+                  child: Container(
+                    width: 400,
+                    constraints: const BoxConstraints(maxHeight: 600),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.gradientPrimary,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.people_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'P2P Status & Active Users',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${peers.length + 1} online',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white),
+                                onPressed: () => Navigator.pop(dialogContext),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Content
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Stats section
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.border,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Statistics',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _StatRow(
+                                        icon: Icons.brush_rounded,
+                                        label: 'Strokes',
+                                        value: '$strokeCount',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _StatRow(
+                                        icon: Icons.text_fields_rounded,
+                                        label: 'Texts',
+                                        value: '$textCount',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _StatRow(
+                                        icon: Icons.task_rounded,
+                                        label: 'Tasks',
+                                        value: '$taskCount',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Active Users section
+                                Text(
+                                  'Active Users',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                // Current user (You)
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final currentUser = ref.watch(authStateProvider).user;
+                                    return _UserItem(
+                                      name: currentUser?.name ?? currentUser?.email ?? 'You',
+                                      isCurrentUser: true,
+                                      isConnected: true,
+                                      avatar: currentUser?.avatar,
+                                      isMuted: false,
+                                      isVoiceEnabled: _isVoiceEnabled,
+                                    );
+                                  },
+                                ),
+                                if (peers.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  ...peers.map((peer) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: _UserItem(
+                                        name: peer.userName ?? peer.userId,
+                                        isCurrentUser: false,
+                                        isConnected: peer.connected,
+                                        avatar: peer.avatar,
+                                        isMuted: peer.isMuted,
+                                        isVoiceEnabled: _isVoiceEnabled,
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Voice call controls
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: _isVoiceEnabled
+                                      ? LinearGradient(
+                                          colors: [
+                                            AppColors.error,
+                                            AppColors.error.withOpacity(0.8),
+                                          ],
+                                        )
+                                      : AppColors.gradientPrimary,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (_isVoiceEnabled
+                                              ? AppColors.error
+                                              : AppColors.primary)
+                                          .withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(dialogContext);
+                                    _toggleVoice();
+                                  },
+                                  icon: Icon(
+                                    _isVoiceEnabled
+                                        ? Icons.mic_rounded
+                                        : Icons.mic_off_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  label: Text(
+                                    _isVoiceEnabled ? 'End Voice Call' : 'Start Voice Call',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_isVoiceEnabled) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.success.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.graphic_eq_rounded,
+                                        size: 16,
+                                        color: AppColors.success,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Voice call active',
+                                        style: const TextStyle(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
+            tooltip: 'P2P Status & Active Users',
           ),
         ],
       ),
@@ -1019,20 +1264,48 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 ),
               ),
 
-              // Kanban sidebar
+              // Kanban sidebar (resizable)
               if (_showKanban)
-                Container(
-                  width: 350,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
+                Row(
+                  children: [
+                    // Resize handle
+                    MouseRegion(
+                      cursor: SystemMouseCursors.resizeColumn,
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (details) {
+                          setState(() {
+                            _kanbanWidth = (_kanbanWidth - details.delta.dx).clamp(250.0, 600.0);
+                          });
+                        },
+                        child: Container(
+                          width: 8,
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: Container(
+                              width: 2,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                borderRadius: BorderRadius.circular(1),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Column(
+                    ),
+                    // Kanban panel
+                    Container(
+                      width: _kanbanWidth,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Column(
                     children: [
                       // Create task button
                       Container(
@@ -1156,27 +1429,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                     ],
                   ),
                 ),
+                  ],
+                ),
             ],
           ),
-
-          // Active Users & Voice Call Panel (floating)
-          if (_showActiveUsers)
-            Positioned(
-              right: _showKanban ? 370 : 20,
-              top: 20,
-              child: _ActiveUsersPanel(
-                peers: state.peers,
-                isVoiceEnabled: _isVoiceEnabled,
-                onVoiceToggle: _toggleVoice,
-                currentUserId: ref.watch(authStateProvider).user?.id,
-              ),
-            ),
         ],
       ),
     );
   }
 
   void _toggleVoice() {
+    if (!mounted) return;
     setState(() {
       _isVoiceEnabled = !_isVoiceEnabled;
     });
@@ -1197,10 +1460,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       if (!status.isGranted) {
         final result = await Permission.microphone.request();
         if (!result.isGranted) {
-          _showSnackBar('❌ Microphone permission denied', isError: true);
-          setState(() {
-            _isVoiceEnabled = false;
-          });
+          if (mounted) {
+            _showSnackBar('❌ Microphone permission denied', isError: true);
+            setState(() {
+              _isVoiceEnabled = false;
+            });
+          }
           return;
         }
       }
@@ -1209,10 +1474,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       final webrtc = ref.read(whiteboardProvider.notifier).webrtc;
 
       if (webrtc == null) {
-        _showSnackBar('❌ WebRTC service not available', isError: true);
-        setState(() {
-          _isVoiceEnabled = false;
-        });
+        if (mounted) {
+          _showSnackBar('❌ WebRTC service not available', isError: true);
+          setState(() {
+            _isVoiceEnabled = false;
+          });
+        }
         return;
       }
 
@@ -1220,21 +1487,27 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       final success = await webrtc.startAudioStream();
 
       if (!success) {
-        _showSnackBar('❌ Failed to access microphone', isError: true);
-        setState(() {
-          _isVoiceEnabled = false;
-        });
+        if (mounted) {
+          _showSnackBar('❌ Failed to access microphone', isError: true);
+          setState(() {
+            _isVoiceEnabled = false;
+          });
+        }
         return;
       }
 
-      _showSnackBar('🎤 Voice call started', isError: false);
+      if (mounted) {
+        _showSnackBar('🎤 Voice call started', isError: false);
+      }
       debugPrint('✅ Voice call started successfully');
     } catch (e) {
       debugPrint('❌ Error starting voice call: $e');
-      _showSnackBar('❌ Failed to start voice call: $e', isError: true);
-      setState(() {
-        _isVoiceEnabled = false;
-      });
+      if (mounted) {
+        _showSnackBar('❌ Failed to start voice call: $e', isError: true);
+        setState(() {
+          _isVoiceEnabled = false;
+        });
+      }
     }
   }
 
@@ -1533,7 +1806,6 @@ class _TaskColumn extends StatelessWidget {
                     ),
                   )
                 : Scrollbar(
-                    thumbVisibility: true,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(8),
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -1927,236 +2199,43 @@ class _ToolButton extends StatelessWidget {
   }
 }
 
-// ===== ACTIVE USERS PANEL =====
+// ===== STAT ROW WIDGET =====
 
-class _ActiveUsersPanel extends StatelessWidget {
-  final List<Peer> peers;
-  final bool isVoiceEnabled;
-  final VoidCallback onVoiceToggle;
-  final String? currentUserId;
+class _StatRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  const _ActiveUsersPanel({
-    required this.peers,
-    required this.isVoiceEnabled,
-    required this.onVoiceToggle,
-    this.currentUserId,
+  const _StatRow({
+    required this.icon,
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 280),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
-        ],
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1.5,
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: AppColors.gradientPrimary,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.people_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Active Users',
-                        style: AppTextStyles.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${peers.length + 1} online',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: 14,
           ),
-
-          // Users list
-          Container(
-            padding: const EdgeInsets.all(12),
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Current user (You)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final currentUser = ref.watch(authStateProvider).user;
-                      return _UserItem(
-                        name: currentUser?.name ?? currentUser?.email ?? 'You',
-                        isCurrentUser: true,
-                        isConnected: true,
-                        avatar: currentUser?.avatar,
-                        isMuted:
-                            false, // Current user mic status - will be controlled by voice call
-                        isVoiceEnabled: isVoiceEnabled,
-                      );
-                    },
-                  ),
-
-                  if (peers.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    ...peers.map((peer) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _UserItem(
-                          name: peer.userName ?? peer.userId,
-                          isCurrentUser: false,
-                          isConnected: peer.connected,
-                          avatar: peer.avatar,
-                          isMuted: peer.isMuted,
-                          isVoiceEnabled: isVoiceEnabled,
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          // Voice call controls
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: isVoiceEnabled
-                        ? LinearGradient(
-                            colors: [
-                              AppColors.error,
-                              AppColors.error.withOpacity(0.8),
-                            ],
-                          )
-                        : AppColors.gradientPrimary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            (isVoiceEnabled
-                                    ? AppColors.error
-                                    : AppColors.primary)
-                                .withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: onVoiceToggle,
-                    icon: Icon(
-                      isVoiceEnabled
-                          ? Icons.mic_rounded
-                          : Icons.mic_off_rounded,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      isVoiceEnabled ? 'End Voice Call' : 'Start Voice Call',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                if (isVoiceEnabled) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.success.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.graphic_eq_rounded,
-                          size: 16,
-                          color: AppColors.success,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Voice call active',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -2270,19 +2349,21 @@ class _UserItem extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
+                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (isCurrentUser)
-                  Text(
+                  const Text(
                     '(You)',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
+                      fontSize: 12,
                     ),
                   ),
               ],

@@ -71,6 +71,16 @@ class MyApp extends ConsumerWidget {
         final isAuthenticated = authState.isAuthenticated;
         final path = state.matchedLocation;
         
+        // If authenticated and on login page, redirect to workspaces
+        if (isAuthenticated && (path == '/login' || path == '/')) {
+          final storage = ref.read(storageServiceProvider);
+          final lastWorkspaceId = storage.getLastWorkspace();
+          if (lastWorkspaceId != null) {
+            return '/workspace/$lastWorkspaceId/boards';
+          }
+          return '/workspaces';
+        }
+
         // Allow public routes
         if (path == '/login' || 
             path == '/forgot-password' || 
@@ -85,19 +95,17 @@ class MyApp extends ConsumerWidget {
           return null;
         }
 
+        // Allow workspace and board routes for authenticated users
+        if (isAuthenticated && 
+            (path.startsWith('/workspace/') || 
+             path.startsWith('/board/') ||
+             path == '/workspaces')) {
+          return null;
+        }
+
         // Require auth for other routes
         if (!isAuthenticated) {
           return '/login';
-        }
-
-        // Redirect root to workspaces or last workspace
-        if (path == '/' || path == '/login') {
-          final storage = ref.read(storageServiceProvider);
-          final lastWorkspaceId = storage.getLastWorkspace();
-          if (lastWorkspaceId != null) {
-            return '/workspace/$lastWorkspaceId/boards';
-          }
-          return '/workspaces';
         }
 
         return null;
@@ -178,7 +186,15 @@ class MyApp extends ConsumerWidget {
   }
 
   String _getInitialLocation(WidgetRef ref) {
-    // Always start from login screen
+    final authState = ref.read(authStateProvider);
+    if (authState.isAuthenticated) {
+      final storage = ref.read(storageServiceProvider);
+      final lastWorkspaceId = storage.getLastWorkspace();
+      if (lastWorkspaceId != null) {
+        return '/workspace/$lastWorkspaceId/boards';
+      }
+      return '/workspaces';
+    }
     return '/login';
   }
 }

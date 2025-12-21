@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/storage_service.dart';
+import '../../providers/language_provider.dart';
 import '../../ui/theme/app_colors.dart';
 
 /// Username input screen for offline mode
-class OfflineUsernameScreen extends StatefulWidget {
+class OfflineUsernameScreen extends ConsumerStatefulWidget {
   const OfflineUsernameScreen({super.key});
 
   @override
-  State<OfflineUsernameScreen> createState() => _OfflineUsernameScreenState();
+  ConsumerState<OfflineUsernameScreen> createState() => _OfflineUsernameScreenState();
 }
 
-class _OfflineUsernameScreenState extends State<OfflineUsernameScreen> {
+class _OfflineUsernameScreenState extends ConsumerState<OfflineUsernameScreen> {
   final _usernameController = TextEditingController();
   late StorageService _storage;
   bool _isLoading = false;
@@ -76,9 +78,12 @@ class _OfflineUsernameScreenState extends State<OfflineUsernameScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 900;
+    final currentLocale = ref.watch(languageProvider);
 
     return Scaffold(
-      body: Row(
+      body: Stack(
+        children: [
+          Row(
         children: [
           // Left side - decorative panel
           if (isWideScreen)
@@ -231,19 +236,8 @@ class _OfflineUsernameScreenState extends State<OfflineUsernameScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Guest option
-                      TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () async {
-                                await _storage.saveOfflineUsername('Guest');
-                                if (mounted) {
-                                  context.go('/offline-boards');
-                                }
-                              },
-                        child: const Text('Continue as Guest'),
-                      ),
-                      const SizedBox(height: 48),
+                     
+          
 
                       // Info box
                       Container(
@@ -294,7 +288,50 @@ class _OfflineUsernameScreenState extends State<OfflineUsernameScreen> {
             ),
           ),
         ],
+      ),      // Language switcher button
+      Positioned(
+        top: 16,
+        right: 16,
+        child: Material(
+          elevation: 2,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: () {
+              final currentLang = ref.read(languageProvider).languageCode;
+              final newLangCode = currentLang == 'en' ? 'vi' : 'en';
+              ref.read(languageProvider.notifier).setLanguage(newLangCode);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.language,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    currentLocale.languageCode.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-    );
+      ],
+    ),    );
   }
 }

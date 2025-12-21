@@ -197,6 +197,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState();
   }
 
+  void updateUser(Map<String, dynamic> userData) {
+    final user = User.fromJson(userData);
+    state = state.copyWith(user: user);
+    
+    final storage = ref.read(storageServiceProvider);
+    storage.saveUser(userData);
+  }
+
   Future<void> refreshUser() async {
     try {
       final api = ref.read(apiServiceProvider);

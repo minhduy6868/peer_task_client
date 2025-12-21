@@ -12,8 +12,9 @@ class CloudinaryService {
   static const String _cloudName = 'dy5vntutj';
   static const String _apiKey = '156727476264568';
   static const String _apiSecret = 'oHhCzliSvEq4HuQiJTwvyWbbuvA';
+  static const String _uploadPreset = 'ml_default'; // Use your upload preset
 
-  /// Upload image to Cloudinary
+  /// Upload image to Cloudinary (signed upload)
   /// Returns the secure URL of the uploaded image
   Future<String> uploadImage({
     required Uint8List imageBytes,
@@ -21,15 +22,22 @@ class CloudinaryService {
     String? folder,
   }) async {
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // Get current timestamp in seconds (Unix timestamp)
+      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
       
+      debugPrint('🕐 Current timestamp: $timestamp');
+      debugPrint('🕐 Current time: ${DateTime.now().toUtc()}');
+
+      // Build parameters for signature (must be in alphabetical order)
+      final params = <String, dynamic>{};
+      if (folder != null) {
+        params['folder'] = folder;
+      }
+      params['timestamp'] = timestamp;
+
       // Generate signature
-      final paramsToSign = {
-        'timestamp': timestamp.toString(),
-        if (folder != null) 'folder': folder,
-      };
-      
-      final signature = _generateSignature(paramsToSign, timestamp);
+      final signature = _generateSignature(params);
+      debugPrint('🔐 Generated signature: $signature');
 
       // Prepare multipart request
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
@@ -44,7 +52,7 @@ class CloudinaryService {
         ),
       );
 
-      // Add parameters
+      // Add all parameters
       request.fields['api_key'] = _apiKey;
       request.fields['timestamp'] = timestamp.toString();
       request.fields['signature'] = signature;
@@ -52,17 +60,23 @@ class CloudinaryService {
         request.fields['folder'] = folder;
       }
 
+      debugPrint('📤 Uploading to Cloudinary: $fileName');
+
       // Send request
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['secure_url'] as String;
+        final url = data['secure_url'] as String;
+        debugPrint('✅ Upload successful: $url');
+        return url;
       } else {
+        debugPrint('❌ Upload failed: ${response.statusCode} - ${response.body}');
         throw Exception('Upload failed: ${response.body}');
       }
     } catch (e) {
+      debugPrint('❌ Upload error: $e');
       throw Exception('Failed to upload image: $e');
     }
   }
@@ -73,15 +87,17 @@ class CloudinaryService {
     String? folder,
   }) async {
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
       
-      // Generate signature
-      final paramsToSign = {
-        'timestamp': timestamp.toString(),
-        if (folder != null) 'folder': folder,
+      // Build parameters for signature
+      final params = <String, dynamic>{
+        'timestamp': timestamp,
       };
+      if (folder != null) {
+        params['folder'] = folder;
+      }
       
-      final signature = _generateSignature(paramsToSign, timestamp);
+      final signature = _generateSignature(params);
 
       // Prepare request
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
@@ -109,17 +125,22 @@ class CloudinaryService {
   }
 
   /// Generate Cloudinary signature
-  String _generateSignature(Map<String, String> params, int timestamp) {
-    // Sort parameters alphabetically
+  /// Parameters must NOT include api_key, file, cloud_name, or resource_type
+  String _generateSignature(Map<String, dynamic> params) {
+    // Sort parameters alphabetically by key
     final sortedKeys = params.keys.toList()..sort();
     
-    // Build parameters string
+    // Build parameter string: key1=value1&key2=value2...
     final paramsString = sortedKeys
         .map((key) => '$key=${params[key]}')
         .join('&');
     
-    // Generate SHA1 hash
+    // Append API secret to the end
     final stringToSign = '$paramsString$_apiSecret';
+    
+    debugPrint('🔑 String to sign: $stringToSign');
+    
+    // Generate SHA1 hash
     final bytes = utf8.encode(stringToSign);
     final digest = sha1.convert(bytes);
     
@@ -129,15 +150,15 @@ class CloudinaryService {
   /// Delete image from Cloudinary
   Future<bool> deleteImage(String publicId) async {
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
       
-      // Generate signature for deletion
-      final paramsToSign = {
+      // Build parameters for signature
+      final params = <String, dynamic>{
         'public_id': publicId,
-        'timestamp': timestamp.toString(),
+        'timestamp': timestamp,
       };
       
-      final signature = _generateSignature(paramsToSign, timestamp);
+      final signature = _generateSignature(params);
 
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/destroy');
       

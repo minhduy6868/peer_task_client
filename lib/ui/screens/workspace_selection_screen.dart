@@ -101,7 +101,23 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
             await api.joinWorkspace(token);
             if (mounted) {
               Navigator.pop(context);
+              
+              // Refresh workspaces list
               ref.invalidate(workspacesProvider);
+              
+              // Wait a bit for the provider to refresh
+              await Future.delayed(const Duration(milliseconds: 300));
+              
+              // Get the updated workspaces
+              final workspaces = ref.read(workspacesProvider).value;
+              if (workspaces != null && workspaces.isNotEmpty) {
+                // Navigate to the most recently joined workspace (last in list)
+                final newWorkspace = workspaces.last;
+                if (mounted) {
+                  context.go('/workspace/${newWorkspace.id}/boards');
+                }
+              }
+              
               final l10n = AppLocalizations.of(context)!;
               context.showSuccessMessage(l10n.joinedSuccessfully);
             }
@@ -136,6 +152,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               title: Text(
                 l10n.selectWorkspace,
                 style: const TextStyle(
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),

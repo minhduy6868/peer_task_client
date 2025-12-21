@@ -42,11 +42,11 @@ class SignalingService {
       debugPrint('✅ Connected to signaling server');
       _isConnected = true;
       if (_currentBoardId != null) {
-        _socket!.emit('join-room', {'boardId': _currentBoardId});
+        _socket!.emit('join_room', _currentBoardId);
       }
     });
 
-    _socket!.on('room-joined', (data) {
+    _socket!.on('room_joined', (data) {
       debugPrint('📥 Room joined event received');
       final peers = (data['peers'] as List?)
           ?.map((p) => Peer.fromJson(p as Map<String, dynamic>))
@@ -54,12 +54,12 @@ class SignalingService {
       onRoomJoined?.call(peers);
     });
 
-    _socket!.on('peer-joined', (data) {
+    _socket!.on('peer_joined', (data) {
       debugPrint('📥 Peer joined: ${data['socketId']}');
       onPeerJoined?.call(Peer.fromJson(data as Map<String, dynamic>));
     });
 
-    _socket!.on('peer-left', (data) {
+    _socket!.on('peer_left', (data) {
       debugPrint('📤 Peer left: ${data['socketId']}');
       onPeerLeft?.call(Peer.fromJson(data as Map<String, dynamic>));
     });
@@ -71,7 +71,7 @@ class SignalingService {
       onSignal?.call(peerId, signal);
     });
 
-    _socket!.on('peer-mic-updated', (data) {
+    _socket!.on('peer_mic_updated', (data) {
       final socketId = data['socketId'] as String;
       final isMuted = data['isMuted'] as bool;
       debugPrint('🎤 Peer mic updated: $socketId -> ${isMuted ? "muted" : "unmuted"}');
@@ -101,7 +101,7 @@ class SignalingService {
     _currentBoardId = boardId;
     if (_isConnected) {
       debugPrint('🚪 Joining room: $boardId');
-      _socket?.emit('join-room', {'boardId': boardId});
+      _socket?.emit('join_room', boardId);
     }
   }
 
@@ -118,7 +118,7 @@ class SignalingService {
 
   void updateMicStatus(bool isMuted) {
     if (!_isConnected) return;
-    _socket?.emit('update-mic-status', {'isMuted': isMuted});
+    _socket?.emit('update_mic_status', {'isMuted': isMuted});
   }
 
   void disconnect() {

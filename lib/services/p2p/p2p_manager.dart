@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import '../../utils/platform_utils.dart';
 import '../../models/operation/operation.dart';
 import 'p2p_service_interface.dart';
-import '../native_p2p_service.dart' if (dart.library.html) '../web_p2p_service_stub.dart';
+import '../native_p2p_service.dart'
+    if (dart.library.html) '../native_p2p_service_stub.dart';
 import '../web_p2p_service.dart';
 
 /// Unified P2P Manager that handles both Web and Native P2P

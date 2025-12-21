@@ -883,7 +883,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
             borderRadius: BorderRadius.circular(24),
           ),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 700),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -895,9 +895,10 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
               ),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 // Header
                 Container(
                   padding: const EdgeInsets.all(24),
@@ -1143,7 +1144,8 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                     ],
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         );

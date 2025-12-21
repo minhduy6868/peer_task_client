@@ -165,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               padding: const EdgeInsets.all(16),
                               child: Image.asset(
-                                'assets/logo_peer.png',
+                                'assets/images/logo_peer.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   padding: EdgeInsets.all(isTablet ? 22 : 18),
                                   child: Image.asset(
-                                    'assets/logo_peer.png',
+                                    'assets/images/logo_peer.png',
                                     fit: BoxFit.contain,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Icon(

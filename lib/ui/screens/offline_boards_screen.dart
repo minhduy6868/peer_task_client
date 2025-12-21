@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../providers/language_provider.dart';
 import 'offline_board_screen.dart';
 import 'package:uuid/uuid.dart';
 import '../../services/storage_service.dart';
 import '../theme/app_colors.dart';
 
 /// Screen to create or select offline boards
-class OfflineBoardsScreen extends StatefulWidget {
+class OfflineBoardsScreen extends ConsumerStatefulWidget {
   const OfflineBoardsScreen({super.key});
 
   @override
-  State<OfflineBoardsScreen> createState() => _OfflineBoardsScreenState();
+  ConsumerState<OfflineBoardsScreen> createState() => _OfflineBoardsScreenState();
 }
 
-class _OfflineBoardsScreenState extends State<OfflineBoardsScreen> {
+class _OfflineBoardsScreenState extends ConsumerState<OfflineBoardsScreen> {
   @override
   void initState() {
     super.initState();
@@ -260,19 +262,22 @@ class _OfflineBoardsScreenState extends State<OfflineBoardsScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            username,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Colors.white,
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              username,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.edit,
-                            size: 14,
+                            size: 13,
                             color: Colors.white70,
                           ),
                         ],
