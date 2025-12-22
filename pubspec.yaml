@@ -25,6 +25,10 @@ dependencies:
   http: ^1.2.2
   permission_handler: ^11.3.1
 
+  # Firebase (chỉ dùng core cho analytics, không dùng database plugin)
+  firebase_core: ^3.6.0
+  # firebase_database: Không cần - dùng REST API thay vì plugin
+
   # Local Storage
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -51,7 +55,7 @@ dependencies:
   shimmer: ^3.0.0
   google_fonts: ^6.3.2
   screenshot: ^3.0.0
-  image_gallery_saver: ^2.0.3
+  # image_gallery_saver: ^2.0.3  # Temporarily disabled due to build issues
 
 dev_dependencies:
   flutter_test:

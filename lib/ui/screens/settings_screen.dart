@@ -579,42 +579,49 @@ class _ModernListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            leading,
+            size: 22,
+            color: AppColors.primary,
+          ),
         ),
-        child: Icon(
-          leading,
-          size: 22,
-          color: AppColors.primary,
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            inherit: true,
+          ),
         ),
-      ),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: AppTextStyles.bodySmall.copyWith(
+        subtitle: subtitle != null
+            ? Text(
+                subtitle!,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textTertiary,
+                  inherit: true,
+                ),
+              )
+            : null,
+        trailing: trailing != null
+            ? Icon(
+                trailing,
                 color: AppColors.textTertiary,
-              ),
-            )
-          : null,
-      trailing: trailing != null
-          ? Icon(
-              trailing,
-              color: AppColors.textTertiary,
-              size: 20,
-            )
-          : null,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                size: 20,
+              )
+            : null,
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
     );
   }
 }

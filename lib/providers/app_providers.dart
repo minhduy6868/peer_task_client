@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import '../services/signaling_service.dart';
 import '../services/storage_service.dart';
+import '../services/config_service.dart';
 import '../services/webrtc_service.dart';
 import '../core/sync_engine.dart';
 import '../models/user/user.dart';
@@ -21,9 +22,18 @@ final storageServiceProvider = Provider<StorageService>((ref) {
   return StorageService();
 });
 
+final configServiceProvider = Provider<ConfigService>((ref) {
+  return ConfigService();
+});
+
 final apiServiceProvider = Provider<ApiService>((ref) {
   final storage = ref.watch(storageServiceProvider);
-  return ApiService(storage: storage);
+  final config = ref.watch(configServiceProvider);
+  return ApiService(
+    storage: storage, 
+    configService: config,
+    baseUrl: config.serverUrl,
+  );
 });
 
 // Auth state
@@ -424,8 +434,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       },
     );
 
-    // Initialize signaling
-    final serverUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000';
+    // Initialize signaling - sử dụng URL từ ConfigService
+    final config = ref.read(configServiceProvider);
+    final serverUrl = config.serverUrl;
     debugPrint('🌐 Signaling server URL: $serverUrl');
 
     _signaling = SignalingService(

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_providers.dart';
 import 'providers/language_provider.dart';
 import 'services/storage_service.dart';
+import 'services/config_service.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/reset_password_screen.dart';
@@ -20,14 +23,24 @@ import 'ui/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   // Initialize storage
   final storage = StorageService();
   await storage.init();
+  
+  // Initialize config service (sẽ load URL từ Firebase)
+  final configService = ConfigService();
+  await configService.init();
   
   runApp(
     ProviderScope(
       overrides: [
         storageServiceProvider.overrideWithValue(storage),
+        configServiceProvider.overrideWithValue(configService),
       ],
       child: const MyApp(),
     ),

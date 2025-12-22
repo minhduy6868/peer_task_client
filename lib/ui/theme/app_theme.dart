@@ -6,7 +6,7 @@ import 'app_text_styles.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
-      useMaterial3: false, // Temporarily disable to fix TextStyle lerp issues
+      useMaterial3: true,
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -70,13 +70,6 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(
-            inherit: true,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            letterSpacing: 0.1,
-            height: 1.4,
-          ),
         ),
       ),
       
@@ -89,13 +82,6 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(
-            inherit: true,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            letterSpacing: 0.1,
-            height: 1.4,
-          ),
         ),
       ),
       
@@ -104,13 +90,6 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          textStyle: const TextStyle(
-            inherit: true,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: 0.1,
-            height: 1.4,
-          ),
         ),
       ),
       
@@ -140,20 +119,16 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.error, width: 2.5),
         ),
         labelStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textSecondary,
           fontSize: 14,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.25,
-          height: 1.5,
         ),
         hintStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textTertiary,
           fontSize: 14,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.25,
-          height: 1.5,
         ),
       ),
       
@@ -197,20 +172,16 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
         ),
         titleTextStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textPrimary,
           fontSize: 22,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
-          height: 1.4,
         ),
         contentTextStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textSecondary,
           fontSize: 14,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.25,
-          height: 1.5,
         ),
       ),
       
@@ -218,12 +189,10 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
         contentTextStyle: const TextStyle(
-          inherit: true,
           color: Colors.white,
           fontSize: 14,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.25,
-          height: 1.5,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -250,20 +219,16 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
         titleTextStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textPrimary,
           fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.15,
-          height: 1.5,
         ),
         subtitleTextStyle: const TextStyle(
-          inherit: true,
           color: AppColors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.4,
-          height: 1.5,
         ),
       ),
       

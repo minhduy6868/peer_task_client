@@ -110,9 +110,29 @@ class StorageService {
     await _authBox!.delete('offlineUsername');
   }
 
+  /// Clear authentication data but preserve offline username
   Future<void> clearAuth() async {
     if (_authBox == null) return;
+    
+    debugPrint('🔄 Clearing auth data...');
+    debugPrint('   Before clear - keys: ${_authBox!.keys.toList()}');
+    
+    // Save offline username before clearing
+    final offlineUsername = _authBox!.get('offlineUsername');
+    debugPrint('   Saved offline username: $offlineUsername');
+    
+    // Clear all auth data (removes token, refreshToken, userId, user, lastWorkspaceId, everything)
     await _authBox!.clear();
+    debugPrint('   After clear - keys: ${_authBox!.keys.toList()}');
+    
+    // Restore offline username if it existed
+    if (offlineUsername != null) {
+      await _authBox!.put('offlineUsername', offlineUsername);
+      debugPrint('   Restored offline username: $offlineUsername');
+    }
+    
+    debugPrint('   Final keys: ${_authBox!.keys.toList()}');
+    debugPrint('✅ Auth cleared - only offlineUsername preserved');
   }
 
   // Board state persistence

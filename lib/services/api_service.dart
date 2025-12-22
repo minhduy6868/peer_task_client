@@ -7,6 +7,7 @@ import '../models/workspace/workspace.dart';
 import '../models/board/board.dart';
 import '../models/api_error.dart';
 import 'storage_service.dart';
+import 'config_service.dart';
 
 /// PeerTask API Service
 /// 
@@ -73,15 +74,30 @@ import 'storage_service.dart';
 /// - Access control: owner sees ALL boards, editor/viewer only see boards they're added to
 
 class ApiService {
-  final String baseUrl;
+  String baseUrl;
   final StorageService storage;
+  final ConfigService configService;
   String? _accessToken;
   String? _refreshToken;
 
   ApiService({
     String? baseUrl,
     required this.storage,
-  }) : baseUrl = baseUrl ?? (kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000');
+    required this.configService,
+  }) : baseUrl = baseUrl ?? configService.cachedUrl ?? 'http://localhost:3000' {
+    // If no cached URL, initialize asynchronously in background
+    if (baseUrl == null && configService.cachedUrl == null) {
+      _initializeBaseUrl();
+    }
+  }
+
+  Future<void> _initializeBaseUrl() async {
+    try {
+      baseUrl = await configService.getBackendUrl();
+    } catch (e) {
+      // Keep using fallback localhost
+    }
+  }
 
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
@@ -124,30 +140,91 @@ class ApiService {
       throw Exception('No refresh token available');
     }
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/token/refresh'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'refreshToken': _refreshToken}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/token/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'refreshToken': _refreshToken}),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      // Save new access token
-      _accessToken = data['accessToken'];
-      await storage.saveAuthToken(data['accessToken']);
-      
-      // Handle refresh token rotation (if server provides new refresh token)
-      if (data['refreshToken'] != null) {
-        _refreshToken = data['refreshToken'];
-        await storage.saveRefreshToken(data['refreshToken']);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setTokens(accessToken: data['accessToken']);
+      } else {
+        throw Exception('Token refresh failed');
       }
-    } else {
-      throw Exception('Token refresh failed');
+    } catch (e) {
+      // Nếu refresh token fail, thử refresh URL và retry
+      debugPrint('⚠️ Token refresh failed, checking if URL issue: $e');
+      await _handleConnectionError();
+      rethrow;
     }
+  }
+  
+  /// Handle connection error - refresh URL từ Firebase và retry
+  Future<void> _handleConnectionError() async {
+    debugPrint('🔄 Handling connection error, refreshing URL...');
+    final newUrl = await configService.handleApiError();
+    if (newUrl != baseUrl) {
+      baseUrl = newUrl;
+      debugPrint('✅ Updated baseUrl to: $baseUrl');
+    }
+  }
+  
+  /// Wrapper cho HTTP requests với auto-retry on connection error
+  Future<http.Response> _safeHttpRequest(
+    Future<http.Response> Function() request, {
+    int maxRetries = 1,
+  }) async {
+    http.Response? response;
+    Exception? lastError;
+    
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        response = await request();
+        
+        // Check if response indicates connection issue
+        if (response.statusCode >= 500 || response.statusCode == 0) {
+          throw Exception('Server error: ${response.statusCode}');
+        }
+        
+        return response;
+        
+      } on SocketException catch (e) {
+        lastError = e;
+        debugPrint('❌ Socket error (attempt ${attempt + 1}/${maxRetries + 1}): $e');
+        
+        if (attempt < maxRetries) {
+          await _handleConnectionError();
+          await Future.delayed(Duration(seconds: attempt + 1));
+        }
+      } on TimeoutException catch (e) {
+        lastError = e as Exception;
+        debugPrint('❌ Timeout (attempt ${attempt + 1}/${maxRetries + 1}): $e');
+        
+        if (attempt < maxRetries) {
+          await _handleConnectionError();
+          await Future.delayed(Duration(seconds: attempt + 1));
+        }
+      } catch (e) {
+        lastError = e as Exception;
+        debugPrint('❌ Request error (attempt ${attempt + 1}/${maxRetries + 1}): $e');
+        
+        if (attempt < maxRetries) {
+          await _handleConnectionError();
+          await Future.delayed(Duration(seconds: attempt + 1));
+        } else {
+          rethrow;
+        }
+      }
+    }
+    
+    throw lastError ?? Exception('Request failed after $maxRetries retries');
   }
 
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning
     if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
   };
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:ui' as ui;
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
@@ -759,6 +760,35 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to boards list of this workspace
+            final boardAsync = ref.read(currentBoardProvider);
+            boardAsync.whenData((board) {
+              if (board != null && board.workspaceId != null) {
+                context.go('/workspace/${board.workspaceId}/boards');
+              } else {
+                // Fallback to workspace selection if no workspace ID
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/workspaces');
+                }
+              }
+            });
+            
+            // Immediate fallback if board data not available
+            if (!boardAsync.hasValue || boardAsync.value?.workspaceId == null) {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/workspaces');
+              }
+            }
+          },
+          tooltip: 'Back to boards',
+        ),
         title: const Text('Canvas + Kanban'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,

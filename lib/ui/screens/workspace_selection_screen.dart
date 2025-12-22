@@ -84,6 +84,10 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                 }
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             child: Text(l10n.create),
           ),
         ],
@@ -232,6 +236,14 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                       onPressed: () => ref.invalidate(workspacesProvider),
                       icon: const Icon(Icons.refresh_rounded),
                       label: Text(l10n.loading),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -286,6 +298,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                                 label: Text(l10n.createWorkspace),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 32,
                                     vertical: 18,
