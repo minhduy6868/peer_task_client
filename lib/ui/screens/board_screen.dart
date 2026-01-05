@@ -1,8 +1,15 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui' as ui;
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
@@ -40,6 +47,9 @@ class BoardScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
+  // Screenshot controller
+  final ScreenshotController _screenshotController = ScreenshotController();
+
   // Drawing state
   List<Offset> _currentPoints = [];
   Color _selectedColor = Colors.black;
@@ -97,6 +107,92 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     _taskController.dispose();
     _textController.dispose();
     super.dispose();
+  }
+
+  /// Capture screenshot of current board
+  Future<void> _captureScreenshot() async {
+    try {
+      final Uint8List? image = await _screenshotController.capture();
+      if (image == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('❌ Failed to capture screenshot')),
+          );
+        }
+        return;
+      }
+
+      if (kIsWeb) {
+        // For web, just show the image in a dialog or let user download via anchor
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Screenshot'),
+            content: Image.memory(image),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Get directory to save
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+      } else if (Platform.isIOS) {
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        // Windows/Desktop
+        directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      }
+
+      if (directory == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('❌ Failed to get save directory')),
+          );
+        }
+        return;
+      }
+
+      // Create filename
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'board_${widget.boardId}_$timestamp.png';
+      final filePath = '${directory.path}/$fileName';
+
+      // Save file
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('📸 Screenshot saved!\n$filePath'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () {
+                if (!kIsWeb && Platform.isWindows) {
+                  Process.run('explorer.exe', ['/select,', filePath]);
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error capturing screenshot: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Error: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _initBoard() async {
@@ -763,26 +859,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Navigate back to boards list of this workspace
-            final boardAsync = ref.read(currentBoardProvider);
-            boardAsync.whenData((board) {
-              if (board != null && board.workspaceId != null) {
+            // Try to pop first (simplest way to go back to boards list)
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              // Try to navigate to boards list
+              final boardAsync = ref.read(currentBoardProvider);
+              final board = boardAsync.value;
+              
+              if (board != null) {
                 context.go('/workspace/${board.workspaceId}/boards');
               } else {
-                // Fallback to workspace selection if no workspace ID
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/workspaces');
-                }
-              }
-            });
-            
-            // Immediate fallback if board data not available
-            if (!boardAsync.hasValue || boardAsync.value?.workspaceId == null) {
-              if (context.canPop()) {
-                context.pop();
-              } else {
+                // Last fallback - go to workspaces
                 context.go('/workspaces');
               }
             }
@@ -801,6 +889,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             ),
             onPressed: () => setState(() => _showKanban = !_showKanban),
             tooltip: 'Toggle Kanban',
+          ),
+          Tooltip(
+            message: 'Capture Screenshot',
+            child: IconButton(
+              icon: const Icon(Icons.camera_alt),
+              onPressed: _captureScreenshot,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.people_rounded),
@@ -1074,17 +1169,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                       ],
                     ),
                   ),
-                ),
-              );
+                )); 
             },
             tooltip: 'P2P Status & Active Users',
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Row(
-            children: [
+      body: Screenshot(
+        controller: _screenshotController,
+        child: Stack(
+          children: [
+            Row(
+              children: [
               // Canvas area
               Expanded(
                 child: Column(
@@ -1464,6 +1560,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -2149,8 +2246,7 @@ class _TaskColumn extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ),
-                        );
+                        ));
                       },
                     ),
                   ),
