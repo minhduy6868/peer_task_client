@@ -878,4 +878,153 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addFirstTask => 'Thêm công việc đầu tiên để bắt đầu';
+
+  @override
+  String get aiBrainstorm => 'AI Brainstorm';
+
+  @override
+  String get aiAssistant => 'Trợ lý AI';
+
+  @override
+  String get aiThinking => 'Đang suy nghĩ...';
+
+  @override
+  String get aiConnected => 'Đã kết nối AI';
+
+  @override
+  String get aiDisconnected => 'AI chưa kết nối';
+
+  @override
+  String get aiConnectionError => 'Không thể kết nối Ollama';
+
+  @override
+  String get aiConnectionErrorHint =>
+      'Hãy chắc chắn Ollama đang chạy (ollama serve)';
+
+  @override
+  String get aiRetryConnection => 'Thử kết nối lại';
+
+  @override
+  String get brainstormMode => 'Brainstorm';
+
+  @override
+  String get brainstormHint => 'Mở rộng ý tưởng';
+
+  @override
+  String get tasksMode => 'Công việc';
+
+  @override
+  String get tasksHint => 'Tạo danh sách việc';
+
+  @override
+  String get improveMode => 'Cải thiện';
+
+  @override
+  String get improveHint => 'Cải thiện văn bản';
+
+  @override
+  String get enterIdeaToBrainstorm => 'Nhập ý tưởng để brainstorm...';
+
+  @override
+  String get describeProjectForTasks =>
+      'Mô tả dự án để tạo danh sách công việc...';
+
+  @override
+  String get enterTextToImprove => 'Nhập văn bản cần cải thiện...';
+
+  @override
+  String get addToBoard => 'Thêm vào bảng';
+
+  @override
+  String get addedToCanvas => 'Đã thêm vào canvas!';
+
+  @override
+  String get copy => 'Sao chép';
+
+  @override
+  String get copied => 'Đã sao chép!';
+
+  @override
+  String get mainIdea => 'Ý tưởng chính';
+
+  @override
+  String get relatedIdeas => 'Ý tưởng liên quan';
+
+  @override
+  String get connections => 'Kết nối';
+
+  @override
+  String get nextActions => 'Hành động tiếp theo';
+
+  @override
+  String get questionsToConsider => 'Câu hỏi để suy ngẫm';
+
+  @override
+  String get highPriority => 'Ưu tiên cao';
+
+  @override
+  String get mediumPriority => 'Ưu tiên trung bình';
+
+  @override
+  String get lowPriority => 'Ưu tiên thấp';
+
+  @override
+  String get taskList => 'Danh sách công việc';
+
+  @override
+  String get summary => 'Tổng kết';
+
+  @override
+  String get totalTasks => 'Tổng số công việc';
+
+  @override
+  String get estimatedTime => 'Thời gian ước tính';
+
+  @override
+  String get improvedText => 'Văn bản cải thiện';
+
+  @override
+  String get changes => 'Thay đổi';
+
+  @override
+  String get dragToMove => 'Kéo để di chuyển';
+
+  @override
+  String get clickToSelect => 'Nhấn để chọn';
+
+  @override
+  String get textAddedToBoard => 'Đã thêm văn bản vào bảng';
+
+  @override
+  String get voiceCall => 'Gọi thoại';
+
+  @override
+  String get startVoiceCall => 'Bắt đầu gọi thoại';
+
+  @override
+  String get endVoiceCall => 'Kết thúc cuộc gọi';
+
+  @override
+  String get microphonePermissionDenied => 'Quyền truy cập micro bị từ chối';
+
+  @override
+  String get screenshot => 'Chụp màn hình';
+
+  @override
+  String get screenshotSaved => 'Đã lưu ảnh chụp màn hình!';
+
+  @override
+  String get screenshotFailed => 'Không thể chụp màn hình';
+
+  @override
+  String get canvasAndKanban => 'Canvas + Kanban';
+
+  @override
+  String get showKanban => 'Hiện Kanban';
+
+  @override
+  String get hideKanban => 'Ẩn Kanban';
+
+  @override
+  String get backToBoards => 'Quay lại danh sách bảng';
 }

@@ -1,3 +1,4 @@
-{
-  "api_base_url": "https://nonfermentable-unsapientially-maryellen.ngrok-free.dev"
+﻿{
+    "api_base_url":  "https://nonfermentable-unsapientially-maryellen.ngrok-free.dev",
+    "ollama_url":  "https://nonfermentable-unsapientially-maryellen.ngrok-free.dev"
 }

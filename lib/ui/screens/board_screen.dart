@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -13,8 +14,11 @@ import 'package:flutter/foundation.dart';
 import '../../providers/app_providers.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
+import '../../services/config_service.dart';
 import '../../utils/error_display.dart';
+import '../../l10n/app_localizations.dart';
 import '../widgets/task_dialog.dart';
+import '../widgets/ai_brainstorm_panel.dart';
 import '../theme/app_colors.dart';
 
 enum DrawingTool { pen, eraser, text }
@@ -79,6 +83,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   // Voice call state
   bool _isVoiceEnabled = false;
+
+  // AI Brainstorm state
+  bool _showAIPanel = false;
+  
+  // Text position counter for unique placement
+  int _textAddCounter = 0;
+  
+  // Selected text for moving
+  String? _selectedTextId;
+  Offset? _textDragStart;
 
   @override
   void initState() {
@@ -527,6 +541,277 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     debugPrint('📝 Added text by $displayName');
   }
+  
+  // ===== DRAGGABLE TEXT WIDGET =====
+  
+  Widget _buildDraggableText(Map<String, dynamic> textObj) {
+    final text = textObj['text'] as String?;
+    final textId = textObj['id'] as String?;
+    final positionList = textObj['position'] as List?;
+    
+    if (text == null || textId == null || positionList == null || positionList.length < 2) {
+      return const SizedBox.shrink();
+    }
+    
+    final position = Offset(
+      (positionList[0] as num).toDouble(),
+      (positionList[1] as num).toDouble(),
+    );
+    final color = Color((textObj['color'] as num?)?.toInt() ?? 0xFF000000);
+    final fontSize = (textObj['fontSize'] as num?)?.toDouble() ?? 14.0;
+    final actorName = textObj['actorName'] as String?;
+    final isSelected = _selectedTextId == textId;
+    
+    // Format text for better display (convert markdown-like syntax)
+    final formattedText = _formatDisplayText(text);
+    
+    return Positioned(
+      left: position.dx,
+      top: position.dy,
+      child: Draggable<String>(
+        data: textId,
+        feedback: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              formattedText,
+              style: TextStyle(color: color, fontSize: fontSize),
+            ),
+          ),
+        ),
+        childWhenDragging: Container(
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey, style: BorderStyle.solid, width: 1),
+          ),
+          child: Text(
+            formattedText,
+            style: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: fontSize),
+          ),
+        ),
+        onDragEnd: (details) {
+          // Get the render box of the canvas to calculate local position
+          final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+          if (renderBox != null) {
+            // Calculate new position relative to drop location
+            final newX = details.offset.dx.clamp(0.0, 1800.0);
+            final newY = details.offset.dy - 100; // Offset for AppBar
+            
+            final notifier = ref.read(whiteboardProvider.notifier);
+            notifier.createOperation(OperationType.createObject, {
+              'id': textId,
+              'type': 'text',
+              'data': {
+                ...textObj,
+                'position': [newX.clamp(0.0, 1800.0), newY.clamp(0.0, 1800.0)],
+              },
+            }, shouldSaveBackend: true);
+          }
+        },
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedTextId = isSelected ? null : textId;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.white.withOpacity(0.95),
+              border: Border.all(
+                color: isSelected ? Colors.blue : Colors.grey.withOpacity(0.3),
+                width: isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Text content with formatted display
+                SelectableText(
+                  formattedText,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: fontSize,
+                    height: 1.5,
+                  ),
+                ),
+                // Author label
+                if (actorName != null && actorName.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '— $actorName',
+                      style: TextStyle(
+                        color: color.withOpacity(0.5),
+                        fontSize: fontSize * 0.75,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                // Action buttons when selected
+                if (isSelected)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTextActionButton(
+                          icon: Icons.delete_outline,
+                          label: 'Xóa',
+                          color: Colors.red,
+                          onTap: () => _deleteText(textId),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildTextActionButton(
+                          icon: Icons.open_with,
+                          label: 'Kéo để di chuyển',
+                          color: Colors.blue,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Format text for better display - handle markdown-like syntax
+  String _formatDisplayText(String text) {
+    String formatted = text;
+    
+    // Remove markdown bold markers **text** -> text (greedy match)
+    while (formatted.contains('**')) {
+      formatted = formatted.replaceAllMapped(
+        RegExp(r'\*\*([^*]+)\*\*'),
+        (match) => match.group(1) ?? '',
+      );
+      // Break if no more changes
+      if (!formatted.contains('**')) break;
+    }
+    
+    // Remove markdown italic markers *text* -> text (but not bullets)
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'(?<!\*)\*([^*\n]+)\*(?!\*)'),
+      (match) => match.group(1) ?? '',
+    );
+    
+    // Remove __text__ -> text
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'__([^_]+)__'),
+      (match) => match.group(1) ?? '',
+    );
+    
+    // Remove _text_ -> text
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'(?<!_)_([^_\n]+)_(?!_)'),
+      (match) => match.group(1) ?? '',
+    );
+    
+    // Remove `code` markers
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'`([^`]+)`'),
+      (match) => match.group(1) ?? '',
+    );
+    
+    // Remove # headers
+    formatted = formatted.replaceAll(RegExp(r'^#{1,6}\s*', multiLine: true), '');
+    
+    // Clean up multiple consecutive newlines (max 2)
+    formatted = formatted.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    
+    // Standardize bullet points
+    formatted = formatted.replaceAll(RegExp(r'^\s*[-]\s+', multiLine: true), '• ');
+    
+    // Keep checkbox format
+    formatted = formatted.replaceAll(RegExp(r'^\s*\[\s*\]\s*', multiLine: true), '☐ ');
+    formatted = formatted.replaceAll(RegExp(r'^\s*\[x\]\s*', multiLine: true), '☑ ');
+    
+    // Clean up leading/trailing whitespace per line
+    formatted = formatted.split('\n').map((line) => line.trimRight()).join('\n');
+    
+    // Final trim
+    formatted = formatted.trim();
+    
+    return formatted;
+  }
+  
+  Widget _buildTextActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(fontSize: 10, color: color),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _deleteText(String textId) {
+    final notifier = ref.read(whiteboardProvider.notifier);
+    notifier.createOperation(OperationType.deleteObject, {
+      'id': textId,
+      'type': 'text',
+    }, shouldSaveBackend: true);
+    
+    setState(() {
+      _selectedTextId = null;
+    });
+  }
 
   // ===== KANBAN METHODS =====
 
@@ -875,23 +1160,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               }
             }
           },
-          tooltip: 'Back to boards',
+          tooltip: AppLocalizations.of(context)!.backToBoards,
         ),
-        title: const Text('Canvas + Kanban'),
+        title: Text(AppLocalizations.of(context)!.canvasAndKanban),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,
         actions: [
+          // AI Brainstorm button
+          IconButton(
+            icon: Icon(
+              _showAIPanel ? Icons.auto_awesome : Icons.auto_awesome_outlined,
+              color: _showAIPanel ? AppColors.accentPurple : null,
+            ),
+            onPressed: () => setState(() => _showAIPanel = !_showAIPanel),
+            tooltip: AppLocalizations.of(context)!.aiBrainstorm,
+          ),
           IconButton(
             icon: Icon(
               _showKanban ? Icons.view_sidebar : Icons.view_sidebar_outlined,
             ),
             onPressed: () => setState(() => _showKanban = !_showKanban),
-            tooltip: 'Toggle Kanban',
+            tooltip: _showKanban ? AppLocalizations.of(context)!.hideKanban : AppLocalizations.of(context)!.showKanban,
           ),
           Tooltip(
-            message: 'Capture Screenshot',
+            message: AppLocalizations.of(context)!.screenshot,
             child: IconButton(
               icon: const Icon(Icons.camera_alt),
               onPressed: _captureScreenshot,
@@ -1361,26 +1655,51 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                         maxScale: 5.0,
                         constrained: false,
                         child: GestureDetector(
-                          onTapUp: (details) =>
-                              _onCanvasTap(details.localPosition),
-                          onPanStart: (details) =>
-                              _onPanStart(details.localPosition),
-                          onPanUpdate: (details) =>
-                              _onPanUpdate(details.localPosition),
-                          onPanEnd: (details) => _onPanEnd(),
+                          behavior: HitTestBehavior.translucent,
+                          onTapUp: (details) {
+                            // Deselect text if tapping elsewhere
+                            if (_selectedTextId != null) {
+                              setState(() => _selectedTextId = null);
+                            }
+                            _onCanvasTap(details.localPosition);
+                          },
+                          onPanStart: (details) {
+                            // Only draw if no text is selected
+                            if (_selectedTextId == null) {
+                              _onPanStart(details.localPosition);
+                            }
+                          },
+                          onPanUpdate: (details) {
+                            if (_selectedTextId == null) {
+                              _onPanUpdate(details.localPosition);
+                            }
+                          },
+                          onPanEnd: (details) {
+                            if (_selectedTextId == null) {
+                              _onPanEnd();
+                            }
+                          },
                           child: Container(
                             width: 2000,
                             height: 2000,
                             color: Colors.white,
-                            child: CustomPaint(
-                              painter: _StrokePainter(
-                                strokes: strokes,
-                                texts: texts,
-                                activeStrokes: {
-                                  ..._activeStrokes,
-                                  ...peerActiveStrokes,
-                                },
-                              ),
+                            child: Stack(
+                              children: [
+                                // Drawing layer (strokes only)
+                                CustomPaint(
+                                  size: const Size(2000, 2000),
+                                  painter: _StrokePainter(
+                                    strokes: strokes,
+                                    texts: [], // Don't draw texts in CustomPaint
+                                    activeStrokes: {
+                                      ..._activeStrokes,
+                                      ...peerActiveStrokes,
+                                    },
+                                  ),
+                                ),
+                                // Draggable text objects layer
+                                ...texts.map((textObj) => _buildDraggableText(textObj)),
+                              ],
                             ),
                           ),
                         ),
@@ -1559,6 +1878,65 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 ),
             ],
           ),
+          // AI Brainstorm Panel (floating overlay)
+          if (_showAIPanel)
+            Positioned(
+              right: 16,
+              top: 16,
+              bottom: 16,
+              width: 400,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                child: AIBrainstormPanel(
+                  configService: ref.read(configServiceProvider),
+                  onCreateTask: (title, description) {
+                    // Close AI panel and create task
+                    setState(() => _showAIPanel = false);
+                    _showTaskDialog();
+                  },
+                  onAddToBoard: (text) {
+                    // Add text to canvas with unique position (staggered)
+                    final notifier = ref.read(whiteboardProvider.notifier);
+                    final authState = ref.read(authStateProvider);
+                    final now = DateTime.now().millisecondsSinceEpoch;
+                    final textId = 'text-$now';
+                    
+                    final displayName = authState.user?.name?.isNotEmpty == true
+                        ? authState.user!.name!
+                        : authState.user?.email ?? 'Unknown';
+                    
+                    // Calculate unique position with offset
+                    _textAddCounter++;
+                    final random = Random();
+                    final baseX = 100.0 + (_textAddCounter % 5) * 150.0;
+                    final baseY = 100.0 + (_textAddCounter ~/ 5) * 200.0;
+                    final offsetX = random.nextDouble() * 30 - 15;
+                    final offsetY = random.nextDouble() * 30 - 15;
+                    
+                    notifier.createOperation(OperationType.createObject, {
+                      'id': textId,
+                      'type': 'text',
+                      'data': {
+                        'text': text,
+                        'position': [baseX + offsetX, baseY + offsetY],
+                        'color': Colors.black.value,
+                        'fontSize': 14.0,
+                        'actor': authState.user?.id ?? 'unknown',
+                        'actorName': displayName,
+                      },
+                    }, shouldSaveBackend: true);
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ ${AppLocalizations.of(context)!.addedToCanvas}'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
         ],
       ),
       ),

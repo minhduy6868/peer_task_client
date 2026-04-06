@@ -593,7 +593,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(maxWidth: 420, maxHeight: 700),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -605,20 +605,21 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                   ),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.gradientPrimary,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.gradientPrimary,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
+                          ),
                         ),
-                      ),
-                      child: Row(
+                        child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -857,6 +858,7 @@ class _InvitesTabState extends ConsumerState<_InvitesTab> {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             );

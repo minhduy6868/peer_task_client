@@ -349,5 +349,65 @@
     }
   },
   "noTasks": "Chưa có công việc nào",
-  "addFirstTask": "Thêm công việc đầu tiên để bắt đầu"
+  "addFirstTask": "Thêm công việc đầu tiên để bắt đầu",
+
+  "aiBrainstorm": "AI Brainstorm",
+  "aiAssistant": "Trợ lý AI",
+  "aiThinking": "Đang suy nghĩ...",
+  "aiConnected": "Đã kết nối AI",
+  "aiDisconnected": "AI chưa kết nối",
+  "aiConnectionError": "Không thể kết nối Ollama",
+  "aiConnectionErrorHint": "Hãy chắc chắn Ollama đang chạy (ollama serve)",
+  "aiRetryConnection": "Thử kết nối lại",
+  
+  "brainstormMode": "Brainstorm",
+  "brainstormHint": "Mở rộng ý tưởng",
+  "tasksMode": "Công việc",
+  "tasksHint": "Tạo danh sách việc",
+  "improveMode": "Cải thiện",
+  "improveHint": "Cải thiện văn bản",
+  
+  "enterIdeaToBrainstorm": "Nhập ý tưởng để brainstorm...",
+  "describeProjectForTasks": "Mô tả dự án để tạo danh sách công việc...",
+  "enterTextToImprove": "Nhập văn bản cần cải thiện...",
+  
+  "addToBoard": "Thêm vào bảng",
+  "addedToCanvas": "Đã thêm vào canvas!",
+  "copy": "Sao chép",
+  "copied": "Đã sao chép!",
+  
+  "mainIdea": "Ý tưởng chính",
+  "relatedIdeas": "Ý tưởng liên quan",
+  "connections": "Kết nối",
+  "nextActions": "Hành động tiếp theo",
+  "questionsToConsider": "Câu hỏi để suy ngẫm",
+  
+  "highPriority": "Ưu tiên cao",
+  "mediumPriority": "Ưu tiên trung bình",
+  "lowPriority": "Ưu tiên thấp",
+  "taskList": "Danh sách công việc",
+  "summary": "Tổng kết",
+  "totalTasks": "Tổng số công việc",
+  "estimatedTime": "Thời gian ước tính",
+  
+  "improvedText": "Văn bản cải thiện",
+  "changes": "Thay đổi",
+  
+  "dragToMove": "Kéo để di chuyển",
+  "clickToSelect": "Nhấn để chọn",
+  "textAddedToBoard": "Đã thêm văn bản vào bảng",
+  
+  "voiceCall": "Gọi thoại",
+  "startVoiceCall": "Bắt đầu gọi thoại",
+  "endVoiceCall": "Kết thúc cuộc gọi",
+  "microphonePermissionDenied": "Quyền truy cập micro bị từ chối",
+  
+  "screenshot": "Chụp màn hình",
+  "screenshotSaved": "Đã lưu ảnh chụp màn hình!",
+  "screenshotFailed": "Không thể chụp màn hình",
+  
+  "canvasAndKanban": "Canvas + Kanban",
+  "showKanban": "Hiện Kanban",
+  "hideKanban": "Ẩn Kanban",
+  "backToBoards": "Quay lại danh sách bảng"
 }

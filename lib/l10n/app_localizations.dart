@@ -1777,6 +1777,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add your first task to get started'**
   String get addFirstTask;
+
+  /// No description provided for @aiBrainstorm.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Brainstorm'**
+  String get aiBrainstorm;
+
+  /// No description provided for @aiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get aiAssistant;
+
+  /// No description provided for @aiThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking...'**
+  String get aiThinking;
+
+  /// No description provided for @aiConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Connected'**
+  String get aiConnected;
+
+  /// No description provided for @aiDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Disconnected'**
+  String get aiDisconnected;
+
+  /// No description provided for @aiConnectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot connect to Ollama'**
+  String get aiConnectionError;
+
+  /// No description provided for @aiConnectionErrorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure Ollama is running (ollama serve)'**
+  String get aiConnectionErrorHint;
+
+  /// No description provided for @aiRetryConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Connection'**
+  String get aiRetryConnection;
+
+  /// No description provided for @brainstormMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Brainstorm'**
+  String get brainstormMode;
+
+  /// No description provided for @brainstormHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand ideas'**
+  String get brainstormHint;
+
+  /// No description provided for @tasksMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get tasksMode;
+
+  /// No description provided for @tasksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate task list'**
+  String get tasksHint;
+
+  /// No description provided for @improveMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve'**
+  String get improveMode;
+
+  /// No description provided for @improveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve text'**
+  String get improveHint;
+
+  /// No description provided for @enterIdeaToBrainstorm.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter idea to brainstorm...'**
+  String get enterIdeaToBrainstorm;
+
+  /// No description provided for @describeProjectForTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe project to generate tasks...'**
+  String get describeProjectForTasks;
+
+  /// No description provided for @enterTextToImprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter text to improve...'**
+  String get enterTextToImprove;
+
+  /// No description provided for @addToBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Board'**
+  String get addToBoard;
+
+  /// No description provided for @addedToCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to canvas!'**
+  String get addedToCanvas;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied!'**
+  String get copied;
+
+  /// No description provided for @mainIdea.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Idea'**
+  String get mainIdea;
+
+  /// No description provided for @relatedIdeas.
+  ///
+  /// In en, this message translates to:
+  /// **'Related Ideas'**
+  String get relatedIdeas;
+
+  /// No description provided for @connections.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get connections;
+
+  /// No description provided for @nextActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Actions'**
+  String get nextActions;
+
+  /// No description provided for @questionsToConsider.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions to Consider'**
+  String get questionsToConsider;
+
+  /// No description provided for @highPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'High Priority'**
+  String get highPriority;
+
+  /// No description provided for @mediumPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium Priority'**
+  String get mediumPriority;
+
+  /// No description provided for @lowPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Priority'**
+  String get lowPriority;
+
+  /// No description provided for @taskList.
+  ///
+  /// In en, this message translates to:
+  /// **'Task List'**
+  String get taskList;
+
+  /// No description provided for @summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get summary;
+
+  /// No description provided for @totalTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Tasks'**
+  String get totalTasks;
+
+  /// No description provided for @estimatedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Time'**
+  String get estimatedTime;
+
+  /// No description provided for @improvedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Improved Text'**
+  String get improvedText;
+
+  /// No description provided for @changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes'**
+  String get changes;
+
+  /// No description provided for @dragToMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to move'**
+  String get dragToMove;
+
+  /// No description provided for @clickToSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to select'**
+  String get clickToSelect;
+
+  /// No description provided for @textAddedToBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Text added to board'**
+  String get textAddedToBoard;
+
+  /// No description provided for @voiceCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Call'**
+  String get voiceCall;
+
+  /// No description provided for @startVoiceCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Voice Call'**
+  String get startVoiceCall;
+
+  /// No description provided for @endVoiceCall.
+  ///
+  /// In en, this message translates to:
+  /// **'End Voice Call'**
+  String get endVoiceCall;
+
+  /// No description provided for @microphonePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied'**
+  String get microphonePermissionDenied;
+
+  /// No description provided for @screenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot'**
+  String get screenshot;
+
+  /// No description provided for @screenshotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot saved!'**
+  String get screenshotSaved;
+
+  /// No description provided for @screenshotFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to capture screenshot'**
+  String get screenshotFailed;
+
+  /// No description provided for @canvasAndKanban.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas + Kanban'**
+  String get canvasAndKanban;
+
+  /// No description provided for @showKanban.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Kanban'**
+  String get showKanban;
+
+  /// No description provided for @hideKanban.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Kanban'**
+  String get hideKanban;
+
+  /// No description provided for @backToBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to boards'**
+  String get backToBoards;
 }
 
 class _AppLocalizationsDelegate

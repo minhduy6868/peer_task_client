@@ -884,4 +884,152 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addFirstTask => 'Add your first task to get started';
+
+  @override
+  String get aiBrainstorm => 'AI Brainstorm';
+
+  @override
+  String get aiAssistant => 'AI Assistant';
+
+  @override
+  String get aiThinking => 'Thinking...';
+
+  @override
+  String get aiConnected => 'AI Connected';
+
+  @override
+  String get aiDisconnected => 'AI Disconnected';
+
+  @override
+  String get aiConnectionError => 'Cannot connect to Ollama';
+
+  @override
+  String get aiConnectionErrorHint =>
+      'Make sure Ollama is running (ollama serve)';
+
+  @override
+  String get aiRetryConnection => 'Retry Connection';
+
+  @override
+  String get brainstormMode => 'Brainstorm';
+
+  @override
+  String get brainstormHint => 'Expand ideas';
+
+  @override
+  String get tasksMode => 'Tasks';
+
+  @override
+  String get tasksHint => 'Generate task list';
+
+  @override
+  String get improveMode => 'Improve';
+
+  @override
+  String get improveHint => 'Improve text';
+
+  @override
+  String get enterIdeaToBrainstorm => 'Enter idea to brainstorm...';
+
+  @override
+  String get describeProjectForTasks => 'Describe project to generate tasks...';
+
+  @override
+  String get enterTextToImprove => 'Enter text to improve...';
+
+  @override
+  String get addToBoard => 'Add to Board';
+
+  @override
+  String get addedToCanvas => 'Added to canvas!';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied => 'Copied!';
+
+  @override
+  String get mainIdea => 'Main Idea';
+
+  @override
+  String get relatedIdeas => 'Related Ideas';
+
+  @override
+  String get connections => 'Connections';
+
+  @override
+  String get nextActions => 'Next Actions';
+
+  @override
+  String get questionsToConsider => 'Questions to Consider';
+
+  @override
+  String get highPriority => 'High Priority';
+
+  @override
+  String get mediumPriority => 'Medium Priority';
+
+  @override
+  String get lowPriority => 'Low Priority';
+
+  @override
+  String get taskList => 'Task List';
+
+  @override
+  String get summary => 'Summary';
+
+  @override
+  String get totalTasks => 'Total Tasks';
+
+  @override
+  String get estimatedTime => 'Estimated Time';
+
+  @override
+  String get improvedText => 'Improved Text';
+
+  @override
+  String get changes => 'Changes';
+
+  @override
+  String get dragToMove => 'Drag to move';
+
+  @override
+  String get clickToSelect => 'Click to select';
+
+  @override
+  String get textAddedToBoard => 'Text added to board';
+
+  @override
+  String get voiceCall => 'Voice Call';
+
+  @override
+  String get startVoiceCall => 'Start Voice Call';
+
+  @override
+  String get endVoiceCall => 'End Voice Call';
+
+  @override
+  String get microphonePermissionDenied => 'Microphone permission denied';
+
+  @override
+  String get screenshot => 'Screenshot';
+
+  @override
+  String get screenshotSaved => 'Screenshot saved!';
+
+  @override
+  String get screenshotFailed => 'Failed to capture screenshot';
+
+  @override
+  String get canvasAndKanban => 'Canvas + Kanban';
+
+  @override
+  String get showKanban => 'Show Kanban';
+
+  @override
+  String get hideKanban => 'Hide Kanban';
+
+  @override
+  String get backToBoards => 'Back to boards';
 }

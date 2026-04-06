@@ -349,5 +349,65 @@
     }
   },
   "noTasks": "No tasks yet",
-  "addFirstTask": "Add your first task to get started"
+  "addFirstTask": "Add your first task to get started",
+
+  "aiBrainstorm": "AI Brainstorm",
+  "aiAssistant": "AI Assistant",
+  "aiThinking": "Thinking...",
+  "aiConnected": "AI Connected",
+  "aiDisconnected": "AI Disconnected",
+  "aiConnectionError": "Cannot connect to Ollama",
+  "aiConnectionErrorHint": "Make sure Ollama is running (ollama serve)",
+  "aiRetryConnection": "Retry Connection",
+  
+  "brainstormMode": "Brainstorm",
+  "brainstormHint": "Expand ideas",
+  "tasksMode": "Tasks",
+  "tasksHint": "Generate task list",
+  "improveMode": "Improve",
+  "improveHint": "Improve text",
+  
+  "enterIdeaToBrainstorm": "Enter idea to brainstorm...",
+  "describeProjectForTasks": "Describe project to generate tasks...",
+  "enterTextToImprove": "Enter text to improve...",
+  
+  "addToBoard": "Add to Board",
+  "addedToCanvas": "Added to canvas!",
+  "copy": "Copy",
+  "copied": "Copied!",
+  
+  "mainIdea": "Main Idea",
+  "relatedIdeas": "Related Ideas",
+  "connections": "Connections",
+  "nextActions": "Next Actions",
+  "questionsToConsider": "Questions to Consider",
+  
+  "highPriority": "High Priority",
+  "mediumPriority": "Medium Priority",
+  "lowPriority": "Low Priority",
+  "taskList": "Task List",
+  "summary": "Summary",
+  "totalTasks": "Total Tasks",
+  "estimatedTime": "Estimated Time",
+  
+  "improvedText": "Improved Text",
+  "changes": "Changes",
+  
+  "dragToMove": "Drag to move",
+  "clickToSelect": "Click to select",
+  "textAddedToBoard": "Text added to board",
+  
+  "voiceCall": "Voice Call",
+  "startVoiceCall": "Start Voice Call",
+  "endVoiceCall": "End Voice Call",
+  "microphonePermissionDenied": "Microphone permission denied",
+  
+  "screenshot": "Screenshot",
+  "screenshotSaved": "Screenshot saved!",
+  "screenshotFailed": "Failed to capture screenshot",
+  
+  "canvasAndKanban": "Canvas + Kanban",
+  "showKanban": "Show Kanban",
+  "hideKanban": "Hide Kanban",
+  "backToBoards": "Back to boards"
 }

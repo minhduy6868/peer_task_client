@@ -10,14 +10,20 @@ import 'package:http/http.dart' as http;
 class ConfigService {
   static const String _configBoxName = 'app_config';
   static const String _serverUrlKey = 'server_url';
+  static const String _ollamaUrlKey = 'ollama_url';
   static const String _assetConfigPath = 'assets/config.json';
   static const String _firebaseUrl = 'https://clone-puretrovey-default-rtdb.firebaseio.com/peer-task-be-url.json';
+  static const String _firebaseOllamaUrl = 'https://clone-puretrovey-default-rtdb.firebaseio.com/peer-task-ollama-url.json';
   
   late Box _configBox;
   String? _cachedServerUrl;
+  String? _cachedOllamaUrl;
   
   /// Get cached URL (for ApiService initialization)
   String? get cachedUrl => _cachedServerUrl;
+  
+  /// Get cached Ollama URL (for AIService initialization)
+  String? get cachedOllamaUrl => _cachedOllamaUrl;
   
   /// Get backend URL with async initialization if needed
   Future<String> getBackendUrl() async {
@@ -27,10 +33,19 @@ class ConfigService {
     return serverUrl;
   }
   
+  /// Get Ollama URL with async initialization if needed
+  Future<String> getOllamaUrl() async {
+    if (_cachedOllamaUrl == null) {
+      await _loadOllamaConfig();
+    }
+    return ollamaUrl;
+  }
+  
   /// Initialize ConfigService
   Future<void> init() async {
     _configBox = await Hive.openBox(_configBoxName);
     await _loadConfig();
+    await _loadOllamaConfig();
   }
   
   /// Load config with priority and retry:
@@ -89,6 +104,57 @@ class ConfigService {
     }
   }
   
+  /// Load Ollama config with priority:
+  /// 1. User override (local storage)
+  /// 2. Firebase Realtime Database
+  /// 3. Assets config.json
+  /// 4. Fallback localhost
+  Future<void> _loadOllamaConfig() async {
+    try {
+      // 1. Check user override
+      final savedUrl = _configBox.get(_ollamaUrlKey);
+      
+      if (savedUrl != null && savedUrl is String && savedUrl.isNotEmpty) {
+        _cachedOllamaUrl = savedUrl;
+        debugPrint('🤖 Using saved Ollama URL: $_cachedOllamaUrl');
+        final isHealthy = await testOllamaConnection(_cachedOllamaUrl!);
+        if (!isHealthy) {
+          debugPrint('⚠️ Saved Ollama URL unhealthy, trying Firebase...');
+          await _tryLoadOllamaFromFirebase();
+        }
+        return;
+      }
+      
+      // 2. Load from Firebase
+      final firebaseLoaded = await _tryLoadOllamaFromFirebase();
+      if (firebaseLoaded) {
+        return;
+      }
+      
+      // 3. Load from assets/config.json
+      try {
+        final configString = await rootBundle.loadString(_assetConfigPath);
+        final configJson = jsonDecode(configString) as Map<String, dynamic>;
+        
+        _cachedOllamaUrl = configJson['ollama_url'] as String?;
+        if (_cachedOllamaUrl != null && _cachedOllamaUrl!.isNotEmpty) {
+          debugPrint('🤖 Loaded Ollama URL from assets: $_cachedOllamaUrl');
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Assets Ollama load failed: $e');
+      }
+      
+      // 4. Fallback
+      _cachedOllamaUrl = _getDefaultOllamaUrl();
+      debugPrint('🤖 Using fallback Ollama URL: $_cachedOllamaUrl');
+      
+    } catch (e) {
+      debugPrint('⚠️ Error loading Ollama config: $e');
+      _cachedOllamaUrl = _getDefaultOllamaUrl();
+    }
+  }
+  
   /// Get default URL based on platform
   String _getDefaultUrl() {
     if (kIsWeb) {
@@ -97,6 +163,18 @@ class ConfigService {
       return 'http://localhost:3000';
     } else {
       return 'http://10.0.2.2:3000';
+    }
+  }
+  
+  /// Get default Ollama URL based on platform
+  String _getDefaultOllamaUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:11434';
+    } else if (_isDesktopPlatform()) {
+      return 'http://localhost:11434';
+    } else {
+      // Android emulator - but Ollama typically needs ngrok for mobile
+      return 'http://10.0.2.2:11434';
     }
   }
   
@@ -140,9 +218,43 @@ class ConfigService {
     return false;
   }
   
+  /// Try load Ollama URL from Firebase
+  Future<bool> _tryLoadOllamaFromFirebase({int maxRetries = 2}) async {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        debugPrint('🔥 Firebase Ollama load attempt ${attempt + 1}/$maxRetries...');
+        
+        final response = await http.get(
+          Uri.parse(_firebaseOllamaUrl),
+        ).timeout(const Duration(seconds: 5));
+        
+        if (response.statusCode == 200) {
+          final ollamaUrl = json.decode(response.body) as String?;
+          
+          if (ollamaUrl != null && ollamaUrl.isNotEmpty && _isValidUrl(ollamaUrl)) {
+            _cachedOllamaUrl = ollamaUrl;
+            debugPrint('✅ Firebase Ollama URL loaded: $_cachedOllamaUrl');
+            return true;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Firebase Ollama attempt ${attempt + 1} failed: $e');
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(seconds: attempt + 1));
+        }
+      }
+    }
+    return false;
+  }
+  
   /// Get current server URL
   String get serverUrl {
     return _cachedServerUrl ?? _getDefaultUrl();
+  }
+  
+  /// Get current Ollama URL
+  String get ollamaUrl {
+    return _cachedOllamaUrl ?? _getDefaultOllamaUrl();
   }
   
   /// Update server URL
@@ -241,11 +353,55 @@ class ConfigService {
     }
   }
   
+  /// Test Ollama connection
+  Future<bool> testOllamaConnection(String url) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$url/api/tags'),
+        headers: {'ngrok-skip-browser-warning': 'true'},
+      ).timeout(const Duration(seconds: 5));
+      
+      debugPrint('🤖 Ollama test to $url: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('❌ Ollama connection test failed: $e');
+      return false;
+    }
+  }
+  
+  /// Update Ollama URL
+  Future<void> updateOllamaUrl(String newUrl) async {
+    if (!_isValidUrl(newUrl)) {
+      throw ArgumentError('Invalid URL format: $newUrl');
+    }
+    
+    await _configBox.put(_ollamaUrlKey, newUrl);
+    _cachedOllamaUrl = newUrl;
+    
+    debugPrint('✅ Ollama URL updated to: $newUrl');
+  }
+  
+  /// Refresh Ollama URL from Firebase
+  Future<bool> refreshOllamaFromFirebase({int maxRetries = 2}) async {
+    debugPrint('🔄 Refreshing Ollama URL from Firebase...');
+    
+    final loaded = await _tryLoadOllamaFromFirebase(maxRetries: maxRetries);
+    
+    if (!loaded) {
+      _cachedOllamaUrl = _getDefaultOllamaUrl();
+      debugPrint('⚠️ Firebase Ollama refresh failed, using default: $_cachedOllamaUrl');
+    }
+    
+    return loaded;
+  }
+  
   /// Get config
   Map<String, dynamic> getConfig() {
     return {
       'server_url': serverUrl,
+      'ollama_url': ollamaUrl,
       'is_custom': _configBox.containsKey(_serverUrlKey),
+      'is_ollama_custom': _configBox.containsKey(_ollamaUrlKey),
       'cached_at': DateTime.now().toIso8601String(),
     };
   }
