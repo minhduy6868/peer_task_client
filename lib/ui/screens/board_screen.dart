@@ -19,6 +19,8 @@ import '../../utils/error_display.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/task_dialog.dart';
 import '../widgets/ai_brainstorm_panel.dart';
+import '../widgets/app_dialog.dart';
+import '../widgets/app_toast.dart';
 import '../theme/app_colors.dart';
 
 enum DrawingTool { pen, eraser, text }
@@ -116,8 +118,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   @override
   void dispose() {
-    // Disconnect from P2P when leaving board
     debugPrint('🚪 Leaving board: $_currentBoardId');
+    final boardId = _currentBoardId;
+    if (boardId != null) {
+      ref.read(whiteboardProvider.notifier).saveDraft(boardId: boardId);
+    }
     _taskController.dispose();
     _textController.dispose();
     super.dispose();
@@ -214,15 +219,78 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     if (!mounted) return;
 
     debugPrint('🎯 Initializing board: ${widget.boardId}');
+    ref.read(currentBoardIdProvider.notifier).state = widget.boardId;
 
-    // Connect to P2P first
-    ref.read(whiteboardProvider.notifier).connectToBoard(widget.boardId);
+    var restored = 0;
+    try {
+      restored = await ref
+          .read(whiteboardProvider.notifier)
+          .connectToBoard(widget.boardId);
+    } catch (e) {
+      debugPrint('❌ Error connecting to board: $e');
+      restored = await ref
+          .read(whiteboardProvider.notifier)
+          .restoreDraft(widget.boardId);
+      if (mounted) {
+        context.showErrorSnackBar(e);
+      }
+    }
 
-    // Load board members
+    if (!mounted) return;
     await _loadBoardMembers();
+    await _loadFromBackend();
 
-    // Load from backend
-    _loadFromBackend();
+    if (!mounted) return;
+    if (restored > 0) {
+      AppToast.show(
+        context,
+        message: AppLocalizations.of(context)!.draftRestored,
+        type: ToastType.success,
+      );
+    }
+  }
+
+  String _formatDraftTime(DateTime savedAt) {
+    final local = savedAt.toLocal();
+    final now = DateTime.now();
+    final time =
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return time;
+    }
+    return '${local.day}/${local.month} $time';
+  }
+
+  Future<void> _saveDraftPressed() async {
+    try {
+      await ref
+          .read(whiteboardProvider.notifier)
+          .saveDraft(boardId: widget.boardId, throwOnError: true);
+      if (!mounted) return;
+      AppToast.show(
+        context,
+        message: AppLocalizations.of(context)!.draftSaved,
+        type: ToastType.success,
+      );
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
+    }
+  }
+
+  Future<void> _discardDraftPressed() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await AppDialog.showConfirm(
+      context,
+      title: l10n.discardDraft,
+      message: l10n.discardDraftConfirm,
+      confirmText: l10n.delete,
+      cancelText: l10n.cancel,
+      isDanger: true,
+    );
+    if (confirmed != true) return;
+    await ref.read(whiteboardProvider.notifier).discardDraft(widget.boardId);
   }
 
   Future<void> _loadBoardMembers() async {
@@ -479,30 +547,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       });
     }
 
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Text'),
+        title: Text(l10n.addText),
         content: TextField(
           controller: _textController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter text...',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: l10n.enterText,
+            border: const OutlineInputBorder(),
           ),
           maxLines: 3,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               _addText();
               Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: Text(l10n.addText),
           ),
         ],
       ),
@@ -1138,6 +1207,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final doingTasks = tasks.where((t) => t['status'] == 'doing').toList();
     final doneTasks = tasks.where((t) => t['status'] == 'done').toList();
 
+    final l10n = AppLocalizations.of(context)!;
+    final board = ref.watch(currentBoardProvider).value;
+    final boardTitle = board?.name.isNotEmpty == true
+        ? board!.name
+        : l10n.canvasAndKanban;
+    final draftLabel = state.hasUnsavedChanges
+        ? l10n.unsavedDraft
+        : state.draftSavedAt != null
+            ? l10n.draftSavedAt(_formatDraftTime(state.draftSavedAt!))
+            : null;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1149,9 +1229,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               context.pop();
             } else {
               // Try to navigate to boards list
-              final boardAsync = ref.read(currentBoardProvider);
-              final board = boardAsync.value;
-              
               if (board != null) {
                 context.go('/workspace/${board.workspaceId}/boards');
               } else {
@@ -1160,14 +1237,69 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               }
             }
           },
-          tooltip: AppLocalizations.of(context)!.backToBoards,
+          tooltip: l10n.backToBoards,
         ),
-        title: Text(AppLocalizations.of(context)!.canvasAndKanban),
+        toolbarHeight: 64,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              boardTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (draftLabel != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      draftLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: state.hasUnsavedChanges
+                            ? AppColors.warning
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  if (state.draftSavedAt != null) ...[
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: l10n.discardDraft,
+                      child: GestureDetector(
+                        onTap: _discardDraftPressed,
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+          ],
+        ),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: state.hasUnsavedChanges,
+              smallSize: 8,
+              backgroundColor: AppColors.warning,
+              child: const Icon(Icons.save_outlined),
+            ),
+            onPressed: _saveDraftPressed,
+            tooltip: l10n.saveDraft,
+          ),
           // AI Brainstorm button
           IconButton(
             icon: Icon(
@@ -1502,13 +1634,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primarySubtle,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.person_rounded,
                                     size: 16,
                                     color: AppColors.primary,
@@ -1529,8 +1661,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                                                   .watch(authStateProvider)
                                                   .user
                                                   ?.email ??
-                                              'You',
-                                    style: TextStyle(
+                                              l10n.you,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                       color: AppColors.textPrimary,
@@ -1544,7 +1676,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             // Drawing tools
                             _ToolButton(
                               icon: Icons.edit_rounded,
-                              label: 'Pen',
+                              label: l10n.pen,
                               isSelected: _selectedTool == DrawingTool.pen,
                               onTap: () => setState(
                                 () => _selectedTool = DrawingTool.pen,
@@ -1552,7 +1684,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             ),
                             _ToolButton(
                               icon: Icons.auto_fix_high_rounded,
-                              label: 'Eraser',
+                              label: l10n.eraser,
                               isSelected: _selectedTool == DrawingTool.eraser,
                               onTap: () => setState(
                                 () => _selectedTool = DrawingTool.eraser,
@@ -1560,7 +1692,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             ),
                             _ToolButton(
                               icon: Icons.text_fields_rounded,
-                              label: 'Text',
+                              label: l10n.text,
                               isSelected: _selectedTool == DrawingTool.text,
                               onTap: () => setState(
                                 () => _selectedTool = DrawingTool.text,
@@ -1573,11 +1705,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             IconButton(
                               icon: const Icon(Icons.undo_rounded),
                               onPressed: _undoStack.isEmpty ? null : _undo,
-                              tooltip: 'Undo (${_undoStack.length})',
+                              tooltip: '${l10n.undo} (${_undoStack.length})',
                             ),
 
                             const VerticalDivider(),
-                            const Text('Color: '),
+                            Text('${l10n.color}: '),
                             const SizedBox(width: 8),
                             ...[
                               'black',
@@ -1589,21 +1721,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                               'purple',
                             ].map((colorName) {
                               final color = _getColor(colorName);
+                              final selected = _selectedColor == color;
                               return GestureDetector(
                                 onTap: () =>
                                     setState(() => _selectedColor = color),
                                 child: Container(
                                   margin: const EdgeInsets.only(right: 8),
-                                  width: 32,
-                                  height: 32,
+                                  width: 28,
+                                  height: 28,
                                   decoration: BoxDecoration(
                                     color: color,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: _selectedColor == color
-                                          ? Colors.black
-                                          : Colors.grey,
-                                      width: _selectedColor == color ? 3 : 1,
+                                      color: selected
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                      width: selected ? 3 : 1,
                                     ),
                                   ),
                                 ),
@@ -1612,7 +1745,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             const SizedBox(width: 16),
 
                             // Stroke width slider
-                            const Text('Width: '),
+                            Text('${l10n.width}: '),
                             SizedBox(
                               width: 100,
                               child: Slider(
@@ -1629,7 +1762,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                             // Text size slider (shown only when text tool selected)
                             if (_selectedTool == DrawingTool.text) ...[
                               const SizedBox(width: 16),
-                              const Text('Text Size: '),
+                              Text('${l10n.textSize}: '),
                               SizedBox(
                                 width: 120,
                                 child: Slider(
@@ -1644,6 +1777,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                               ),
                             ],
                           ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      color: AppColors.surface,
+                      child: Text(
+                        _selectedTool == DrawingTool.eraser
+                            ? l10n.toolHintEraser
+                            : _selectedTool == DrawingTool.text
+                                ? l10n.toolHintText
+                                : l10n.toolHintPen,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),

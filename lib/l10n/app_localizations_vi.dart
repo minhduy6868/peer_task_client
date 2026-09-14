@@ -1027,4 +1027,51 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get backToBoards => 'Quay lại danh sách bảng';
+
+  @override
+  String get saveDraft => 'Lưu nháp lên server';
+
+  @override
+  String get draftSaved => 'Đã lưu nháp lên server';
+
+  @override
+  String get draftRestored =>
+      'Đã khôi phục nét chưa lưu và ghi lên server';
+
+  @override
+  String get unsavedDraft => 'Chưa lưu lên server';
+
+  @override
+  String get discardDraft => 'Xóa bản dự phòng máy';
+
+  @override
+  String get discardDraftConfirm =>
+      'Chỉ xóa bản dự phòng trên máy? Bản trên server vẫn giữ nguyên.';
+
+  @override
+  String draftSavedAt(String time) => 'Đã lưu · $time';
+
+  @override
+  String get addText => 'Thêm văn bản';
+
+  @override
+  String get enterText => 'Nhập văn bản…';
+
+  @override
+  String get textSize => 'Cỡ chữ';
+
+  @override
+  String get width => 'Nét';
+
+  @override
+  String get you => 'Bạn';
+
+  @override
+  String get toolHintPen => 'Vẽ trên canvas';
+
+  @override
+  String get toolHintEraser => 'Tẩy nét vẽ';
+
+  @override
+  String get toolHintText => 'Chạm canvas để thêm chữ';
 }

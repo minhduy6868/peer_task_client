@@ -2071,6 +2071,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to boards'**
   String get backToBoards;
+
+  /// No description provided for @saveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft to server'**
+  String get saveDraft;
+
+  /// No description provided for @draftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved to server'**
+  String get draftSaved;
+
+  /// No description provided for @draftRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved strokes were recovered and saved to the server'**
+  String get draftRestored;
+
+  /// No description provided for @unsavedDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved to server yet'**
+  String get unsavedDraft;
+
+  /// No description provided for @discardDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard local backup'**
+  String get discardDraft;
+
+  /// No description provided for @discardDraftConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the local backup only? The canvas on the server stays as it is.'**
+  String get discardDraftConfirm;
+
+  /// No description provided for @draftSavedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved · {time}'**
+  String draftSavedAt(String time);
+
+  /// No description provided for @addText.
+  ///
+  /// In en, this message translates to:
+  /// **'Add text'**
+  String get addText;
+
+  /// No description provided for @enterText.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter text…'**
+  String get enterText;
+
+  /// No description provided for @textSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get textSize;
+
+  /// No description provided for @width.
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get width;
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
+  /// No description provided for @toolHintPen.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw on the canvas'**
+  String get toolHintPen;
+
+  /// No description provided for @toolHintEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase strokes'**
+  String get toolHintEraser;
+
+  /// No description provided for @toolHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the canvas to add text'**
+  String get toolHintText;
 }
 
 class _AppLocalizationsDelegate

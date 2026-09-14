@@ -409,5 +409,27 @@
   "canvasAndKanban": "Canvas + Kanban",
   "showKanban": "Hiện Kanban",
   "hideKanban": "Ẩn Kanban",
-  "backToBoards": "Quay lại danh sách bảng"
+  "backToBoards": "Quay lại danh sách bảng",
+  "saveDraft": "Lưu nháp lên server",
+  "draftSaved": "Đã lưu nháp lên server",
+  "draftRestored": "Đã khôi phục nét chưa lưu và ghi lên server",
+  "unsavedDraft": "Chưa lưu lên server",
+  "discardDraft": "Xóa bản dự phòng máy",
+  "discardDraftConfirm": "Chỉ xóa bản dự phòng trên máy? Bản trên server vẫn giữ nguyên.",
+  "draftSavedAt": "Đã lưu · {time}",
+  "@draftSavedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "addText": "Thêm văn bản",
+  "enterText": "Nhập văn bản…",
+  "textSize": "Cỡ chữ",
+  "width": "Nét",
+  "you": "Bạn",
+  "toolHintPen": "Vẽ trên canvas",
+  "toolHintEraser": "Tẩy nét vẽ",
+  "toolHintText": "Chạm canvas để thêm chữ"
 }

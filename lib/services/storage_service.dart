@@ -277,4 +277,30 @@ class StorageService {
       await _operationsBox!.delete(key);
     }
   }
+
+  String _draftKey(String boardId) => 'draft_$boardId';
+
+  /// Local canvas draft (strokes + text). Separate from offline board state.
+  Future<void> saveBoardDraft(String boardId, Map<String, dynamic> draft) async {
+    if (_operationsBox == null) return;
+    await _operationsBox!.put(_draftKey(boardId), json.encode(draft));
+  }
+
+  Map<String, dynamic>? getBoardDraft(String boardId) {
+    final data = _operationsBox?.get(_draftKey(boardId));
+    if (data == null) return null;
+    try {
+      final decoded = json.decode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (e) {
+      debugPrint('Error loading board draft $boardId: $e');
+    }
+    return null;
+  }
+
+  Future<void> clearBoardDraft(String boardId) async {
+    if (_operationsBox == null) return;
+    await _operationsBox!.delete(_draftKey(boardId));
+  }
 }

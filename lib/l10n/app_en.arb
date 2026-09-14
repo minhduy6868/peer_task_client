@@ -409,5 +409,27 @@
   "canvasAndKanban": "Canvas + Kanban",
   "showKanban": "Show Kanban",
   "hideKanban": "Hide Kanban",
-  "backToBoards": "Back to boards"
+  "backToBoards": "Back to boards",
+  "saveDraft": "Save draft to server",
+  "draftSaved": "Draft saved to server",
+  "draftRestored": "Unsaved strokes were recovered and saved to the server",
+  "unsavedDraft": "Not saved to server yet",
+  "discardDraft": "Discard local backup",
+  "discardDraftConfirm": "Delete the local backup only? The canvas on the server stays as it is.",
+  "draftSavedAt": "Saved · {time}",
+  "@draftSavedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "addText": "Add text",
+  "enterText": "Enter text…",
+  "textSize": "Text size",
+  "width": "Width",
+  "you": "You",
+  "toolHintPen": "Draw on the canvas",
+  "toolHintEraser": "Erase strokes",
+  "toolHintText": "Tap the canvas to add text"
 }

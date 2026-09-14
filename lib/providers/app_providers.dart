@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -295,6 +297,8 @@ class WhiteboardState {
   final bool isConnected;
   final double zoom;
   final Offset pan;
+  final DateTime? draftSavedAt;
+  final bool hasUnsavedChanges;
 
   WhiteboardState({
     this.operations = const [],
@@ -304,6 +308,8 @@ class WhiteboardState {
     this.isConnected = false,
     this.zoom = 1.0,
     this.pan = Offset.zero,
+    this.draftSavedAt,
+    this.hasUnsavedChanges = false,
   });
 
   WhiteboardState copyWith({
@@ -314,6 +320,9 @@ class WhiteboardState {
     bool? isConnected,
     double? zoom,
     Offset? pan,
+    DateTime? draftSavedAt,
+    bool clearDraftSavedAt = false,
+    bool? hasUnsavedChanges,
   }) {
     return WhiteboardState(
       operations: operations ?? this.operations,
@@ -323,6 +332,10 @@ class WhiteboardState {
       isConnected: isConnected ?? this.isConnected,
       zoom: zoom ?? this.zoom,
       pan: pan ?? this.pan,
+      draftSavedAt: clearDraftSavedAt
+          ? null
+          : (draftSavedAt ?? this.draftSavedAt),
+      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
     );
   }
 }
@@ -333,14 +346,55 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   WebRTCService? _webrtc;
   SyncEngine? _syncEngine;
   String? _currentBoardId;
+  Timer? _draftSaveTimer;
+  bool _hydrating = false;
+  final Set<String> _syncedOpIds = {};
+
+  static const _draftableTypes = {'stroke', 'text'};
 
   WhiteboardNotifier(this.ref) : super(WhiteboardState());
+
+  bool _isDraftable(Operation op) {
+    final type = op.payload['type'] as String?;
+    return type != null && _draftableTypes.contains(type);
+  }
+
+  void _markDraftDirtyIfNeeded(Operation op) {
+    if (_hydrating || !_isDraftable(op)) return;
+    state = state.copyWith(hasUnsavedChanges: true);
+    _scheduleDraftSave();
+  }
+
+  void _scheduleDraftSave() {
+    final boardId = _currentBoardId;
+    if (boardId == null) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 800), () {
+      unawaited(saveDraft(boardId: boardId));
+    });
+  }
+
+  void _refreshDraftStatus({DateTime? savedAt}) {
+    final unsynced = state.operations
+        .where(_isDraftable)
+        .any((op) => !_syncedOpIds.contains(op.opId));
+    state = state.copyWith(
+      hasUnsavedChanges: unsynced,
+      draftSavedAt: unsynced ? state.draftSavedAt : (savedAt ?? DateTime.now()),
+    );
+  }
+
+  Map<String, dynamic> _payloadForBackend(Operation op) {
+    final payload = Map<String, dynamic>.from(op.payload);
+    payload.remove('_saveBackend');
+    return payload;
+  }
 
   // Getter to access WebRTC service
   WebRTCService? get webrtc => _webrtc;
 
   // Save operation to backend database
-  Future<void> _saveOperationToBackend(
+  Future<bool> _saveOperationToBackend(
     String boardId,
     Operation op,
     ApiService api,
@@ -350,16 +404,40 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         boardId: boardId,
         operationId: op.opId,
         operationType: op.type.name,
-        payload: op.payload,
+        payload: _payloadForBackend(op),
         timestamp: op.timestamp,
       );
+      _syncedOpIds.add(op.opId);
+      return true;
     } catch (e) {
       debugPrint('Error saving operation to backend: $e');
-      // Don't throw - P2P sync should continue even if backend save fails
+      return false;
     }
   }
 
-  Future<void> connectToBoard(
+  Future<int> _flushOpsToServer(String boardId, List<Operation> ops) async {
+    final api = ref.read(apiServiceProvider);
+    var saved = 0;
+    var failed = 0;
+    for (final op in ops) {
+      if (_syncedOpIds.contains(op.opId)) {
+        saved++;
+        continue;
+      }
+      final ok = await _saveOperationToBackend(boardId, op, api);
+      if (ok) {
+        saved++;
+      } else {
+        failed++;
+      }
+    }
+    if (failed > 0) {
+      throw ApiError.network('Failed to save draft to server');
+    }
+    return saved;
+  }
+
+  Future<int> connectToBoard(
     String boardId, [
     void Function(Operation)? onRemoteOperation,
   ]) async {
@@ -369,7 +447,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       disconnect();
     } else if (_currentBoardId == boardId && state.isConnected) {
       debugPrint('⚠️  Already connected to board $boardId, skipping reconnect');
-      return;
+      return hydrateCanvas(boardId);
     }
 
     _currentBoardId = boardId;
@@ -390,13 +468,17 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       onOperationApplied: (op) {
         // Update state when operation is applied
         state = state.copyWith(operations: [...state.operations, op]);
+        _markDraftDirtyIfNeeded(op);
       },
       onOperationBroadcast: (op) {
         // Save to backend ONLY if shouldSaveBackend flag is true
         final shouldSave = op.payload['_saveBackend'] ?? true;
         if (shouldSave) {
           debugPrint('💾 Saving operation to backend: ${op.type.name}');
-          _saveOperationToBackend(_boardId, op, api);
+          unawaited((() async {
+            final ok = await _saveOperationToBackend(_boardId, op, api);
+            if (ok) _refreshDraftStatus();
+          })());
         } else {
           debugPrint('⏭️  Skipping backend save for: ${op.type.name}');
         }
@@ -516,20 +598,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       onReconnected: () async {
         // When reconnected, sync operations from backend
         debugPrint('♻️ Reconnected - syncing operations from backend');
-        try {
-          final api = ref.read(apiServiceProvider);
-          final operations = await api.getBoardOperations(boardId);
-          for (final opData in operations) {
-            try {
-              final operation = Operation.fromJson(opData);
-              _syncEngine?.receiveOperation(operation);
-            } catch (e) {
-              debugPrint('Error applying operation after reconnect: $e');
-            }
-          }
-        } catch (e) {
-          debugPrint('Error syncing operations after reconnect: $e');
-        }
+        await hydrateCanvas(boardId);
       },
     );
 
@@ -544,6 +613,172 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     for (final op in offlineOps) {
       _syncEngine!.receiveOperation(op);
       await storage.clearPendingOperation(boardId, op.opId);
+    }
+
+    return hydrateCanvas(boardId);
+  }
+
+  /// Replay server history, then upload any newer local-only strokes/text.
+  Future<int> hydrateCanvas(String boardId) async {
+    _hydrating = true;
+    var restored = 0;
+    try {
+      await _loadBackendOperations(boardId);
+      restored = await restoreDraft(boardId);
+    } finally {
+      _hydrating = false;
+    }
+    final unsynced = state.operations
+        .where(_isDraftable)
+        .where((op) => !_syncedOpIds.contains(op.opId))
+        .toList();
+    if (unsynced.isNotEmpty) {
+      try {
+        await saveDraft(boardId: boardId);
+      } catch (e) {
+        debugPrint('Error flushing restored draft to server: $e');
+      }
+    }
+    return restored;
+  }
+
+  Future<void> _loadBackendOperations(String boardId) async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final operations = await api.getBoardOperations(boardId);
+      for (final opData in operations) {
+        try {
+          final mapped = Map<String, dynamic>.from(opData);
+          mapped['actor'] ??= 'unknown';
+          final payload = mapped['payload'];
+          if (payload is Map) {
+            mapped['payload'] = Map<String, dynamic>.from(payload);
+          }
+          final operation = Operation.fromJson(mapped);
+          if ((operation.payload['type'] as String?) == 'cursor') continue;
+          _syncedOpIds.add(operation.opId);
+          _applyLocally(operation);
+        } catch (e) {
+          debugPrint('Error applying backend operation: $e');
+        }
+      }
+      debugPrint('✅ Loaded ${operations.length} operations from backend');
+    } catch (e) {
+      debugPrint('Error loading board operations: $e');
+    }
+  }
+
+  void _applyLocally(Operation operation) {
+    if (_syncEngine != null) {
+      _syncEngine!.receiveOperation(operation);
+      return;
+    }
+    if (state.operations.any((op) => op.opId == operation.opId)) return;
+    state = state.copyWith(operations: [...state.operations, operation]);
+  }
+
+  bool _shouldRestoreDraftOp(Operation draftOp) {
+    if (state.operations.any((op) => op.opId == draftOp.opId)) return false;
+    final objectId = draftOp.payload['id'];
+    if (objectId == null) return true;
+    final existing = state.operations.where(
+      (op) => op.payload['id'] == objectId && _isDraftable(op),
+    );
+    if (existing.isEmpty) return true;
+    final latest = existing
+        .map((op) => op.timestamp)
+        .reduce((a, b) => a > b ? a : b);
+    return draftOp.timestamp > latest;
+  }
+
+  Future<int> saveDraft({
+    String? boardId,
+    List<Operation>? opsSnapshot,
+    bool throwOnError = false,
+  }) async {
+    final id = boardId ?? _currentBoardId;
+    if (id == null) return 0;
+
+    final ops = opsSnapshot ?? state.operations.where(_isDraftable).toList();
+    final storage = ref.read(storageServiceProvider);
+    await storage.saveBoardDraft(id, {
+      'boardId': id,
+      'savedAt': DateTime.now().toIso8601String(),
+      'operations': ops.map((op) => op.toJson()).toList(),
+    });
+
+    try {
+      final saved = await _flushOpsToServer(id, ops);
+      final savedAt = DateTime.now();
+      if (_currentBoardId == id) {
+        _refreshDraftStatus(savedAt: savedAt);
+      }
+      debugPrint('💾 Saved canvas draft to server for $id ($saved ops)');
+      return saved;
+    } catch (e) {
+      debugPrint('Error flushing draft to server: $e');
+      if (_currentBoardId == id) {
+        state = state.copyWith(hasUnsavedChanges: true);
+      }
+      if (throwOnError) rethrow;
+      return 0;
+    }
+  }
+
+  Future<int> restoreDraft(String boardId) async {
+    final storage = ref.read(storageServiceProvider);
+    final draft = storage.getBoardDraft(boardId);
+    if (draft == null) return 0;
+
+    DateTime? savedAt;
+    final rawSavedAt = draft['savedAt'] as String?;
+    if (rawSavedAt != null) {
+      savedAt = DateTime.tryParse(rawSavedAt);
+    }
+
+    final rawOps = draft['operations'];
+    var restored = 0;
+    if (rawOps is List) {
+      final draftOps = <Operation>[];
+      for (final item in rawOps) {
+        if (item is! Map) continue;
+        try {
+          final op = Operation.fromJson(Map<String, dynamic>.from(item));
+          if (_isDraftable(op)) draftOps.add(op);
+        } catch (e) {
+          debugPrint('Error parsing draft operation: $e');
+        }
+      }
+      draftOps.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      for (final op in draftOps) {
+        if (!_shouldRestoreDraftOp(op)) continue;
+        _applyLocally(op);
+        restored++;
+      }
+    }
+
+    if (_currentBoardId == boardId) {
+      state = state.copyWith(
+        draftSavedAt: savedAt ?? state.draftSavedAt,
+        hasUnsavedChanges: false,
+      );
+    }
+
+    if (restored > 0) {
+      debugPrint('📝 Restored $restored draft operation(s) for $boardId');
+    }
+    return restored;
+  }
+
+  Future<void> discardDraft(String boardId) async {
+    _draftSaveTimer?.cancel();
+    final storage = ref.read(storageServiceProvider);
+    await storage.clearBoardDraft(boardId);
+    if (_currentBoardId == boardId) {
+      state = state.copyWith(
+        clearDraftSavedAt: true,
+        hasUnsavedChanges: false,
+      );
     }
   }
 
@@ -671,12 +906,19 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
   void disconnect() {
     debugPrint('🔌 Disconnecting from board: $_currentBoardId');
+    _draftSaveTimer?.cancel();
+    final boardId = _currentBoardId;
+    final draftOps = state.operations.where(_isDraftable).toList();
+    if (boardId != null && draftOps.isNotEmpty) {
+      unawaited(saveDraft(boardId: boardId, opsSnapshot: draftOps));
+    }
     _signaling?.disconnect();
     _webrtc?.closeAllConnections();
     _syncEngine = null;
     _signaling = null;
     _webrtc = null;
     _currentBoardId = null;
+    _syncedOpIds.clear();
     state = WhiteboardState();
   }
 

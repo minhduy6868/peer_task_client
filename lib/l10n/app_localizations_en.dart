@@ -1032,4 +1032,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backToBoards => 'Back to boards';
+
+  @override
+  String get saveDraft => 'Save draft to server';
+
+  @override
+  String get draftSaved => 'Draft saved to server';
+
+  @override
+  String get draftRestored =>
+      'Unsaved strokes were recovered and saved to the server';
+
+  @override
+  String get unsavedDraft => 'Not saved to server yet';
+
+  @override
+  String get discardDraft => 'Discard local backup';
+
+  @override
+  String get discardDraftConfirm =>
+      'Delete the local backup only? The canvas on the server stays as it is.';
+
+  @override
+  String draftSavedAt(String time) => 'Saved · $time';
+
+  @override
+  String get addText => 'Add text';
+
+  @override
+  String get enterText => 'Enter text…';
+
+  @override
+  String get textSize => 'Text size';
+
+  @override
+  String get width => 'Width';
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get toolHintPen => 'Draw on the canvas';
+
+  @override
+  String get toolHintEraser => 'Erase strokes';
+
+  @override
+  String get toolHintText => 'Tap the canvas to add text';
 }
