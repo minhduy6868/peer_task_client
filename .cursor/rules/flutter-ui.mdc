@@ -1,0 +1,15 @@
+---
+description: Flutter screens, widgets, theme, l10n
+globs: lib/ui/**/*.dart,lib/l10n/**,l10n.yaml,client/lib/ui/**/*.dart,client/lib/l10n/**
+alwaysApply: false
+---
+
+# Flutter UI
+
+- Material 3 + `AppTheme.lightTheme`. Colors from `AppColors` (primary `#4A90E2`). No one-off hex.
+- Reuse `AppButton`, `AppDialog`, `AppToast`, `AppCard`.
+- Screens: `ConsumerWidget` / `ConsumerStatefulWidget`. Do not construct `ApiService` in `build`.
+- Routes live in `lib/main.dart`. Update `redirect` when adding paths.
+- User-visible strings: `AppLocalizations.of(context)!` + both ARB files.
+- Errors: `ApiError.userMessage` / `utils/error_display.dart`.
+- Destructive actions: `AppDialog.showConfirm(..., isDanger: true)`.

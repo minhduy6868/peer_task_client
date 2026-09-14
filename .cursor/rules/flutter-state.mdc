@@ -1,0 +1,14 @@
+---
+description: Riverpod, freezed models, Hive, ApiService
+globs: lib/providers/**/*.dart,lib/models/**/*.dart,lib/services/**/*.dart,client/lib/providers/**/*.dart,client/lib/models/**/*.dart,client/lib/services/**/*.dart
+alwaysApply: false
+---
+
+# Flutter state
+
+- Providers in `lib/providers/`. Override services only in `main.dart` `ProviderScope`.
+- Codegen: `dart run build_runner build --delete-conflicting-outputs`.
+- Keep custom `fromJson` on `User`, `Workspace`, `Board` (API is `snake_case`).
+- Tokens and last workspace via `StorageService`. Never store passwords.
+- `ConfigService` URL order: Hive → Firebase REST → `assets/config.json` → localhost.
+- New HTTP methods belong on `ApiService` (`_handleResponse` + `ApiError`), not ad-hoc `http` calls.

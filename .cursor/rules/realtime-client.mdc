@@ -1,0 +1,13 @@
+---
+description: Client SyncEngine, signaling, and WebRTC
+globs: lib/core/**/*.dart,lib/services/**/*p2p*.dart,lib/services/signaling_service.dart,lib/services/webrtc_service.dart,lib/models/operation/**/*.dart,client/lib/core/**/*.dart,client/lib/services/**/*.dart
+alwaysApply: false
+---
+
+# Realtime (client)
+
+- Online: JWT on `handshake.auth.token`, `join_room` with `boardId` string.
+- Offline: no JWT. `create_room` / `join_room` with `{ roomCode, userName }`. No REST for workspaces/boards.
+- `SyncEngine` dedups `opId`. LWW on `updateObject` via `timestamp`.
+- Canvas types `stroke|text|rectangle|circle|line|cursor` and `task` stay in the op log, not `_objects`.
+- Cursors: `shouldSaveBackend: false`. Durable ops: `ApiService.saveOperation`.

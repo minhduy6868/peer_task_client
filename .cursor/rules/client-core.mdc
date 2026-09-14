@@ -1,0 +1,13 @@
+---
+description: PeerTask Flutter client — always-on conventions
+alwaysApply: true
+---
+
+# Client core
+
+- This folder is the Flutter app only. Do not edit `../server`.
+- Read `AGENTS.md` and the matching skill under `.cursor/skills/`.
+- Call the backend through `lib/services/api_service.dart`. No `/api` prefix.
+- UI: `AppColors`, `AppTheme`, `AppButton`, `AppDialog`, `AppToast`. Both `app_en.arb` and `app_vi.arb`.
+- State in Riverpod providers, not widgets. Models accept `snake_case` JSON.
+- Never commit `.env`, tokens, or `firebase` secrets. Do not hand-edit `*.freezed.dart` / `*.g.dart`.

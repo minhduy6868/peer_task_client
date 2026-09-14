@@ -1,0 +1,21 @@
+---
+description: GitHub, branches, Conventional Commits, and PRs for the Flutter client
+alwaysApply: true
+---
+
+# GitHub & commits (client)
+
+Repo: `minhduy6868/peer_task_client`. Default branch: `dev`.
+
+- Branch: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `docs/<slug>`, `refactor/<slug>`.
+- Commits: Conventional Commits, English, imperative, **why** not file lists.
+
+```
+feat(board): persist stroke ops after peer sync
+fix(auth): refresh access token before retrying 401
+```
+
+Scopes: `auth`, `workspace`, `board`, `task`, `p2p`, `ui`, `l10n`, `offline`.
+- One concern per commit. Never `--no-verify`, force-push `dev`/`main`, or commit `.env`.
+- PR into `dev`: title = same as commit style. Body: Summary + Test plan. Use `gh pr create` from `client/`.
+- Do not include `server/` files in this repo’s commits.
