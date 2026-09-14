@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../models/api_error.dart';
 import 'package:crypto/crypto.dart';
 
 class CloudinaryService {
@@ -73,11 +74,12 @@ class CloudinaryService {
         return url;
       } else {
         debugPrint('❌ Upload failed: ${response.statusCode} - ${response.body}');
-        throw Exception('Upload failed: ${response.body}');
+        throw ApiError.server('Upload failed');
       }
     } catch (e) {
       debugPrint('❌ Upload error: $e');
-      throw Exception('Failed to upload image: $e');
+      if (e is ApiError) rethrow;
+      throw ApiError.server('Failed to upload image');
     }
   }
 
@@ -117,10 +119,11 @@ class CloudinaryService {
         final data = json.decode(response.body);
         return data['secure_url'] as String;
       } else {
-        throw Exception('Upload failed: ${response.body}');
+        throw ApiError.server('Upload failed');
       }
     } catch (e) {
-      throw Exception('Failed to upload image: $e');
+      if (e is ApiError) rethrow;
+      throw ApiError.server('Failed to upload image');
     }
   }
 

@@ -376,7 +376,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
     final authState = ref.read(authStateProvider);
     if (!authState.isAuthenticated || authState.accessToken == null) {
-      throw Exception('Not authenticated');
+      throw ApiError.unauthorized();
     }
 
     final api = ref.read(apiServiceProvider);

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
+import '../models/api_error.dart';
 
 /// AI Service for Ollama LLM integration
 /// ALWAYS prioritizes online server proxy (ngrok), falls back to localhost only if unavailable
@@ -266,7 +267,7 @@ class AIService {
         final data = json.decode(response.body);
         return data['response'] as String? ?? '';
       } else {
-        throw Exception('Ollama error: ${response.statusCode}');
+        throw ApiError.server('Ollama error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('❌ AI generate error: $e');
