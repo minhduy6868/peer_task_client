@@ -78,7 +78,12 @@ lib/
 
 ## Git
 
+- `dev` = phát triển. `main` = đồng bộ từ `dev` khi sẵn sàng release.
 - Branch: `feat/<slug>`, `fix/<slug>`, … từ `dev`
 - Commit: Conventional Commits, ví dụ `feat(board): show assignee chips on task cards`
 - PR template: `.github/pull_request_template.md`
 - Không commit `.env`, không đưa file server vào PR này
+
+## CI
+
+Push / PR lên `dev` hoặc `main` chạy `flutter analyze`. API trên server: xem `peer_task_server` `docs/DEPLOY.md`.

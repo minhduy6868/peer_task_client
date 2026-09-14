@@ -5,7 +5,7 @@ description: Creates Conventional Commits and GitHub PRs for peer_task_client. U
 
 # GitHub & commits (client)
 
-Repo: `minhduy6868/peer_task_client`. Base branch: `dev`. Work only inside `client/`.
+Repo: `minhduy6868/peer_task_client`. Base branch: `dev`. Production branch: `main`. Work only inside `client/`.
 
 ## Branch
 

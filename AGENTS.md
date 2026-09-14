@@ -35,4 +35,4 @@ Codex: `$peertask-flutter-ui` or `/skills`. Claude: `/peertask-flutter-ui`.
 
 ## Git
 
-Upstream: `https://github.com/minhduy6868/peer_task_client` (`dev`).
+Upstream: `https://github.com/minhduy6868/peer_task_client` (`dev` develop, `main` release).

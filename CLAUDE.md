@@ -4,7 +4,7 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/REQUIREMENTS.md](doc
 
 Flutter app. This file is always-on project context. Skills load from `.claude/skills/` (invoke with `/skill-name` or when the task matches).
 
-Do not edit `../server`. Commit only in this repo (`peer_task_client`, base `dev`).
+Do not edit `../server`. Commit only in this repo (`peer_task_client`, base `dev`, release `main`).
 
 ## Skills
 
