@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -112,7 +113,7 @@ class _OfflineBoardsScreenState extends ConsumerState<OfflineBoardsScreen> {
 
   void _openBoardFromCode(String code) {
     final storage = StorageService();
-    print('🔍 Searching for board with code: $code');
+    debugPrint('🔍 Searching for board with code: $code');
 
     // Check if board exists locally first
     String? existingBoardId = storage.getBoardIdByCode(code);
@@ -142,8 +143,8 @@ class _OfflineBoardsScreenState extends ConsumerState<OfflineBoardsScreen> {
       'columns': ['To Do', 'In Progress', 'Done'],
     });
 
-    print('✅ Created board: $boardId');
-    print('🔄 Will connect to peer with same board code via P2P');
+    debugPrint('✅ Created board: $boardId');
+    debugPrint('🔄 Will connect to peer with same board code via P2P');
 
     // Navigate - P2P will discover peer automatically
     Navigator.of(context).push(

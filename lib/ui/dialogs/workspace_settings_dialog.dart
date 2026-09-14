@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -426,18 +427,18 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     );
     
     try {
-      print('Updating role for user $userId to $newRole in workspace ${widget.workspaceId}');
+      debugPrint('Updating role for user $userId to $newRole in workspace ${widget.workspaceId}');
       final api = ref.read(apiServiceProvider);
-      print('API baseUrl: ${api.baseUrl}');
-      print('Making PUT request to: ${api.baseUrl}/workspaces/${widget.workspaceId}/members/$userId');
-      print('Request body: {"role": "$newRole"}');
+      debugPrint('API baseUrl: ${api.baseUrl}');
+      debugPrint('Making PUT request to: ${api.baseUrl}/workspaces/${widget.workspaceId}/members/$userId');
+      debugPrint('Request body: {"role": "$newRole"}');
       
       await api.updateWorkspaceMemberRole(
         workspaceId: widget.workspaceId,
         userId: userId,
         role: newRole,
       );
-      print('Role update API call completed successfully');
+      debugPrint('Role update API call completed successfully');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);
@@ -448,8 +449,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
         context.showSuccessMessage(l10n.roleUpdated);
       }
     } catch (e, stackTrace) {
-      print('Error updating role: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error updating role: $e');
+      debugPrint('Stack trace: $stackTrace');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);
@@ -484,13 +485,13 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     );
     
     try {
-      print('Removing user $userId from workspace ${widget.workspaceId}');
+      debugPrint('Removing user $userId from workspace ${widget.workspaceId}');
       final api = ref.read(apiServiceProvider);
       await api.removeWorkspaceMember(
         workspaceId: widget.workspaceId,
         userId: userId,
       );
-      print('Remove member API call completed');
+      debugPrint('Remove member API call completed');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);
@@ -501,7 +502,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
         context.showSuccessMessage(l10n.memberRemoved);
       }
     } catch (e) {
-      print('Error removing member: $e');
+      debugPrint('Error removing member: $e');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);

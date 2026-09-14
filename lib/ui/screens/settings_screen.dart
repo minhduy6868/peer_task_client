@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +49,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           folder: 'avatars',
         );
 
-        print('✅ Avatar uploaded to Cloudinary: $avatarUrl');
+        debugPrint('✅ Avatar uploaded to Cloudinary: $avatarUrl');
 
         // 2. Update profile with Cloudinary URL
         final api = ref.read(apiServiceProvider);
@@ -59,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         // 3. Refresh user data
         final response = await api.getCurrentUser();
-        print('🔄 User data after avatar upload: $response');
+        debugPrint('🔄 User data after avatar upload: $response');
         ref.read(authStateProvider.notifier).updateUser(response);
 
         if (mounted) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
@@ -422,20 +423,20 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     if (_workspaceId == null) return;
     
     try {
-      print('Loading workspace members for workspace: $_workspaceId');
+      debugPrint('Loading workspace members for workspace: $_workspaceId');
       final api = ref.read(apiServiceProvider);
       
       // Get workspace members
       final workspaceMembers = await api.getWorkspaceMembers(_workspaceId!);
-      print('Loaded ${workspaceMembers.length} workspace members');
+      debugPrint('Loaded ${workspaceMembers.length} workspace members');
       
       // Filter out members already in board
       final memberIds = _members.map((m) => m['user_id']).toSet();
-      print('Current board member IDs: $memberIds');
+      debugPrint('Current board member IDs: $memberIds');
       final availableMembers = workspaceMembers
           .where((m) => !memberIds.contains(m['user_id']))
           .toList();
-      print('Available members to add: ${availableMembers.length}');
+      debugPrint('Available members to add: ${availableMembers.length}');
       
       if (!mounted) return;
       
@@ -484,18 +485,18 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
     );
     
     try {
-      print('Adding member $userId with permission $permission to board ${widget.boardId}');
+      debugPrint('Adding member $userId with permission $permission to board ${widget.boardId}');
       final api = ref.read(apiServiceProvider);
-      print('API baseUrl: ${api.baseUrl}');
-      print('Making POST request to: ${api.baseUrl}/boards/${widget.boardId}/members');
-      print('Request body: {"userId": "$userId", "permission": "$permission"}');
+      debugPrint('API baseUrl: ${api.baseUrl}');
+      debugPrint('Making POST request to: ${api.baseUrl}/boards/${widget.boardId}/members');
+      debugPrint('Request body: {"userId": "$userId", "permission": "$permission"}');
       
       await api.addBoardMember(
         boardId: widget.boardId,
         userId: userId,
         permission: permission,
       );
-      print('Add board member API call completed successfully');
+      debugPrint('Add board member API call completed successfully');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);
@@ -506,8 +507,8 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
         context.showSuccessMessage(l10n.operationSuccess);
       }
     } catch (e, stackTrace) {
-      print('Error adding member: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error adding member: $e');
+      debugPrint('Stack trace: $stackTrace');
       
       // Close loading dialog
       if (mounted) Navigator.pop(context);

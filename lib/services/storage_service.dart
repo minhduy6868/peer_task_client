@@ -200,7 +200,7 @@ class StorageService {
           final data = json.decode(_operationsBox!.get(key));
           operations.add(Operation.fromJson(data));
         } catch (e) {
-          print('Error loading operation $key: $e');
+          debugPrint('Error loading operation $key: $e');
         }
       }
     }
@@ -248,7 +248,7 @@ class StorageService {
           final data = json.decode(_operationsBox!.get(key));
           operations.add(Operation.fromJson(data));
         } catch (e) {
-          print('Error loading pending operation $key: $e');
+          debugPrint('Error loading pending operation $key: $e');
         }
       }
     }

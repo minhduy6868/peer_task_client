@@ -137,7 +137,7 @@ class ApiService {
 
   Future<void> refreshAccessToken() async {
     if (_refreshToken == null) {
-      throw Exception('No refresh token available');
+      throw ApiError.unauthorized('No refresh token available');
     }
 
     try {
@@ -151,7 +151,7 @@ class ApiService {
         final data = json.decode(response.body);
         setTokens(accessToken: data['accessToken']);
       } else {
-        throw Exception('Token refresh failed');
+        throw ApiError.unauthorized('Token refresh failed');
       }
     } catch (e) {
       // Nếu refresh token fail, thử refresh URL và retry
@@ -185,7 +185,7 @@ class ApiService {
         
         // Check if response indicates connection issue
         if (response.statusCode >= 500 || response.statusCode == 0) {
-          throw Exception('Server error: ${response.statusCode}');
+          throw ApiError.server('Server error: ${response.statusCode}');
         }
         
         return response;
@@ -332,6 +332,18 @@ class ApiService {
       headers: _headers,
       body: json.encode(body),
     ));
+  }
+
+  Future<http.Response> _delete(String endpoint, [Map<String, dynamic>? body]) async {
+    return _requestWithRetry(() => http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+      body: body != null ? json.encode(body) : null,
+    ));
+  }
+
+  List<Map<String, dynamic>> _mapList(dynamic data) {
+    return List<Map<String, dynamic>>.from(data as List);
   }
 
   Future<Map<String, dynamic>> register({
@@ -497,30 +509,13 @@ class ApiService {
     }
   }
 
-  // Workspaces
   Future<Workspace> createWorkspace({required String name}) async {
-    debugPrint('📤 Creating workspace: $name');
-    final response = await _requestWithRetry(() => http.post(
-      Uri.parse('$baseUrl/workspaces'),
-      headers: _headers,
-      body: json.encode({'name': name}),
-    ));
-
-    debugPrint('📥 Response status: ${response.statusCode}');
-    debugPrint('📥 Response body: ${response.body}');
-
-    final data = _handleResponse(response);
-    debugPrint('✅ Workspace created: $data');
+    final data = _handleResponse(await _post('/workspaces', {'name': name}));
     return Workspace.fromJson(data);
   }
 
   Future<List<Workspace>> getWorkspaces() async {
-    final response = await _requestWithRetry(() => http.get(
-      Uri.parse('$baseUrl/workspaces'),
-      headers: _headers,
-    ));
-
-    final List data = _handleResponse(response);
+    final List data = _handleResponse(await _get('/workspaces'));
     return data.map((w) => Workspace.fromJson(w)).toList();
   }
 
@@ -528,106 +523,50 @@ class ApiService {
     required String workspaceId,
     required String email,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/invite'),
-      headers: _headers,
-      body: json.encode({'email': email}),
+    _handleResponse(
+      await _post('/workspaces/$workspaceId/invite', {'email': email}),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to invite user: ${response.body}');
-    }
   }
 
-  // Boards
   Future<Board> createBoard({
     required String workspaceId,
     required String name,
     String? description,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/boards'),
-      headers: _headers,
-      body: json.encode({
-        'workspaceId': workspaceId,
-        'name': name,
-        if (description != null) 'description': description,
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      return Board.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to create board: ${response.body}');
-    }
+    final data = _handleResponse(await _post('/boards', {
+      'workspaceId': workspaceId,
+      'name': name,
+      if (description != null) 'description': description,
+    }));
+    return Board.fromJson(data);
   }
 
   Future<List<Board>> getWorkspaceBoards(String workspaceId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/boards/workspace/$workspaceId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.map((b) => Board.fromJson(b)).toList();
-    } else {
-      throw Exception('Failed to get boards: ${response.body}');
-    }
+    final List data = _handleResponse(await _get('/boards/workspace/$workspaceId'));
+    return data.map((b) => Board.fromJson(b)).toList();
   }
 
   Future<Board> getBoard(String boardId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/boards/$boardId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      return Board.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get board: ${response.body}');
-    }
+    return Board.fromJson(_handleResponse(await _get('/boards/$boardId')));
   }
 
   Future<Workspace> updateWorkspace({
     required String workspaceId,
     required String name,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/workspaces/$workspaceId'),
-      headers: _headers,
-      body: json.encode({'name': name}),
+    final data = _handleResponse(
+      await _put('/workspaces/$workspaceId', {'name': name}),
     );
-
-    if (response.statusCode == 200) {
-      return Workspace.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to update workspace: ${response.body}');
-    }
+    return Workspace.fromJson(data);
   }
 
   Future<void> deleteWorkspace(String workspaceId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/workspaces/$workspaceId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete workspace: ${response.body}');
-    }
+    _handleResponse(await _delete('/workspaces/$workspaceId'), expectData: false);
   }
 
   Future<Workspace> getWorkspace(String workspaceId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/workspaces/$workspaceId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      return Workspace.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get workspace: ${response.body}');
-    }
+    return Workspace.fromJson(_handleResponse(await _get('/workspaces/$workspaceId')));
   }
 
   Future<Map<String, dynamic>> createInviteLink({
@@ -635,85 +574,41 @@ class ApiService {
     int? maxUses,
     DateTime? expiresAt,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-link'),
-      headers: _headers,
-      body: json.encode({
+    return Map<String, dynamic>.from(_handleResponse(await _post(
+      '/workspaces/$workspaceId/invite-link',
+      {
         if (maxUses != null) 'maxUses': maxUses,
         if (expiresAt != null) 'expiresAt': expiresAt.toIso8601String(),
-      }),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to create invite link: ${response.body}');
-    }
+      },
+    )));
   }
 
   Future<List<Map<String, dynamic>>> getInviteLinks(String workspaceId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-links'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get invite links: ${response.body}');
-    }
+    return _mapList(_handleResponse(await _get('/workspaces/$workspaceId/invite-links')));
   }
 
   Future<Map<String, dynamic>> getInviteInfo(String token) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/workspaces/invite/$token'),
-      headers: _headers,
+    return Map<String, dynamic>.from(
+      _handleResponse(await _get('/workspaces/invite/$token')),
     );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to get invite info: ${response.body}');
-    }
   }
 
   Future<void> joinWorkspace(String token) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/workspaces/join/$token'),
-      headers: _headers,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to join workspace: ${response.body}');
-    }
+    _handleResponse(await _post('/workspaces/join/$token', {}), expectData: false);
   }
 
   Future<void> revokeInviteLink({
     required String workspaceId,
     required String inviteId,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/invite-links/$inviteId'),
-      headers: _headers,
+    _handleResponse(
+      await _delete('/workspaces/$workspaceId/invite-links/$inviteId'),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to revoke invite: ${response.body}');
-    }
   }
 
-  // Workspace Members
   Future<List<Map<String, dynamic>>> getWorkspaceMembers(String workspaceId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/members'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get members: ${response.body}');
-    }
+    return _mapList(_handleResponse(await _get('/workspaces/$workspaceId/members')));
   }
 
   Future<void> addWorkspaceMember({
@@ -721,18 +616,13 @@ class ApiService {
     required String userId,
     required String role,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/members'),
-      headers: _headers,
-      body: json.encode({
+    _handleResponse(
+      await _post('/workspaces/$workspaceId/members', {
         'userId': userId,
         'role': role,
       }),
+      expectData: false,
     );
-
-    if (response.statusCode != 201) {
-      throw Exception('Failed to add member: ${response.body}');
-    }
   }
 
   Future<void> updateWorkspaceMemberRole({
@@ -740,84 +630,39 @@ class ApiService {
     required String userId,
     required String role,
   }) async {
-    final url = '$baseUrl/workspaces/$workspaceId/members/$userId';
-    print('[API] PUT $url');
-    print('[API] Headers: ${_headers}');
-    print('[API] Body: ${json.encode({'role': role})}');
-    
-    final response = await http.put(
-      Uri.parse(url),
-      headers: _headers,
-      body: json.encode({'role': role}),
+    _handleResponse(
+      await _put('/workspaces/$workspaceId/members/$userId', {'role': role}),
+      expectData: false,
     );
-
-    print('[API] Response status: ${response.statusCode}');
-    print('[API] Response body: ${response.body}');
-    
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update member role: ${response.body}');
-    }
   }
 
   Future<void> removeWorkspaceMember({
     required String workspaceId,
     required String userId,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/workspaces/$workspaceId/members/$userId'),
-      headers: _headers,
+    _handleResponse(
+      await _delete('/workspaces/$workspaceId/members/$userId'),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to remove member: ${response.body}');
-    }
   }
 
-  // Board CRUD
   Future<Board> updateBoard({
     required String boardId,
     String? name,
     String? description,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/boards/$boardId'),
-      headers: _headers,
-      body: json.encode({
-        if (name != null) 'name': name,
-        if (description != null) 'description': description,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return Board.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to update board: ${response.body}');
-    }
+    return Board.fromJson(_handleResponse(await _put('/boards/$boardId', {
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+    })));
   }
 
   Future<void> deleteBoard(String boardId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/boards/$boardId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete board: ${response.body}');
-    }
+    _handleResponse(await _delete('/boards/$boardId'), expectData: false);
   }
 
-  // Board Members
   Future<List<Map<String, dynamic>>> getBoardMembers(String boardId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/boards/$boardId/members'),
-      headers: _headers,
-    );
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get board members: ${response.body}');
-    }
+    return _mapList(_handleResponse(await _get('/boards/$boardId/members')));
   }
 
   Future<void> addBoardMember({
@@ -825,28 +670,13 @@ class ApiService {
     required String userId,
     required String permission,
   }) async {
-    final url = '$baseUrl/boards/$boardId/members';
-    final body = json.encode({
-      'userId': userId,
-      'permission': permission,
-    });
-    
-    print('[API] POST $url');
-    print('[API] Headers: ${_headers}');
-    print('[API] Body: $body');
-    
-    final response = await http.post(
-      Uri.parse(url),
-      headers: _headers,
-      body: body,
+    _handleResponse(
+      await _post('/boards/$boardId/members', {
+        'userId': userId,
+        'permission': permission,
+      }),
+      expectData: false,
     );
-
-    print('[API] Response status: ${response.statusCode}');
-    print('[API] Response body: ${response.body}');
-    
-    if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception('Failed to add board member: ${response.body}');
-    }
   }
 
   Future<void> updateBoardMemberPermission({
@@ -854,32 +684,22 @@ class ApiService {
     required String userId,
     required String permission,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/boards/$boardId/members/$userId'),
-      headers: _headers,
-      body: json.encode({'permission': permission}),
+    _handleResponse(
+      await _put('/boards/$boardId/members/$userId', {'permission': permission}),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update board member permission: ${response.body}');
-    }
   }
 
   Future<void> removeBoardMember({
     required String boardId,
     required String userId,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/boards/$boardId/members/$userId'),
-      headers: _headers,
+    _handleResponse(
+      await _delete('/boards/$boardId/members/$userId'),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to remove board member: ${response.body}');
-    }
   }
 
-  // Tasks
   Future<List<Map<String, dynamic>>> getBoardTasks(
     String boardId, {
     String? assigneeId,
@@ -892,18 +712,13 @@ class ApiService {
     if (status != null) queryParams['status'] = status;
     if (priority != null) queryParams['priority'] = priority;
     if (parentId != null) queryParams['parent_id'] = parentId;
-    
+
     final uri = Uri.parse('$baseUrl/tasks/board/$boardId').replace(
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
 
-    final response = await http.get(uri, headers: _headers);
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get tasks: ${response.body}');
-    }
+    final response = await _requestWithRetry(() => http.get(uri, headers: _headers));
+    return _mapList(_handleResponse(response));
   }
 
   Future<Map<String, dynamic>> createTask({
@@ -918,28 +733,18 @@ class ApiService {
     List<String>? labels,
     double? estimatedHours,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/tasks'),
-      headers: _headers,
-      body: json.encode({
-        'boardId': boardId,
-        'title': title,
-        if (description != null) 'description': description,
-        if (assignees != null) 'assignees': assignees,
-        if (status != null) 'status': status,
-        if (priority != null) 'priority': priority,
-        if (deadline != null) 'deadline': deadline.toIso8601String(),
-        if (parentId != null) 'parent_id': parentId,
-        if (labels != null) 'labels': labels,
-        if (estimatedHours != null) 'estimated_hours': estimatedHours,
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to create task: ${response.body}');
-    }
+    return Map<String, dynamic>.from(_handleResponse(await _post('/tasks', {
+      'boardId': boardId,
+      'title': title,
+      if (description != null) 'description': description,
+      if (assignees != null) 'assignees': assignees,
+      if (status != null) 'status': status,
+      if (priority != null) 'priority': priority,
+      if (deadline != null) 'deadline': deadline.toIso8601String(),
+      if (parentId != null) 'parent_id': parentId,
+      if (labels != null) 'labels': labels,
+      if (estimatedHours != null) 'estimated_hours': estimatedHours,
+    })));
   }
 
   Future<Map<String, dynamic>> updateTask({
@@ -954,38 +759,21 @@ class ApiService {
     List<String>? labels,
     double? estimatedHours,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/tasks/$taskId'),
-      headers: _headers,
-      body: json.encode({
-        if (title != null) 'title': title,
-        if (description != null) 'description': description,
-        if (assignees != null) 'assignees': assignees,
-        if (status != null) 'status': status,
-        if (position != null) 'position': position,
-        if (priority != null) 'priority': priority,
-        if (deadline != null) 'deadline': deadline.toIso8601String(),
-        if (labels != null) 'labels': labels,
-        if (estimatedHours != null) 'estimated_hours': estimatedHours,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to update task: ${response.body}');
-    }
+    return Map<String, dynamic>.from(_handleResponse(await _put('/tasks/$taskId', {
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (assignees != null) 'assignees': assignees,
+      if (status != null) 'status': status,
+      if (position != null) 'position': position,
+      if (priority != null) 'priority': priority,
+      if (deadline != null) 'deadline': deadline.toIso8601String(),
+      if (labels != null) 'labels': labels,
+      if (estimatedHours != null) 'estimated_hours': estimatedHours,
+    })));
   }
 
   Future<void> deleteTask(String taskId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/tasks/$taskId'),
-      headers: _headers,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete task: ${response.body}');
-    }
+    _handleResponse(await _delete('/tasks/$taskId'), expectData: false);
   }
 
   Future<void> reorderTasks({
@@ -993,19 +781,14 @@ class ApiService {
     required String status,
     required List<String> taskIds,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/tasks/reorder'),
-      headers: _headers,
-      body: json.encode({
+    _handleResponse(
+      await _post('/tasks/reorder', {
         'boardId': boardId,
         'status': status,
         'taskIds': taskIds,
       }),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to reorder tasks: ${response.body}');
-    }
   }
 
   Future<Map<String, dynamic>> moveTask({
@@ -1014,34 +797,17 @@ class ApiService {
     String? boardId,
     int? position,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/tasks/$taskId/move'),
-      headers: _headers,
-      body: json.encode({
-        'status': status,
-        if (boardId != null) 'boardId': boardId,
-        if (position != null) 'position': position,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to move task: ${response.body}');
-    }
+    return Map<String, dynamic>.from(_handleResponse(await _post('/tasks/$taskId/move', {
+      'status': status,
+      if (boardId != null) 'boardId': boardId,
+      if (position != null) 'position': position,
+    })));
   }
 
   Future<Map<String, dynamic>> getTaskStats(String boardId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/tasks/board/$boardId/stats'),
-      headers: _headers,
+    return Map<String, dynamic>.from(
+      _handleResponse(await _get('/tasks/board/$boardId/stats')),
     );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to get task stats: ${response.body}');
-    }
   }
 
   Future<List<Map<String, dynamic>>> getMyTasks({
@@ -1050,38 +816,21 @@ class ApiService {
   }) async {
     final queryParams = <String, String>{
       'limit': limit.toString(),
+      if (status != null) 'status': status,
     };
-    if (status != null) queryParams['status'] = status;
-    
-    final uri = Uri.parse('$baseUrl/tasks/my-tasks').replace(
-      queryParameters: queryParams,
-    );
-
-    final response = await http.get(uri, headers: _headers);
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get my tasks: ${response.body}');
-    }
+    final uri = Uri.parse('$baseUrl/tasks/my-tasks').replace(queryParameters: queryParams);
+    final response = await _requestWithRetry(() => http.get(uri, headers: _headers));
+    return _mapList(_handleResponse(response));
   }
 
-  // Operations (P2P Sync)
   Future<List<Map<String, dynamic>>> getBoardOperations(
     String boardId, {
     int? since,
   }) async {
-    final uri = since != null
-        ? Uri.parse('$baseUrl/operations/board/$boardId?since=$since')
-        : Uri.parse('$baseUrl/operations/board/$boardId');
-
-    final response = await http.get(uri, headers: _headers);
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception('Failed to get operations: ${response.body}');
-    }
+    final path = since != null
+        ? '/operations/board/$boardId?since=$since'
+        : '/operations/board/$boardId';
+    return _mapList(_handleResponse(await _get(path)));
   }
 
   Future<void> saveOperation({
@@ -1091,45 +840,28 @@ class ApiService {
     required Map<String, dynamic> payload,
     required int timestamp,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/operations'),
-      headers: _headers,
-      body: json.encode({
+    _handleResponse(
+      await _post('/operations', {
         'boardId': boardId,
         'operationId': operationId,
         'operationType': operationType,
         'payload': payload,
         'timestamp': timestamp,
       }),
+      expectData: false,
     );
-
-    if (response.statusCode != 201 && response.statusCode != 200) {
-      throw Exception('Failed to save operation: ${response.body}');
-    }
   }
 
   Future<Map<String, dynamic>> getOperationCount(String boardId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/operations/board/$boardId/count'),
-      headers: _headers,
+    return Map<String, dynamic>.from(
+      _handleResponse(await _get('/operations/board/$boardId/count')),
     );
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to get operation count: ${response.body}');
-    }
   }
 
   Future<void> cleanupOperations(String boardId, int olderThan) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/operations/board/$boardId/cleanup'),
-      headers: _headers,
-      body: json.encode({'olderThan': olderThan}),
+    _handleResponse(
+      await _delete('/operations/board/$boardId/cleanup', {'olderThan': olderThan}),
+      expectData: false,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to cleanup operations: ${response.body}');
-    }
   }
 }

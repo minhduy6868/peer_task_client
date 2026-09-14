@@ -15,11 +15,25 @@ class ApiError implements Exception {
 
   factory ApiError.fromJson(Map<String, dynamic> json) {
     final error = json['error'] ?? json;
+    if (error is String) {
+      return ApiError(
+        message: error,
+        code: json['code']?.toString() ?? 'UNKNOWN_ERROR',
+        statusCode: json['statusCode'] is int ? json['statusCode'] as int : 500,
+      );
+    }
+    if (error is Map) {
+      return ApiError(
+        message: error['message']?.toString() ?? 'Unknown error',
+        code: error['code']?.toString() ?? 'UNKNOWN_ERROR',
+        statusCode: error['statusCode'] is int ? error['statusCode'] as int : 500,
+        details: error['details'],
+      );
+    }
     return ApiError(
-      message: error['message'] ?? 'Unknown error',
-      code: error['code'] ?? 'UNKNOWN_ERROR',
-      statusCode: error['statusCode'] ?? 500,
-      details: error['details'],
+      message: 'Unknown error',
+      code: 'UNKNOWN_ERROR',
+      statusCode: 500,
     );
   }
 
