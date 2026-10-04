@@ -19,6 +19,16 @@ Keep the three skill trees in sync (same `SKILL.md` names and body).
 | Skill | When |
 | --- | --- |
 | `peertask-flutter-ui` | Screens, widgets, theme, l10n |
+| `flutter-build-responsive-layout` | Adaptive phone, tablet, desktop layout |
+| `flutter-fix-layout-issues` | Overflow and unbounded constraints |
+| `flutter-apply-architecture-best-practices` | App structure |
+| `flutter-setup-localization` | l10n |
+| `flutter-setup-declarative-routing` | Routes |
+| `flutter-add-widget-test` | Widget tests |
+| `flutter-add-widget-preview` | Widget previews |
+| `flutter-add-integration-test` | Integration tests |
+| `flutter-implement-json-serialization` | JSON models |
+| `flutter-use-http-package` | HTTP client |
 | `peertask-flutter-state` | Riverpod, models, ApiService, Hive |
 | `peertask-realtime-client` | SyncEngine, WebRTC, signaling client |
 | `github-commits` | Branches, commits, PRs |
