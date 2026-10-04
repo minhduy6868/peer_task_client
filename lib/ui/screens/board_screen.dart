@@ -1,48 +1,25 @@
-import 'dart:io';
-import 'dart:math';
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui' as ui;
-import 'package:screenshot/screenshot.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-import '../../providers/app_providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
-import '../../services/config_service.dart';
+import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
-import '../../l10n/app_localizations.dart';
-import '../widgets/task_dialog.dart';
-import '../widgets/ai_brainstorm_panel.dart';
+import '../theme/app_colors.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_toast.dart';
-import '../theme/app_colors.dart';
+import '../widgets/task_dialog.dart';
 
-enum DrawingTool { pen, eraser, text }
+enum _BoardPage { tasks, canvas }
 
-class _ActiveStroke {
-  final List<Offset> points;
-  final Color color;
-  final double width;
-  final String userName;
-  final bool isEraser;
+enum _DrawTool { pen, eraser, text, hand }
 
-  _ActiveStroke({
-    required this.points,
-    required this.color,
-    required this.width,
-    required this.userName,
-    this.isEraser = false,
-  });
-}
-
-/// Board Screen - Canvas (Canva) + Kanban (Trello)
-/// Simple and clean implementation for realtime P2P collaboration
+/// Trello board for tasks, Canva page for drawing.
 class BoardScreen extends ConsumerStatefulWidget {
   final String boardId;
 
@@ -53,48 +30,24 @@ class BoardScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
-  // Screenshot controller
-  final ScreenshotController _screenshotController = ScreenshotController();
+  _BoardPage _page = _BoardPage.tasks;
+  _DrawTool _tool = _DrawTool.pen;
+  Color _color = const Color(0xFF172B4D);
+  double _width = 3;
+  final double _textSize = 20;
+  bool _voice = false;
 
-  // Drawing state
-  List<Offset> _currentPoints = [];
-  Color _selectedColor = Colors.black;
-  double _strokeWidth = 3.0;
-  String? _currentStrokeId;
-
-  // Drawing tools
-  DrawingTool _selectedTool = DrawingTool.pen;
-
-  // Text tool state
   final _textController = TextEditingController();
-  Offset? _textPosition;
-  double _textSize = 16.0; // Default text size
+  final Map<String, TextEditingController> _quickAdd = {
+    'todo': TextEditingController(),
+    'doing': TextEditingController(),
+    'done': TextEditingController(),
+  };
 
-  // Undo/Redo
-  final List<String> _undoStack = [];
-
-  // Active strokes (for showing username while drawing)
-  final Map<String, _ActiveStroke> _activeStrokes = {};
-
-  // Kanban state
-  final _taskController = TextEditingController();
-  bool _showKanban = true;
-  double _kanbanWidth = 350.0; // Resizable width
-  List<Map<String, dynamic>> _boardMembers = [];
+  List<Offset> _points = [];
+  String? _strokeId;
+  List<Map<String, dynamic>> _members = [];
   String? _currentBoardId;
-
-  // Voice call state
-  bool _isVoiceEnabled = false;
-
-  // AI Brainstorm state
-  bool _showAIPanel = false;
-  
-  // Text position counter for unique placement
-  int _textAddCounter = 0;
-  
-  // Selected text for moving
-  String? _selectedTextId;
-  Offset? _textDragStart;
 
   @override
   void initState() {
@@ -106,238 +59,78 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   @override
   void didUpdateWidget(BoardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If board ID changed, disconnect from old board and connect to new one
-    if (oldWidget.boardId != widget.boardId) {
-      debugPrint('🔄 Board changed: ${oldWidget.boardId} -> ${widget.boardId}');
-      ref.read(whiteboardProvider.notifier).disconnect();
-      _currentBoardId = widget.boardId;
-      _boardMembers = [];
-      _initBoard();
-    }
+    if (oldWidget.boardId == widget.boardId) return;
+    ref.read(whiteboardProvider.notifier).disconnect();
+    _currentBoardId = widget.boardId;
+    _members = [];
+    _initBoard();
   }
 
   @override
   void dispose() {
-    debugPrint('🚪 Leaving board: $_currentBoardId');
     final boardId = _currentBoardId;
     if (boardId != null) {
       ref.read(whiteboardProvider.notifier).saveDraft(boardId: boardId);
     }
-    _taskController.dispose();
     _textController.dispose();
-    super.dispose();
-  }
-
-  /// Capture screenshot of current board
-  Future<void> _captureScreenshot() async {
-    try {
-      final Uint8List? image = await _screenshotController.capture();
-      if (image == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Failed to capture screenshot')),
-          );
-        }
-        return;
-      }
-
-      if (kIsWeb) {
-        // For web, just show the image in a dialog or let user download via anchor
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Screenshot'),
-            content: Image.memory(image),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-
-      // Get directory to save
-      Directory? directory;
-      if (Platform.isAndroid) {
-        directory = await getExternalStorageDirectory();
-      } else if (Platform.isIOS) {
-        directory = await getApplicationDocumentsDirectory();
-      } else {
-        // Windows/Desktop
-        directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-      }
-
-      if (directory == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Failed to get save directory')),
-          );
-        }
-        return;
-      }
-
-      // Create filename
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'board_${widget.boardId}_$timestamp.png';
-      final filePath = '${directory.path}/$fileName';
-
-      // Save file
-      final file = File(filePath);
-      await file.writeAsBytes(image);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('📸 Screenshot saved!\n$filePath'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Open',
-              onPressed: () {
-                if (!kIsWeb && Platform.isWindows) {
-                  Process.run('explorer.exe', ['/select,', filePath]);
-                }
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error capturing screenshot: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: $e')),
-        );
-      }
+    for (final controller in _quickAdd.values) {
+      controller.dispose();
     }
+    super.dispose();
   }
 
   Future<void> _initBoard() async {
     await Future.delayed(Duration.zero);
     if (!mounted) return;
-
-    debugPrint('🎯 Initializing board: ${widget.boardId}');
     ref.read(currentBoardIdProvider.notifier).state = widget.boardId;
-
-    var restored = 0;
     try {
-      restored = await ref
+      final restored = await ref
           .read(whiteboardProvider.notifier)
           .connectToBoard(widget.boardId);
-    } catch (e) {
-      debugPrint('❌ Error connecting to board: $e');
-      restored = await ref
-          .read(whiteboardProvider.notifier)
-          .restoreDraft(widget.boardId);
-      if (mounted) {
-        context.showErrorSnackBar(e);
+      if (mounted && restored > 0) {
+        AppToast.show(
+          context,
+          message: AppLocalizations.of(context)!.draftRestored,
+          type: ToastType.success,
+        );
       }
-    }
-
-    if (!mounted) return;
-    await _loadBoardMembers();
-    await _loadFromBackend();
-
-    if (!mounted) return;
-    if (restored > 0) {
-      AppToast.show(
-        context,
-        message: AppLocalizations.of(context)!.draftRestored,
-        type: ToastType.success,
-      );
-    }
-  }
-
-  String _formatDraftTime(DateTime savedAt) {
-    final local = savedAt.toLocal();
-    final now = DateTime.now();
-    final time =
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-    if (local.year == now.year &&
-        local.month == now.month &&
-        local.day == now.day) {
-      return time;
-    }
-    return '${local.day}/${local.month} $time';
-  }
-
-  Future<void> _saveDraftPressed() async {
-    try {
-      await ref
-          .read(whiteboardProvider.notifier)
-          .saveDraft(boardId: widget.boardId, throwOnError: true);
-      if (!mounted) return;
-      AppToast.show(
-        context,
-        message: AppLocalizations.of(context)!.draftSaved,
-        type: ToastType.success,
-      );
     } catch (e) {
+      await ref.read(whiteboardProvider.notifier).restoreDraft(widget.boardId);
       if (mounted) context.showErrorSnackBar(e);
     }
+    if (!mounted) return;
+    await _loadMembers();
+    await _loadTasks();
   }
 
-  Future<void> _discardDraftPressed() async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await AppDialog.showConfirm(
-      context,
-      title: l10n.discardDraft,
-      message: l10n.discardDraftConfirm,
-      confirmText: l10n.delete,
-      cancelText: l10n.cancel,
-      isDanger: true,
-    );
-    if (confirmed != true) return;
-    await ref.read(whiteboardProvider.notifier).discardDraft(widget.boardId);
-  }
-
-  Future<void> _loadBoardMembers() async {
+  Future<void> _loadMembers() async {
     try {
-      final api = ref.read(apiServiceProvider);
-      final members = await api.getBoardMembers(widget.boardId);
-
-      // Map board members to use consistent field names (id, name, email)
-      final mappedMembers = members.map((member) {
-        return {
-          'id': member['user_id'] ?? member['id'],
-          'name': member['name'],
-          'email': member['email'],
-          'permission': member['permission'],
-          'is_board_owner': member['is_board_owner'],
-        };
-      }).toList();
-
-      if (mounted) {
-        setState(() {
-          _boardMembers = mappedMembers;
-        });
-      }
-      debugPrint('✅ Loaded ${members.length} board members');
+      final members = await ref.read(apiServiceProvider).getBoardMembers(widget.boardId);
+      if (!mounted) return;
+      setState(() {
+        _members = members
+            .map((member) => {
+                  'id': member['user_id'] ?? member['id'],
+                  'name': member['name'],
+                  'email': member['email'],
+                })
+            .toList();
+      });
     } catch (e) {
-      debugPrint('❌ Error loading board members: $e');
+      debugPrint('Board members failed: $e');
     }
   }
 
-  Future<void> _loadFromBackend() async {
+  Future<void> _loadTasks() async {
     try {
-      debugPrint('🚀 Board initialized for P2P collaboration');
-
-      // Load existing tasks from backend API
-      final api = ref.read(apiServiceProvider);
-      final existingTasks = await api.getBoardTasks(widget.boardId);
-
+      final tasks = await ref.read(apiServiceProvider).getBoardTasks(widget.boardId);
       final notifier = ref.read(whiteboardProvider.notifier);
-      for (final task in existingTasks) {
-        // Create operation with full task data from database
-        final operation = Operation(
+      for (final task in tasks) {
+        notifier.receiveOperation(Operation(
           opId: task['id'] ?? 'task-${DateTime.now().millisecondsSinceEpoch}',
           actor: task['created_by'] ?? 'backend',
           timestamp: task['created_at'] != null
-              ? DateTime.parse(
-                  task['created_at'] as String,
-                ).millisecondsSinceEpoch
+              ? DateTime.parse(task['created_at'] as String).millisecondsSinceEpoch
               : DateTime.now().millisecondsSinceEpoch,
           type: OperationType.createObject,
           payload: {
@@ -352,2499 +145,448 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               'assignee_list': task['assignee_list'] ?? [],
               'deadline': task['deadline'],
               'labels': task['labels'],
-              'estimated_hours': task['estimated_hours'],
-              'parent_id': task['parent_id'],
               'position': task['position'],
               'created_by': task['created_by'],
               'creator_name': task['creator_name'],
-              'created_at': task['created_at'],
-              'updated_at': task['updated_at'],
             },
           },
-        );
-        notifier.receiveOperation(operation);
+        ));
       }
-
-      debugPrint('✅ Loaded ${existingTasks.length} tasks from backend');
     } catch (e) {
-      debugPrint('❌ Error loading tasks: $e');
+      debugPrint('Load tasks failed: $e');
     }
   }
 
-  // ===== DRAWING METHODS =====
+  String _displayName() {
+    final user = ref.read(authStateProvider).user;
+    if (user?.name?.isNotEmpty == true) return user!.name!;
+    return user?.email ?? 'Unknown';
+  }
 
-  void _onPanStart(Offset point) {
-    if (_selectedTool == DrawingTool.text) return;
-
-    final notifier = ref.read(whiteboardProvider.notifier);
-    final authState = ref.read(authStateProvider);
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    // Get display name: use name if available, otherwise email
-    final displayName = authState.user?.name?.isNotEmpty == true
-        ? authState.user!.name!
-        : authState.user?.email ?? 'Unknown';
-
-    _currentStrokeId = 'stroke-$now';
-    _currentPoints = [point];
-
-    // For eraser, use white color with thicker width
-    final isEraser = _selectedTool == DrawingTool.eraser;
-    final strokeColor = isEraser ? Colors.white : _selectedColor;
-    final strokeWidth = isEraser ? _strokeWidth * 3 : _strokeWidth;
-
-    // Track active stroke for realtime display
-    if (mounted) {
-      setState(() {
-        _activeStrokes[_currentStrokeId!] = _ActiveStroke(
-        points: [point],
-        color: strokeColor,
-        width: strokeWidth,
-        userName: displayName,
-        isEraser: isEraser,
+  Future<void> _createTask({
+    required String title,
+    String status = 'todo',
+    String? description,
+    String priority = 'medium',
+  }) async {
+    try {
+      final response = await ref.read(apiServiceProvider).createTask(
+            boardId: widget.boardId,
+            title: title,
+            description: description,
+            status: status,
+            priority: priority,
+          );
+      ref.read(whiteboardProvider.notifier).createOperation(
+        OperationType.createObject,
+        {'id': response['id'], 'type': 'task', 'data': response},
+        shouldSaveBackend: false,
       );
-      });
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
     }
+  }
 
-    // Create initial stroke - SAVE to backend
-    notifier.createOperation(OperationType.createObject, {
-      'id': _currentStrokeId,
-      'type': 'stroke',
-      'data': {
-        'points': [point.dx, point.dy],
-        'color': strokeColor.value,
-        'width': strokeWidth,
-        'actor': authState.user?.id ?? 'unknown',
-        'actorName': displayName,
-        'isEraser': isEraser,
-      },
-    }, shouldSaveBackend: true);
+  Future<void> _moveTask(String taskId, String status) async {
+    try {
+      final response = await ref.read(apiServiceProvider).moveTask(
+            taskId: taskId,
+            status: status,
+            boardId: widget.boardId,
+          );
+      ref.read(whiteboardProvider.notifier).createOperation(
+        OperationType.updateObject,
+        {'id': taskId, 'type': 'task', 'data': response},
+        shouldSaveBackend: false,
+      );
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
+    }
+  }
 
-    debugPrint(
-      '🖊️ Start ${isEraser ? "eraser" : "stroke"}: $_currentStrokeId by $displayName',
+  Future<void> _deleteTask(String taskId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await AppDialog.showConfirm(
+      context,
+      title: l10n.deleteTask,
+      message: l10n.deleteTaskConfirm,
+      confirmText: l10n.delete,
+      cancelText: l10n.cancel,
+      isDanger: true,
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(apiServiceProvider).deleteTask(taskId);
+      ref.read(whiteboardProvider.notifier).createOperation(
+        OperationType.deleteObject,
+        {'id': taskId, 'type': 'task'},
+        shouldSaveBackend: false,
+      );
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
+    }
+  }
+
+  Future<void> _openTask(Map<String, dynamic>? existing, {String status = 'todo'}) async {
+    TaskModel? model;
+    if (existing != null) {
+      model = TaskModel(
+        id: existing['id'] as String? ?? '',
+        boardId: widget.boardId,
+        title: existing['title'] as String? ?? '',
+        description: existing['description'] as String?,
+        status: existing['status'] as String? ?? status,
+        priority: existing['priority'] as String? ?? 'medium',
+        assignees: (existing['assignees'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        assigneeList: const [],
+        labels: (existing['labels'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        position: (existing['position'] as num?)?.toInt() ?? 0,
+        createdBy: existing['created_by'] as String? ?? '',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => TaskDialog(
+        existingTask: model,
+        initialStatus: status,
+        boardMembers: _members,
+        onSave: ({
+          required String title,
+          String? description,
+          required String priority,
+          required String status,
+          DateTime? deadline,
+          List<String>? assignees,
+          List<String>? labels,
+          double? estimatedHours,
+        }) async {
+          if (existing == null) {
+            await _createTask(
+              title: title,
+              description: description,
+              status: status,
+              priority: priority,
+            );
+            return;
+          }
+          final taskId = existing['id'] as String;
+          final response = await ref.read(apiServiceProvider).updateTask(
+                taskId: taskId,
+                title: title,
+                description: description,
+                assignees: assignees,
+                priority: priority,
+                status: status,
+                deadline: deadline,
+                labels: labels,
+                estimatedHours: estimatedHours,
+              );
+          ref.read(whiteboardProvider.notifier).createOperation(
+            OperationType.updateObject,
+            {'id': taskId, 'type': 'task', 'data': response},
+            shouldSaveBackend: false,
+          );
+        },
+      ),
     );
   }
 
-  void _onPanUpdate(Offset point) {
-    if (_currentStrokeId == null || _selectedTool == DrawingTool.text) return;
+  void _panStart(Offset point) {
+    if (_tool == _DrawTool.text || _tool == _DrawTool.hand) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final eraser = _tool == _DrawTool.eraser;
+    _strokeId = 'stroke-$now';
+    _points = [point];
+    ref.read(whiteboardProvider.notifier).createOperation(
+      OperationType.createObject,
+      {
+        'id': _strokeId,
+        'type': 'stroke',
+        'data': _strokeData(eraser),
+      },
+      shouldSaveBackend: true,
+    );
+  }
 
-    if (mounted) {
-      setState(() {
-        _currentPoints.add(point);
-        _activeStrokes[_currentStrokeId!]?.points.add(point);
-      });
-    }
-
-    final notifier = ref.read(whiteboardProvider.notifier);
-    final authState = ref.read(authStateProvider);
-    final points = _currentPoints.expand((p) => [p.dx, p.dy]).toList();
-
-    // Get display name
-    final displayName = authState.user?.name?.isNotEmpty == true
-        ? authState.user!.name!
-        : authState.user?.email ?? 'Unknown';
-
-    // For eraser, use white color with thicker width
-    final isEraser = _selectedTool == DrawingTool.eraser;
-    final strokeColor = isEraser ? Colors.white : _selectedColor;
-    final strokeWidth = isEraser ? _strokeWidth * 3 : _strokeWidth;
-
-    // Update stroke - P2P ONLY (no backend save)
-    notifier.createOperation(
+  void _panUpdate(Offset point) {
+    if (_strokeId == null || _tool == _DrawTool.text) return;
+    setState(() => _points.add(point));
+    ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.updateObject,
       {
-        'id': _currentStrokeId,
+        'id': _strokeId,
         'type': 'stroke',
-        'data': {
-          'points': points,
-          'color': strokeColor.value,
-          'width': strokeWidth,
-          'actor': authState.user?.id ?? 'unknown',
-          'actorName': displayName,
-          'isEraser': isEraser,
-        },
+        'data': _strokeData(_tool == _DrawTool.eraser),
       },
-      shouldSaveBackend: false, // P2P only for smooth drawing
+      shouldSaveBackend: false,
     );
   }
 
-  void _onPanEnd() {
-    if (_currentStrokeId == null) return;
-
-    final notifier = ref.read(whiteboardProvider.notifier);
-    final authState = ref.read(authStateProvider);
-    final points = _currentPoints.expand((p) => [p.dx, p.dy]).toList();
-
-    // Get display name
-    final displayName = authState.user?.name?.isNotEmpty == true
-        ? authState.user!.name!
-        : authState.user?.email ?? 'Unknown';
-
-    // For eraser, use white color with thicker width
-    final isEraser = _selectedTool == DrawingTool.eraser;
-    final strokeColor = isEraser ? Colors.white : _selectedColor;
-    final strokeWidth = isEraser ? _strokeWidth * 3 : _strokeWidth;
-
-    // Final stroke - SAVE to backend
-    notifier.createOperation(OperationType.updateObject, {
-      'id': _currentStrokeId,
-      'type': 'stroke',
-      'data': {
-        'points': points,
-        'color': strokeColor.value,
-        'width': strokeWidth,
-        'actor': authState.user?.id ?? 'unknown',
-        'actorName': displayName,
-        'isEraser': isEraser,
+  void _panEnd() {
+    if (_strokeId == null) return;
+    ref.read(whiteboardProvider.notifier).createOperation(
+      OperationType.updateObject,
+      {
+        'id': _strokeId,
+        'type': 'stroke',
+        'data': _strokeData(_tool == _DrawTool.eraser),
       },
-    }, shouldSaveBackend: true);
-
-    // Add to undo stack
-    _undoStack.add(_currentStrokeId!);
-
-    debugPrint(
-      '✅ Finish ${isEraser ? "eraser" : "stroke"}: $_currentStrokeId (${_currentPoints.length} points)',
+      shouldSaveBackend: true,
     );
-
-    // Clear active stroke after a delay to show completion
-    final strokeId = _currentStrokeId;
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _activeStrokes.remove(strokeId);
-        });
-      }
-    });
-
-    _currentStrokeId = null;
-    _currentPoints = [];
+    _strokeId = null;
+    _points = [];
   }
 
-  // ===== UNDO/REDO =====
-
-  void _undo() {
-    if (_undoStack.isEmpty) return;
-
-    final strokeId = _undoStack.removeLast();
-    final notifier = ref.read(whiteboardProvider.notifier);
-
-    notifier.createOperation(OperationType.deleteObject, {
-      'id': strokeId,
-      'type': 'stroke',
-    }, shouldSaveBackend: true);
-
-    debugPrint('↩️ Undo stroke: $strokeId');
+  Map<String, dynamic> _strokeData(bool eraser) {
+    final paint = eraser ? Colors.white : _color;
+    return {
+      'points': _points.expand((p) => [p.dx, p.dy]).toList(),
+      'color': paint.toARGB32(),
+      'width': eraser ? _width * 4 : _width,
+      'actor': ref.read(authStateProvider).user?.id ?? 'unknown',
+      'actorName': _displayName(),
+      'isEraser': eraser,
+    };
   }
 
-  // ===== TEXT TOOL =====
-
-  void _onCanvasTap(Offset position) {
-    if (_selectedTool != DrawingTool.text) return;
-
-    if (mounted) {
-      setState(() {
-        _textPosition = position;
-      });
-    }
-
+  Future<void> _addText(Offset position) async {
+    _textController.clear();
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.addText),
         content: TextField(
           controller: _textController,
           autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.enterText,
-            border: const OutlineInputBorder(),
-          ),
-          maxLines: 3,
+          decoration: InputDecoration(hintText: l10n.enterText),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _addText();
-              Navigator.pop(context);
-            },
-            child: Text(l10n.addText),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.addText)),
         ],
       ),
     );
-  }
-
-  void _addText() {
-    if (_textController.text.trim().isEmpty || _textPosition == null) return;
-
-    final notifier = ref.read(whiteboardProvider.notifier);
-    final authState = ref.read(authStateProvider);
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final textId = 'text-$now';
-
-    // Get display name
-    final displayName = authState.user?.name?.isNotEmpty == true
-        ? authState.user!.name!
-        : authState.user?.email ?? 'Unknown';
-
-    notifier.createOperation(OperationType.createObject, {
-      'id': textId,
-      'type': 'text',
-      'data': {
-        'text': _textController.text.trim(),
-        'position': [_textPosition!.dx, _textPosition!.dy],
-        'color': _selectedColor.value,
-        'fontSize': _textSize,
-        'actor': authState.user?.id ?? 'unknown',
-        'actorName': displayName,
-      },
-    }, shouldSaveBackend: true);
-
-    _textController.clear();
-    _textPosition = null;
-    _undoStack.add(textId);
-
-    debugPrint('📝 Added text by $displayName');
-  }
-  
-  // ===== DRAGGABLE TEXT WIDGET =====
-  
-  Widget _buildDraggableText(Map<String, dynamic> textObj) {
-    final text = textObj['text'] as String?;
-    final textId = textObj['id'] as String?;
-    final positionList = textObj['position'] as List?;
-    
-    if (text == null || textId == null || positionList == null || positionList.length < 2) {
-      return const SizedBox.shrink();
-    }
-    
-    final position = Offset(
-      (positionList[0] as num).toDouble(),
-      (positionList[1] as num).toDouble(),
-    );
-    final color = Color((textObj['color'] as num?)?.toInt() ?? 0xFF000000);
-    final fontSize = (textObj['fontSize'] as num?)?.toDouble() ?? 14.0;
-    final actorName = textObj['actorName'] as String?;
-    final isSelected = _selectedTextId == textId;
-    
-    // Format text for better display (convert markdown-like syntax)
-    final formattedText = _formatDisplayText(text);
-    
-    return Positioned(
-      left: position.dx,
-      top: position.dy,
-      child: Draggable<String>(
-        data: textId,
-        feedback: Material(
-          elevation: 8,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            constraints: const BoxConstraints(maxWidth: 400),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Text(
-              formattedText,
-              style: TextStyle(color: color, fontSize: fontSize),
-            ),
-          ),
-        ),
-        childWhenDragging: Container(
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey, style: BorderStyle.solid, width: 1),
-          ),
-          child: Text(
-            formattedText,
-            style: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: fontSize),
-          ),
-        ),
-        onDragEnd: (details) {
-          // Get the render box of the canvas to calculate local position
-          final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
-          if (renderBox != null) {
-            // Calculate new position relative to drop location
-            final newX = details.offset.dx.clamp(0.0, 1800.0);
-            final newY = details.offset.dy - 100; // Offset for AppBar
-            
-            final notifier = ref.read(whiteboardProvider.notifier);
-            notifier.createOperation(OperationType.createObject, {
-              'id': textId,
-              'type': 'text',
-              'data': {
-                ...textObj,
-                'position': [newX.clamp(0.0, 1800.0), newY.clamp(0.0, 1800.0)],
-              },
-            }, shouldSaveBackend: true);
-          }
+    if (ok != true || _textController.text.trim().isEmpty) return;
+    final id = 'text-${DateTime.now().millisecondsSinceEpoch}';
+    ref.read(whiteboardProvider.notifier).createOperation(
+      OperationType.createObject,
+      {
+        'id': id,
+        'type': 'text',
+        'data': {
+          'text': _textController.text.trim(),
+          'position': [position.dx, position.dy],
+          'color': _color.toARGB32(),
+          'fontSize': _textSize,
+          'actorName': _displayName(),
         },
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedTextId = isSelected ? null : textId;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(maxWidth: 400),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.white.withOpacity(0.95),
-              border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey.withOpacity(0.3),
-                width: isSelected ? 2 : 1,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Text content with formatted display
-                SelectableText(
-                  formattedText,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: fontSize,
-                    height: 1.5,
-                  ),
-                ),
-                // Author label
-                if (actorName != null && actorName.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '— $actorName',
-                      style: TextStyle(
-                        color: color.withOpacity(0.5),
-                        fontSize: fontSize * 0.75,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                // Action buttons when selected
-                if (isSelected)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildTextActionButton(
-                          icon: Icons.delete_outline,
-                          label: 'Xóa',
-                          color: Colors.red,
-                          onTap: () => _deleteText(textId),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTextActionButton(
-                          icon: Icons.open_with,
-                          label: 'Kéo để di chuyển',
-                          color: Colors.blue,
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      },
+      shouldSaveBackend: true,
     );
   }
-  
-  /// Format text for better display - handle markdown-like syntax
-  String _formatDisplayText(String text) {
-    String formatted = text;
-    
-    // Remove markdown bold markers **text** -> text (greedy match)
-    while (formatted.contains('**')) {
-      formatted = formatted.replaceAllMapped(
-        RegExp(r'\*\*([^*]+)\*\*'),
-        (match) => match.group(1) ?? '',
-      );
-      // Break if no more changes
-      if (!formatted.contains('**')) break;
+
+  Future<void> _toggleVoice() async {
+    if (_voice) {
+      ref.read(whiteboardProvider.notifier).webrtc?.stopAudioStream();
+      ref.read(whiteboardProvider.notifier).updateMicStatus(true);
+      setState(() => _voice = false);
+      return;
     }
-    
-    // Remove markdown italic markers *text* -> text (but not bullets)
-    formatted = formatted.replaceAllMapped(
-      RegExp(r'(?<!\*)\*([^*\n]+)\*(?!\*)'),
-      (match) => match.group(1) ?? '',
-    );
-    
-    // Remove __text__ -> text
-    formatted = formatted.replaceAllMapped(
-      RegExp(r'__([^_]+)__'),
-      (match) => match.group(1) ?? '',
-    );
-    
-    // Remove _text_ -> text
-    formatted = formatted.replaceAllMapped(
-      RegExp(r'(?<!_)_([^_\n]+)_(?!_)'),
-      (match) => match.group(1) ?? '',
-    );
-    
-    // Remove `code` markers
-    formatted = formatted.replaceAllMapped(
-      RegExp(r'`([^`]+)`'),
-      (match) => match.group(1) ?? '',
-    );
-    
-    // Remove # headers
-    formatted = formatted.replaceAll(RegExp(r'^#{1,6}\s*', multiLine: true), '');
-    
-    // Clean up multiple consecutive newlines (max 2)
-    formatted = formatted.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-    
-    // Standardize bullet points
-    formatted = formatted.replaceAll(RegExp(r'^\s*[-]\s+', multiLine: true), '• ');
-    
-    // Keep checkbox format
-    formatted = formatted.replaceAll(RegExp(r'^\s*\[\s*\]\s*', multiLine: true), '☐ ');
-    formatted = formatted.replaceAll(RegExp(r'^\s*\[x\]\s*', multiLine: true), '☑ ');
-    
-    // Clean up leading/trailing whitespace per line
-    formatted = formatted.split('\n').map((line) => line.trimRight()).join('\n');
-    
-    // Final trim
-    formatted = formatted.trim();
-    
-    return formatted;
-  }
-  
-  Widget _buildTextActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(fontSize: 10, color: color),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
-  void _deleteText(String textId) {
-    final notifier = ref.read(whiteboardProvider.notifier);
-    notifier.createOperation(OperationType.deleteObject, {
-      'id': textId,
-      'type': 'text',
-    }, shouldSaveBackend: true);
-    
-    setState(() {
-      _selectedTextId = null;
-    });
-  }
-
-  // ===== KANBAN METHODS =====
-
-  Future<void> _showTaskDialog({
-    String? editTaskId,
-    Map<String, dynamic>? existingTask,
-  }) async {
-    // Convert Map to TaskModel if editing
-    TaskModel? taskModel;
-    if (existingTask != null) {
-      try {
-        taskModel = TaskModel(
-          id: existingTask['id'] as String,
-          boardId: widget.boardId,
-          title: existingTask['title'] as String? ?? 'Untitled',
-          description: existingTask['description'] as String?,
-          status: existingTask['status'] as String? ?? 'todo',
-          priority: existingTask['priority'] as String? ?? 'medium',
-          assignees: (existingTask['assignees'] as List?)?.cast<String>() ?? [],
-          assigneeList:
-              (existingTask['assignee_list'] as List?)
-                  ?.map(
-                    (a) => AssigneeInfo(
-                      id: a['id'] as String,
-                      name: a['name'] as String? ?? '',
-                      email: a['email'] as String?,
-                      avatar: null,
-                    ),
-                  )
-                  .toList() ??
-              [],
-          labels: (existingTask['labels'] as List?)?.cast<String>() ?? [],
-          deadline: existingTask['deadline'] != null
-              ? DateTime.tryParse(existingTask['deadline'] as String)
-              : null,
-          estimatedHours: existingTask['estimated_hours'] != null
-              ? double.tryParse(existingTask['estimated_hours'].toString())
-              : null,
-          actualHours: existingTask['actual_hours'] != null
-              ? double.tryParse(existingTask['actual_hours'].toString())
-              : null,
-          parentId: existingTask['parent_id'] as String?,
-          position: existingTask['position'] as int? ?? 0,
-          createdBy: existingTask['created_by'] as String? ?? '',
-          creatorName: existingTask['creator_name'] as String?,
-          createdAt:
-              DateTime.tryParse(existingTask['created_at'] as String? ?? '') ??
-              DateTime.now(),
-          updatedAt:
-              DateTime.tryParse(existingTask['updated_at'] as String? ?? '') ??
-              DateTime.now(),
-        );
-      } catch (e) {
-        debugPrint('Error converting task: $e');
-      }
+    if (!kIsWeb) {
+      final status = await Permission.microphone.request();
+      if (!status.isGranted) return;
     }
-
-    await showDialog(
-      context: context,
-      builder: (context) => TaskDialog(
-        existingTask: taskModel,
-        boardMembers: _boardMembers,
-        onSave:
-            ({
-              required String title,
-              String? description,
-              required String priority,
-              required String status,
-              DateTime? deadline,
-              List<String>? assignees,
-              List<String>? labels,
-              double? estimatedHours,
-            }) async {
-              if (editTaskId == null) {
-                await _createTaskWithDetails(
-                  title: title,
-                  description: description,
-                  priority: priority,
-                  status: status,
-                  deadline: deadline,
-                  assignees: assignees,
-                  labels: labels,
-                  estimatedHours: estimatedHours,
-                );
-              } else {
-                await _updateTaskWithDetails(
-                  taskId: editTaskId,
-                  title: title,
-                  description: description,
-                  priority: priority,
-                  status: status,
-                  deadline: deadline,
-                  assignees: assignees,
-                  labels: labels,
-                  estimatedHours: estimatedHours,
-                );
-              }
-            },
-      ),
-    );
-  }
-
-  Future<void> _createTaskWithDetails({
-    required String title,
-    String? description,
-    required String priority,
-    required String status,
-    DateTime? deadline,
-    List<String>? assignees,
-    List<String>? labels,
-    double? estimatedHours,
-  }) async {
-    try {
-      // Save to backend via API first
-      final api = ref.read(apiServiceProvider);
-      final response = await api.createTask(
-        boardId: widget.boardId,
-        title: title,
-        description: description,
-        assignees: assignees,
-        status: status,
-        priority: priority,
-        deadline: deadline,
-        parentId: null,
-        labels: labels,
-        estimatedHours: estimatedHours,
-      );
-
-      final taskId = response['id'] as String;
-
-      // Then broadcast via P2P (without saving to backend again)
-      final notifier = ref.read(whiteboardProvider.notifier);
-      notifier.createOperation(
-        OperationType.createObject,
-        {'id': taskId, 'type': 'task', 'data': response},
-        shouldSaveBackend: false, // Already saved via API
-      );
-
-      debugPrint('✅ Created task: $title (id: $taskId)');
-    } catch (e) {
-      debugPrint('❌ Error creating task: $e');
-      if (mounted) {
-        context.showErrorSnackBar(e);
-      }
+    final ok = await ref.read(whiteboardProvider.notifier).webrtc?.startAudioStream() ?? false;
+    if (!ok) {
+      if (mounted) context.showErrorSnackBar('Microphone unavailable');
+      return;
     }
+    ref.read(whiteboardProvider.notifier).updateMicStatus(false);
+    setState(() => _voice = true);
   }
 
-  Future<void> _updateTaskWithDetails({
-    required String taskId,
-    String? title,
-    String? description,
-    String? priority,
-    String? status,
-    DateTime? deadline,
-    List<String>? assignees,
-    List<String>? labels,
-    double? estimatedHours,
-  }) async {
-    try {
-      // Update via API
-      final api = ref.read(apiServiceProvider);
-      debugPrint('📤 Updating task $taskId via API...');
-      final response = await api.updateTask(
-        taskId: taskId,
-        title: title,
-        description: description,
-        assignees: assignees,
-        priority: priority,
-        status: status,
-        deadline: deadline,
-        labels: labels,
-        estimatedHours: estimatedHours,
-      );
-
-      debugPrint('📥 Received update response: ${response.keys}');
-
-      // Broadcast P2P (without backend save)
-      final notifier = ref.read(whiteboardProvider.notifier);
-      notifier.createOperation(
-        OperationType.updateObject,
-        {'id': taskId, 'type': 'task', 'data': response},
-        shouldSaveBackend: false, // Already saved via API
-      );
-
-      debugPrint('✅ Updated task: $taskId');
-    } catch (e) {
-      debugPrint('❌ Error updating task: $e');
-      if (mounted) {
-        context.showErrorSnackBar(e);
-      }
+  void _leave() {
+    final board = ref.read(currentBoardProvider).value;
+    if (context.canPop()) {
+      context.pop();
+      return;
     }
-  }
-
-  Future<void> _updateTaskStatus(String taskId, String newStatus) async {
-    try {
-      // Use moveTask API for better position handling
-      final api = ref.read(apiServiceProvider);
-      final response = await api.moveTask(
-        taskId: taskId,
-        status: newStatus,
-        boardId: widget.boardId,
-      );
-
-      // Broadcast P2P (without backend save)
-      final notifier = ref.read(whiteboardProvider.notifier);
-      notifier.createOperation(
-        OperationType.updateObject,
-        {'id': taskId, 'type': 'task', 'data': response},
-        shouldSaveBackend: false, // Already saved via API
-      );
-
-      debugPrint('✅ Moved task: $taskId → $newStatus');
-    } catch (e) {
-      debugPrint('❌ Error moving task: $e');
-      if (mounted) {
-        context.showErrorSnackBar(e);
-      }
-    }
-  }
-
-  Future<void> _editTask(String taskId, Map<String, dynamic> taskData) async {
-    await _showTaskDialog(editTaskId: taskId, existingTask: taskData);
-  }
-
-  Future<void> _deleteTask(String taskId) async {
-    try {
-      // Delete via API
-      final api = ref.read(apiServiceProvider);
-      debugPrint('🗑️ Deleting task $taskId via API...');
-      await api.deleteTask(taskId);
-
-      // Broadcast P2P (without backend save)
-      final notifier = ref.read(whiteboardProvider.notifier);
-      notifier.createOperation(
-        OperationType.deleteObject,
-        {'id': taskId, 'type': 'task'},
-        shouldSaveBackend: false, // Already deleted via API
-      );
-
-      debugPrint('✅ Deleted task: $taskId');
-    } catch (e) {
-      debugPrint('❌ Error deleting task: $e');
-      if (mounted) {
-        context.showErrorSnackBar(e);
-      }
+    if (board != null) {
+      context.go('/workspace/${board.workspaceId}/boards');
+    } else {
+      context.go('/workspaces');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(whiteboardProvider);
+    final board = ref.watch(currentBoardProvider).value;
+    final scene = _scene(state.operations);
+    final title = board?.name.isNotEmpty == true ? board!.name : l10n.boards;
 
-    // Extract strokes and tasks from operations
+    return Scaffold(
+      backgroundColor: _page == _BoardPage.tasks
+          ? const Color(0xFFF1F2F4)
+          : AppColors.surface,
+      bottomNavigationBar: const _RemoteAudioMount(),
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _leave),
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          _PageSwitch(
+            tasks: _page == _BoardPage.tasks,
+            tasksLabel: l10n.tasks,
+            canvasLabel: l10n.canvas,
+            onTasks: () => setState(() => _page = _BoardPage.tasks),
+            onCanvas: () => setState(() => _page = _BoardPage.canvas),
+          ),
+          IconButton(
+            tooltip: _voice ? 'Mute' : 'Call',
+            onPressed: _toggleVoice,
+            icon: Icon(_voice ? Icons.mic_rounded : Icons.mic_off_rounded),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: _page == _BoardPage.tasks
+          ? _TrelloBoard(
+              l10n: l10n,
+              columns: [
+                _ColumnData('todo', l10n.todo, scene.tasks.where((t) => t['status'] == 'todo')),
+                _ColumnData('doing', l10n.doing, scene.tasks.where((t) => t['status'] == 'doing')),
+                _ColumnData('done', l10n.done, scene.tasks.where((t) => t['status'] == 'done')),
+              ],
+              controllers: _quickAdd,
+              onQuickAdd: (status, title) => _createTask(title: title, status: status),
+              onOpen: (task) => _openTask(task),
+              onAdd: (status) => _openTask(null, status: status),
+              onMove: _moveTask,
+              onDelete: _deleteTask,
+            )
+          : _CanvaPage(
+              l10n: l10n,
+              tool: _tool,
+              color: _color,
+              width: _width,
+              strokes: scene.strokes,
+              texts: scene.texts,
+              onTool: (tool) => setState(() => _tool = tool),
+              onColor: (color) => setState(() => _color = color),
+              onWidth: (value) => setState(() => _width = value),
+              onPanStart: _panStart,
+              onPanUpdate: _panUpdate,
+              onPanEnd: _panEnd,
+              onTap: (point) {
+                if (_tool == _DrawTool.text) _addText(point);
+              },
+            ),
+    );
+  }
+
+  _Scene _scene(List<Operation> operations) {
     final strokes = <Map<String, dynamic>>[];
     final texts = <Map<String, dynamic>>[];
     final tasks = <Map<String, dynamic>>[];
-    final peerActiveStrokes = <String, _ActiveStroke>{}; // Track peer strokes
-
-    final myUserId = ref.watch(authStateProvider).user?.id;
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    for (final op in state.operations) {
+    for (final op in operations) {
       final id = op.payload['id'] as String?;
       final type = op.payload['type'] as String?;
-
       if (id == null || type == null) continue;
-
       if (op.type == OperationType.deleteObject) {
-        strokes.removeWhere((s) => s['id'] == id);
-        texts.removeWhere((t) => t['id'] == id);
-        tasks.removeWhere((t) => t['id'] == id);
-        peerActiveStrokes.remove(id);
-      } else if (type == 'stroke') {
-        final data = Map<String, dynamic>.from(op.payload['data'] ?? {});
-        final isFromPeer = op.actor != myUserId;
-        final age = now - op.timestamp;
-
-        // If stroke is recent (< 2 seconds) and from peer, show as active
-        if (isFromPeer && age < 2000) {
-          final pointsList = data['points'] as List?;
-          if (pointsList != null && pointsList.length >= 2) {
-            final points = <Offset>[];
-            for (int i = 0; i < pointsList.length - 1; i += 2) {
-              points.add(
-                Offset(
-                  (pointsList[i] as num).toDouble(),
-                  (pointsList[i + 1] as num).toDouble(),
-                ),
-              );
-            }
-
-            if (points.isNotEmpty) {
-              peerActiveStrokes[id] = _ActiveStroke(
-                points: points,
-                color: Color((data['color'] as num?)?.toInt() ?? 0xFF000000),
-                width: (data['width'] as num?)?.toDouble() ?? 3.0,
-                userName: data['actorName'] as String? ?? 'Unknown',
-                isEraser: data['isEraser'] == true,
-              );
-            }
-          }
-        }
-
-        // Remove old version and add new
-        strokes.removeWhere((s) => s['id'] == id);
-        strokes.add({'id': id, ...data});
+        strokes.removeWhere((item) => item['id'] == id);
+        texts.removeWhere((item) => item['id'] == id);
+        tasks.removeWhere((item) => item['id'] == id);
+        continue;
+      }
+      final data = {'id': id, ...Map<String, dynamic>.from(op.payload['data'] ?? {})};
+      if (type == 'stroke') {
+        strokes.removeWhere((item) => item['id'] == id);
+        strokes.add(data);
       } else if (type == 'text') {
-        texts.removeWhere((t) => t['id'] == id);
-        texts.add({
-          'id': id,
-          ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
-        });
+        texts.removeWhere((item) => item['id'] == id);
+        texts.add(data);
       } else if (type == 'task') {
-        // Handle both create and update for tasks
-        tasks.removeWhere((t) => t['id'] == id);
-        tasks.add({
-          'id': id,
-          ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
-        });
+        tasks.removeWhere((item) => item['id'] == id);
+        tasks.add(data);
       }
     }
-
-    final todoTasks = tasks.where((t) => t['status'] == 'todo').toList();
-    final doingTasks = tasks.where((t) => t['status'] == 'doing').toList();
-    final doneTasks = tasks.where((t) => t['status'] == 'done').toList();
-
-    final l10n = AppLocalizations.of(context)!;
-    final board = ref.watch(currentBoardProvider).value;
-    final boardTitle = board?.name.isNotEmpty == true
-        ? board!.name
-        : l10n.canvasAndKanban;
-    final draftLabel = state.hasUnsavedChanges
-        ? l10n.unsavedDraft
-        : state.draftSavedAt != null
-            ? l10n.draftSavedAt(_formatDraftTime(state.draftSavedAt!))
-            : null;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Try to pop first (simplest way to go back to boards list)
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              // Try to navigate to boards list
-              if (board != null) {
-                context.go('/workspace/${board.workspaceId}/boards');
-              } else {
-                // Last fallback - go to workspaces
-                context.go('/workspaces');
-              }
-            }
-          },
-          tooltip: l10n.backToBoards,
-        ),
-        toolbarHeight: 64,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              boardTitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (draftLabel != null)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      draftLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: state.hasUnsavedChanges
-                            ? AppColors.warning
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  if (state.draftSavedAt != null) ...[
-                    const SizedBox(width: 4),
-                    Tooltip(
-                      message: l10n.discardDraft,
-                      child: GestureDetector(
-                        onTap: _discardDraftPressed,
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-          ],
-        ),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: Badge(
-              isLabelVisible: state.hasUnsavedChanges,
-              smallSize: 8,
-              backgroundColor: AppColors.warning,
-              child: const Icon(Icons.save_outlined),
-            ),
-            onPressed: _saveDraftPressed,
-            tooltip: l10n.saveDraft,
-          ),
-          // AI Brainstorm button
-          IconButton(
-            icon: Icon(
-              _showAIPanel ? Icons.auto_awesome : Icons.auto_awesome_outlined,
-              color: _showAIPanel ? AppColors.accentPurple : null,
-            ),
-            onPressed: () => setState(() => _showAIPanel = !_showAIPanel),
-            tooltip: AppLocalizations.of(context)!.aiBrainstorm,
-          ),
-          IconButton(
-            icon: Icon(
-              _showKanban ? Icons.view_sidebar : Icons.view_sidebar_outlined,
-            ),
-            onPressed: () => setState(() => _showKanban = !_showKanban),
-            tooltip: _showKanban ? AppLocalizations.of(context)!.hideKanban : AppLocalizations.of(context)!.showKanban,
-          ),
-          Tooltip(
-            message: AppLocalizations.of(context)!.screenshot,
-            child: IconButton(
-              icon: const Icon(Icons.camera_alt),
-              onPressed: _captureScreenshot,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.people_rounded),
-            onPressed: () {
-              // Capture state here before showDialog
-              final peers = state.peers;
-              final strokeCount = strokes.length;
-              final textCount = texts.length;
-              final taskCount = tasks.length;
-              
-              showDialog(
-                context: context,
-                builder: (dialogContext) => Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Container(
-                    width: 400,
-                    constraints: const BoxConstraints(maxHeight: 600),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Header
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.gradientPrimary,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              topRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.people_rounded,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'P2P Status & Active Users',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${peers.length + 1} online',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close, color: Colors.white),
-                                onPressed: () => Navigator.pop(dialogContext),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Content
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Stats section
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.border,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Statistics',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      _StatRow(
-                                        icon: Icons.brush_rounded,
-                                        label: 'Strokes',
-                                        value: '$strokeCount',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _StatRow(
-                                        icon: Icons.text_fields_rounded,
-                                        label: 'Texts',
-                                        value: '$textCount',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _StatRow(
-                                        icon: Icons.task_rounded,
-                                        label: 'Tasks',
-                                        value: '$taskCount',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                // Active Users section
-                                Text(
-                                  'Active Users',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                // Current user (You)
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                    final currentUser = ref.watch(authStateProvider).user;
-                                    return _UserItem(
-                                      name: currentUser?.name ?? currentUser?.email ?? 'You',
-                                      isCurrentUser: true,
-                                      isConnected: true,
-                                      avatar: currentUser?.avatar,
-                                      isMuted: false,
-                                      isVoiceEnabled: _isVoiceEnabled,
-                                    );
-                                  },
-                                ),
-                                if (peers.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  ...peers.map((peer) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: _UserItem(
-                                        name: peer.userName ?? peer.userId,
-                                        isCurrentUser: false,
-                                        isConnected: peer.connected,
-                                        avatar: peer.avatar,
-                                        isMuted: peer.isMuted,
-                                        isVoiceEnabled: _isVoiceEnabled,
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Voice call controls
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: _isVoiceEnabled
-                                      ? LinearGradient(
-                                          colors: [
-                                            AppColors.error,
-                                            AppColors.error.withOpacity(0.8),
-                                          ],
-                                        )
-                                      : AppColors.gradientPrimary,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (_isVoiceEnabled
-                                              ? AppColors.error
-                                              : AppColors.primary)
-                                          .withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.pop(dialogContext);
-                                    _toggleVoice();
-                                  },
-                                  icon: Icon(
-                                    _isVoiceEnabled
-                                        ? Icons.mic_rounded
-                                        : Icons.mic_off_rounded,
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    _isVoiceEnabled ? 'End Voice Call' : 'Start Voice Call',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (_isVoiceEnabled) ...[
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: AppColors.success.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.graphic_eq_rounded,
-                                        size: 16,
-                                        color: AppColors.success,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Voice call active',
-                                        style: const TextStyle(
-                                          color: AppColors.success,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )); 
-            },
-            tooltip: 'P2P Status & Active Users',
-          ),
-        ],
-      ),
-      body: Screenshot(
-        controller: _screenshotController,
-        child: Stack(
-          children: [
-            Row(
-              children: [
-              // Canvas area
-              Expanded(
-                child: Column(
-                  children: [
-                    // Color picker and tools
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.border, width: 1),
-                        ),
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            // Show current user
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySubtle,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.person_rounded,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    ref
-                                                .watch(authStateProvider)
-                                                .user
-                                                ?.name
-                                                ?.isNotEmpty ==
-                                            true
-                                        ? ref
-                                              .watch(authStateProvider)
-                                              .user!
-                                              .name!
-                                        : ref
-                                                  .watch(authStateProvider)
-                                                  .user
-                                                  ?.email ??
-                                              l10n.you,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-
-                            // Drawing tools
-                            _ToolButton(
-                              icon: Icons.edit_rounded,
-                              label: l10n.pen,
-                              isSelected: _selectedTool == DrawingTool.pen,
-                              onTap: () => setState(
-                                () => _selectedTool = DrawingTool.pen,
-                              ),
-                            ),
-                            _ToolButton(
-                              icon: Icons.auto_fix_high_rounded,
-                              label: l10n.eraser,
-                              isSelected: _selectedTool == DrawingTool.eraser,
-                              onTap: () => setState(
-                                () => _selectedTool = DrawingTool.eraser,
-                              ),
-                            ),
-                            _ToolButton(
-                              icon: Icons.text_fields_rounded,
-                              label: l10n.text,
-                              isSelected: _selectedTool == DrawingTool.text,
-                              onTap: () => setState(
-                                () => _selectedTool = DrawingTool.text,
-                              ),
-                            ),
-
-                            const VerticalDivider(),
-
-                            // Undo button
-                            IconButton(
-                              icon: const Icon(Icons.undo_rounded),
-                              onPressed: _undoStack.isEmpty ? null : _undo,
-                              tooltip: '${l10n.undo} (${_undoStack.length})',
-                            ),
-
-                            const VerticalDivider(),
-                            Text('${l10n.color}: '),
-                            const SizedBox(width: 8),
-                            ...[
-                              'black',
-                              'red',
-                              'blue',
-                              'green',
-                              'yellow',
-                              'orange',
-                              'purple',
-                            ].map((colorName) {
-                              final color = _getColor(colorName);
-                              final selected = _selectedColor == color;
-                              return GestureDetector(
-                                onTap: () =>
-                                    setState(() => _selectedColor = color),
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: selected
-                                          ? AppColors.primary
-                                          : AppColors.border,
-                                      width: selected ? 3 : 1,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                            const SizedBox(width: 16),
-
-                            // Stroke width slider
-                            Text('${l10n.width}: '),
-                            SizedBox(
-                              width: 100,
-                              child: Slider(
-                                value: _strokeWidth,
-                                min: 1,
-                                max: 10,
-                                divisions: 9,
-                                label: _strokeWidth.round().toString(),
-                                onChanged: (value) =>
-                                    setState(() => _strokeWidth = value),
-                              ),
-                            ),
-
-                            // Text size slider (shown only when text tool selected)
-                            if (_selectedTool == DrawingTool.text) ...[
-                              const SizedBox(width: 16),
-                              Text('${l10n.textSize}: '),
-                              SizedBox(
-                                width: 120,
-                                child: Slider(
-                                  value: _textSize,
-                                  min: 12,
-                                  max: 72,
-                                  divisions: 12,
-                                  label: _textSize.round().toString(),
-                                  onChanged: (value) =>
-                                      setState(() => _textSize = value),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      color: AppColors.surface,
-                      child: Text(
-                        _selectedTool == DrawingTool.eraser
-                            ? l10n.toolHintEraser
-                            : _selectedTool == DrawingTool.text
-                                ? l10n.toolHintText
-                                : l10n.toolHintPen,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-
-                    // Canvas
-                    Expanded(
-                      child: InteractiveViewer(
-                        minScale: 0.1,
-                        maxScale: 5.0,
-                        constrained: false,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTapUp: (details) {
-                            // Deselect text if tapping elsewhere
-                            if (_selectedTextId != null) {
-                              setState(() => _selectedTextId = null);
-                            }
-                            _onCanvasTap(details.localPosition);
-                          },
-                          onPanStart: (details) {
-                            // Only draw if no text is selected
-                            if (_selectedTextId == null) {
-                              _onPanStart(details.localPosition);
-                            }
-                          },
-                          onPanUpdate: (details) {
-                            if (_selectedTextId == null) {
-                              _onPanUpdate(details.localPosition);
-                            }
-                          },
-                          onPanEnd: (details) {
-                            if (_selectedTextId == null) {
-                              _onPanEnd();
-                            }
-                          },
-                          child: Container(
-                            width: 2000,
-                            height: 2000,
-                            color: Colors.white,
-                            child: Stack(
-                              children: [
-                                // Drawing layer (strokes only)
-                                CustomPaint(
-                                  size: const Size(2000, 2000),
-                                  painter: _StrokePainter(
-                                    strokes: strokes,
-                                    texts: [], // Don't draw texts in CustomPaint
-                                    activeStrokes: {
-                                      ..._activeStrokes,
-                                      ...peerActiveStrokes,
-                                    },
-                                  ),
-                                ),
-                                // Draggable text objects layer
-                                ...texts.map((textObj) => _buildDraggableText(textObj)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Kanban sidebar (resizable)
-              if (_showKanban)
-                Row(
-                  children: [
-                    // Resize handle
-                    MouseRegion(
-                      cursor: SystemMouseCursors.resizeColumn,
-                      child: GestureDetector(
-                        onHorizontalDragUpdate: (details) {
-                          setState(() {
-                            _kanbanWidth = (_kanbanWidth - details.delta.dx).clamp(250.0, 600.0);
-                          });
-                        },
-                        child: Container(
-                          width: 8,
-                          color: Colors.grey[300],
-                          child: Center(
-                            child: Container(
-                              width: 2,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[400],
-                                borderRadius: BorderRadius.circular(1),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Kanban panel
-                    Container(
-                      width: _kanbanWidth,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                    children: [
-                      // Create task button
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          border: Border(
-                            bottom: BorderSide(color: Colors.grey[300]!),
-                          ),
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _showTaskDialog(),
-                            icon: const Icon(
-                              Icons.add_circle_rounded,
-                              size: 20,
-                            ),
-                            label: const Text('Create Task'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Task columns - responsive layout
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Use single column for narrow screens (mobile)
-                            if (constraints.maxWidth < 800) {
-                              return SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      width: constraints.maxWidth * 0.9,
-                                      child: _TaskColumn(
-                                        title: 'TODO',
-                                        tasks: todoTasks,
-                                        onMove: (id, data) =>
-                                            _updateTaskStatus(id, 'doing'),
-                                        onEdit: _editTask,
-                                        onDelete: _deleteTask,
-                                        color: Colors.orange,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: constraints.maxWidth * 0.9,
-                                      child: _TaskColumn(
-                                        title: 'DOING',
-                                        tasks: doingTasks,
-                                        onMove: (id, data) =>
-                                            _updateTaskStatus(id, 'done'),
-                                        onEdit: _editTask,
-                                        onDelete: _deleteTask,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: constraints.maxWidth * 0.9,
-                                      child: _TaskColumn(
-                                        title: 'DONE',
-                                        tasks: doneTasks,
-                                        onMove: null,
-                                        onEdit: _editTask,
-                                        onDelete: _deleteTask,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            // Desktop - show all columns side by side
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: _TaskColumn(
-                                    title: 'TODO',
-                                    tasks: todoTasks,
-                                    onMove: (id, data) =>
-                                        _updateTaskStatus(id, 'doing'),
-                                    onEdit: _editTask,
-                                    onDelete: _deleteTask,
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _TaskColumn(
-                                    title: 'DOING',
-                                    tasks: doingTasks,
-                                    onMove: (id, data) =>
-                                        _updateTaskStatus(id, 'done'),
-                                    onEdit: _editTask,
-                                    onDelete: _deleteTask,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _TaskColumn(
-                                    title: 'DONE',
-                                    tasks: doneTasks,
-                                    onMove: null,
-                                    onEdit: _editTask,
-                                    onDelete: _deleteTask,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                  ],
-                ),
-            ],
-          ),
-          // AI Brainstorm Panel (floating overlay)
-          if (_showAIPanel)
-            Positioned(
-              right: 16,
-              top: 16,
-              bottom: 16,
-              width: 400,
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(16),
-                child: AIBrainstormPanel(
-                  configService: ref.read(configServiceProvider),
-                  onCreateTask: (title, description) {
-                    // Close AI panel and create task
-                    setState(() => _showAIPanel = false);
-                    _showTaskDialog();
-                  },
-                  onAddToBoard: (text) {
-                    // Add text to canvas with unique position (staggered)
-                    final notifier = ref.read(whiteboardProvider.notifier);
-                    final authState = ref.read(authStateProvider);
-                    final now = DateTime.now().millisecondsSinceEpoch;
-                    final textId = 'text-$now';
-                    
-                    final displayName = authState.user?.name?.isNotEmpty == true
-                        ? authState.user!.name!
-                        : authState.user?.email ?? 'Unknown';
-                    
-                    // Calculate unique position with offset
-                    _textAddCounter++;
-                    final random = Random();
-                    final baseX = 100.0 + (_textAddCounter % 5) * 150.0;
-                    final baseY = 100.0 + (_textAddCounter ~/ 5) * 200.0;
-                    final offsetX = random.nextDouble() * 30 - 15;
-                    final offsetY = random.nextDouble() * 30 - 15;
-                    
-                    notifier.createOperation(OperationType.createObject, {
-                      'id': textId,
-                      'type': 'text',
-                      'data': {
-                        'text': text,
-                        'position': [baseX + offsetX, baseY + offsetY],
-                        'color': Colors.black.value,
-                        'fontSize': 14.0,
-                        'actor': authState.user?.id ?? 'unknown',
-                        'actorName': displayName,
-                      },
-                    }, shouldSaveBackend: true);
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('✅ ${AppLocalizations.of(context)!.addedToCanvas}'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  void _toggleVoice() {
-    if (!mounted) return;
-    setState(() {
-      _isVoiceEnabled = !_isVoiceEnabled;
-    });
-
-    if (_isVoiceEnabled) {
-      _startVoiceCall();
-    } else {
-      _stopVoiceCall();
-    }
-  }
-
-  Future<void> _startVoiceCall() async {
-    debugPrint('🎤 Starting voice call...');
-
-    try {
-      // Check microphone permission first
-      final status = await Permission.microphone.status;
-      if (!status.isGranted) {
-        final result = await Permission.microphone.request();
-        if (!result.isGranted) {
-          if (mounted) {
-            _showSnackBar('❌ Microphone permission denied', isError: true);
-            setState(() {
-              _isVoiceEnabled = false;
-            });
-          }
-          return;
-        }
-      }
-
-      // Check if we have webrtc service
-      final webrtc = ref.read(whiteboardProvider.notifier).webrtc;
-
-      if (webrtc == null) {
-        if (mounted) {
-          _showSnackBar('❌ WebRTC service not available', isError: true);
-          setState(() {
-            _isVoiceEnabled = false;
-          });
-        }
-        return;
-      }
-
-      // Request microphone permission and start audio stream
-      final success = await webrtc.startAudioStream();
-
-      if (!success) {
-        if (mounted) {
-          _showSnackBar('❌ Failed to access microphone', isError: true);
-          setState(() {
-            _isVoiceEnabled = false;
-          });
-        }
-        return;
-      }
-
-      if (mounted) {
-        _showSnackBar('🎤 Voice call started', isError: false);
-      }
-      debugPrint('✅ Voice call started successfully');
-    } catch (e) {
-      debugPrint('❌ Error starting voice call: $e');
-      if (mounted) {
-        _showSnackBar('❌ Failed to start voice call: $e', isError: true);
-        setState(() {
-          _isVoiceEnabled = false;
-        });
-      }
-    }
-  }
-
-  void _stopVoiceCall() {
-    debugPrint('🔇 Stopping voice call...');
-
-    try {
-      // Get webrtc service
-      final webrtc = ref.read(whiteboardProvider.notifier).webrtc;
-
-      if (webrtc != null) {
-        webrtc.stopAudioStream();
-        _showSnackBar('🔇 Voice call ended', isError: false);
-        debugPrint('✅ Voice call stopped successfully');
-      }
-    } catch (e) {
-      debugPrint('❌ Error stopping voice call: $e');
-      _showSnackBar('❌ Failed to stop voice call: $e', isError: true);
-    }
-  }
-
-  void _showSnackBar(String message, {required bool isError}) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Color _getColor(String name) {
-    switch (name) {
-      case 'red':
-        return Colors.red;
-      case 'blue':
-        return Colors.blue;
-      case 'green':
-        return Colors.green;
-      case 'yellow':
-        return Colors.yellow;
-      case 'orange':
-        return Colors.orange;
-      case 'purple':
-        return Colors.purple;
-      default:
-        return Colors.black;
-    }
+    return _Scene(strokes, texts, tasks);
   }
 }
 
-// ===== CANVAS PAINTER =====
-
-class _StrokePainter extends CustomPainter {
+class _Scene {
   final List<Map<String, dynamic>> strokes;
   final List<Map<String, dynamic>> texts;
-  final Map<String, _ActiveStroke> activeStrokes;
-
-  _StrokePainter({
-    required this.strokes,
-    required this.texts,
-    required this.activeStrokes,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw completed strokes
-    for (final stroke in strokes) {
-      final pointsList = stroke['points'] as List?;
-      if (pointsList == null || pointsList.length < 2) continue;
-
-      final points = <Offset>[];
-      for (int i = 0; i < pointsList.length - 1; i += 2) {
-        points.add(
-          Offset(
-            (pointsList[i] as num).toDouble(),
-            (pointsList[i + 1] as num).toDouble(),
-          ),
-        );
-      }
-
-      if (points.isEmpty) continue;
-
-      final color = Color((stroke['color'] as num?)?.toInt() ?? 0xFF000000);
-      final width = (stroke['width'] as num?)?.toDouble() ?? 3.0;
-
-      // Draw stroke
-      final paint = Paint()
-        ..color = color
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-
-      final path = ui.Path();
-      path.moveTo(points[0].dx, points[0].dy);
-      for (int i = 1; i < points.length; i++) {
-        path.lineTo(points[i].dx, points[i].dy);
-      }
-
-      canvas.drawPath(path, paint);
-    }
-
-    // Draw active strokes with username labels (realtime)
-    for (final entry in activeStrokes.entries) {
-      final activeStroke = entry.value;
-      if (activeStroke.points.isEmpty) continue;
-
-      // Draw stroke
-      final paint = Paint()
-        ..color = activeStroke.color
-        ..strokeWidth = activeStroke.width
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-
-      final path = ui.Path();
-      path.moveTo(activeStroke.points[0].dx, activeStroke.points[0].dy);
-      for (int i = 1; i < activeStroke.points.length; i++) {
-        path.lineTo(activeStroke.points[i].dx, activeStroke.points[i].dy);
-      }
-
-      canvas.drawPath(path, paint);
-
-      // Draw username label with tool indicator
-      final toolIcon = activeStroke.isEraser ? '🧽' : '🖊️';
-      final textSpan = TextSpan(
-        text: '$toolIcon ${activeStroke.userName}',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          backgroundColor: activeStroke.isEraser
-              ? Colors.grey[700]!.withOpacity(0.8)
-              : activeStroke.color.withOpacity(0.8),
-        ),
-      );
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: ui.TextDirection.ltr,
-      );
-      textPainter.layout();
-
-      // Position label at current drawing position (last point)
-      final lastPoint = activeStroke.points.last;
-      final labelOffset = Offset(lastPoint.dx + 10, lastPoint.dy - 10);
-      textPainter.paint(canvas, labelOffset);
-    }
-
-    // Draw text objects
-    for (final textObj in texts) {
-      final text = textObj['text'] as String?;
-      final positionList = textObj['position'] as List?;
-      if (text == null || positionList == null || positionList.length < 2)
-        continue;
-
-      final position = Offset(
-        (positionList[0] as num).toDouble(),
-        (positionList[1] as num).toDouble(),
-      );
-      final color = Color((textObj['color'] as num?)?.toInt() ?? 0xFF000000);
-      final fontSize = (textObj['fontSize'] as num?)?.toDouble() ?? 16.0;
-      final actorName = textObj['actorName'] as String?;
-
-      final textSpan = TextSpan(
-        text: text,
-        style: TextStyle(
-          color: color,
-          fontSize: fontSize,
-          fontWeight: FontWeight.normal,
-        ),
-      );
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: ui.TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, position);
-
-      // Draw author label if available
-      if (actorName != null && actorName.isNotEmpty) {
-        final authorSpan = TextSpan(
-          text: '- $actorName',
-          style: TextStyle(
-            color: color.withOpacity(0.6),
-            fontSize: fontSize * 0.6,
-            fontStyle: FontStyle.italic,
-          ),
-        );
-        final authorPainter = TextPainter(
-          text: authorSpan,
-          textDirection: ui.TextDirection.ltr,
-        );
-        authorPainter.layout();
-        authorPainter.paint(
-          canvas,
-          Offset(position.dx, position.dy + fontSize + 2),
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_StrokePainter oldDelegate) {
-    return strokes.length != oldDelegate.strokes.length ||
-        texts.length != oldDelegate.texts.length ||
-        activeStrokes.length != oldDelegate.activeStrokes.length;
-  }
+  final List<Map<String, dynamic>> tasks;
+  const _Scene(this.strokes, this.texts, this.tasks);
 }
 
-// ===== TASK COLUMN =====
-
-class _TaskColumn extends StatelessWidget {
+class _ColumnData {
+  final String status;
   final String title;
   final List<Map<String, dynamic>> tasks;
-  final Function(String, Map<String, dynamic>)? onMove;
-  final Function(String, Map<String, dynamic>) onEdit;
-  final Function(String) onDelete;
-  final Color color;
+  _ColumnData(this.status, this.title, Iterable<Map<String, dynamic>> tasks)
+      : tasks = tasks.toList();
+}
 
-  const _TaskColumn({
-    required this.title,
+class _PageSwitch extends StatelessWidget {
+  final bool tasks;
+  final String tasksLabel;
+  final String canvasLabel;
+  final VoidCallback onTasks;
+  final VoidCallback onCanvas;
+
+  const _PageSwitch({
     required this.tasks,
-    required this.onMove,
-    required this.onEdit,
-    required this.onDelete,
-    required this.color,
+    required this.tasksLabel,
+    required this.canvasLabel,
+    required this.onTasks,
+    required this.onCanvas,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
+      height: 36,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: color.withOpacity(0.9),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${tasks.length}',
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: tasks.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'No tasks',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                      ),
-                    ),
-                  )
-                : Scrollbar(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) {
-                        final task = tasks[index];
-                        final taskId = task['id'] as String;
-                        final title = task['title'] as String? ?? 'Untitled';
-                        final description = task['description'] as String?;
-                        final priority =
-                            task['priority'] as String? ?? 'medium';
-                        final assigneeList =
-                            task['assignee_list'] as List<dynamic>?;
-                        final deadline = task['deadline'] as String?;
-
-                        // Check if overdue
-                        bool isOverdue = false;
-                        if (deadline != null) {
-                          try {
-                            final deadlineDate = DateTime.parse(deadline);
-                            isOverdue =
-                                deadlineDate.isBefore(DateTime.now()) &&
-                                task['status'] != 'done';
-                          } catch (e) {
-                            // Invalid date
-                          }
-                        }
-
-                        // Priority colors
-                        Color priorityColor = Colors.grey;
-                        IconData priorityIcon = Icons.flag_outlined;
-                        switch (priority) {
-                          case 'urgent':
-                            priorityColor = Colors.red;
-                            priorityIcon = Icons.flag;
-                            break;
-                          case 'high':
-                            priorityColor = Colors.orange;
-                            priorityIcon = Icons.flag;
-                            break;
-                          case 'medium':
-                            priorityColor = Colors.blue;
-                            priorityIcon = Icons.flag_outlined;
-                            break;
-                          case 'low':
-                            priorityColor = Colors.green;
-                            priorityIcon = Icons.flag_outlined;
-                            break;
-                        }
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => onEdit(taskId, task),
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  minHeight: 120,
-                                ),
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Title row with priority
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          priorityIcon,
-                                          size: 14,
-                                          color: priorityColor,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            title,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              height: 1.3,
-                                            ),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    // Description
-                                    if (description != null &&
-                                        description.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        description,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                          height: 1.4,
-                                        ),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-
-                                    // Metadata section
-                                    const SizedBox(height: 12),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Assignees row
-                                        if (assigneeList != null &&
-                                            assigneeList.isNotEmpty) ...[
-                                          Wrap(
-                                            spacing: 6,
-                                            runSpacing: 6,
-                                            children: [
-                                              ...assigneeList.take(3).map((
-                                                assignee,
-                                              ) {
-                                                final name =
-                                                    assignee['name']
-                                                        as String? ??
-                                                    '?';
-                                                return CircleAvatar(
-                                                  radius: 12,
-                                                  backgroundColor: Colors.blue,
-                                                  child: Text(
-                                                    name.isNotEmpty
-                                                        ? name
-                                                              .substring(0, 1)
-                                                              .toUpperCase()
-                                                        : '?',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-                                              if (assigneeList.length > 3)
-                                                CircleAvatar(
-                                                  radius: 12,
-                                                  backgroundColor:
-                                                      Colors.grey[400],
-                                                  child: Text(
-                                                    '+${assigneeList.length - 3}',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                        ],
-
-                                        // Deadline badge
-                                        if (deadline != null) ...[
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isOverdue
-                                                  ? Colors.red[50]
-                                                  : Colors.blue[50],
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: isOverdue
-                                                    ? Colors.red[300]!
-                                                    : Colors.blue[300]!,
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.calendar_today_rounded,
-                                                  size: 12,
-                                                  color: isOverdue
-                                                      ? Colors.red[700]
-                                                      : Colors.blue[700],
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  deadline.substring(
-                                                    5,
-                                                    10,
-                                                  ), // MM-DD
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    color: isOverdue
-                                                        ? Colors.red[700]
-                                                        : Colors.blue[700],
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-
-                                    // Action buttons
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        // Edit button
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            onPressed: () =>
-                                                onEdit(taskId, task),
-                                            icon: const Icon(
-                                              Icons.edit_outlined,
-                                              size: 14,
-                                            ),
-                                            label: const Text(
-                                              'Edit',
-                                              style: TextStyle(fontSize: 11),
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 6,
-                                                  ),
-                                              minimumSize: Size.zero,
-                                              tapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              side: BorderSide(
-                                                color: Colors.blue[300]!,
-                                              ),
-                                              foregroundColor: Colors.blue[700],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        // Delete button
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline_rounded,
-                                            size: 18,
-                                          ),
-                                          onPressed: () => onDelete(taskId),
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 32,
-                                            minHeight: 32,
-                                          ),
-                                          tooltip: 'Delete',
-                                          color: Colors.red[400],
-                                          style: IconButton.styleFrom(
-                                            side: BorderSide(
-                                              color: Colors.red[300]!,
-                                            ),
-                                          ),
-                                        ),
-                                        if (onMove != null) ...[
-                                          const SizedBox(width: 6),
-                                          // Move button
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.arrow_forward,
-                                              size: 18,
-                                            ),
-                                            onPressed: () =>
-                                                onMove!(taskId, task),
-                                            padding: const EdgeInsets.all(6),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 32,
-                                              minHeight: 32,
-                                            ),
-                                            tooltip: 'Move',
-                                            color: Colors.green[600],
-                                            style: IconButton.styleFrom(
-                                              side: BorderSide(
-                                                color: Colors.green[300]!,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ));
-                      },
-                    ),
-                  ),
-          ),
+          _chip(tasksLabel, tasks, onTasks),
+          _chip(canvasLabel, !tasks, onCanvas),
         ],
       ),
     );
   }
-}
 
-// ===== TOOL BUTTON WIDGET =====
-
-class _ToolButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ToolButton({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary.withOpacity(0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+  Widget _chip(String label, bool selected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.primaryDark : Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
           ),
         ),
       ),
@@ -2852,195 +594,430 @@ class _ToolButton extends StatelessWidget {
   }
 }
 
-// ===== STAT ROW WIDGET =====
+class _TrelloBoard extends StatelessWidget {
+  final AppLocalizations l10n;
+  final List<_ColumnData> columns;
+  final Map<String, TextEditingController> controllers;
+  final void Function(String status, String title) onQuickAdd;
+  final void Function(Map<String, dynamic> task) onOpen;
+  final void Function(String status) onAdd;
+  final void Function(String taskId, String status) onMove;
+  final void Function(String taskId) onDelete;
 
-class _StatRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatRow({
-    required this.icon,
-    required this.label,
-    required this.value,
+  const _TrelloBoard({
+    required this.l10n,
+    required this.columns,
+    required this.controllers,
+    required this.onQuickAdd,
+    required this.onOpen,
+    required this.onAdd,
+    required this.onMove,
+    required this.onDelete,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(16),
+      itemCount: columns.length,
+      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        final column = columns[index];
+        return SizedBox(
+          width: 300,
+          height: constraints.maxHeight - 32,
+          child: DragTarget<String>(
+            onWillAcceptWithDetails: (_) => true,
+            onAcceptWithDetails: (details) => onMove(details.data, column.status),
+            builder: (context, candidate, rejected) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: candidate.isEmpty
+                      ? const Color(0xFFEBECF0)
+                      : const Color(0xFFD6E4FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 8, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${column.title}  ${column.tasks.length}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF172B4D),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: l10n.addTask,
+                            onPressed: () => onAdd(column.status),
+                            icon: const Icon(Icons.add),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        itemCount: column.tasks.length,
+                        itemBuilder: (context, taskIndex) {
+                          final task = column.tasks[taskIndex];
+                          final id = task['id'] as String? ?? '';
+                          return LongPressDraggable<String>(
+                            data: id,
+                            feedback: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(width: 280, child: _TaskCard(task: task)),
+                            ),
+                            childWhenDragging: Opacity(
+                              opacity: 0.4,
+                              child: _TaskCard(task: task),
+                            ),
+                            child: _TaskCard(
+                              task: task,
+                              onTap: () => onOpen(task),
+                              onDelete: () => onDelete(id),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: TextField(
+                        controller: controllers[column.status],
+                        decoration: InputDecoration(
+                          hintText: l10n.addTask,
+                          filled: true,
+                          fillColor: Colors.white,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onSubmitted: (value) {
+                          final title = value.trim();
+                          if (title.isEmpty) return;
+                          controllers[column.status]?.clear();
+                          onQuickAdd(column.status, title);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+      },
+    );
+  }
+}
+
+class _TaskCard extends StatelessWidget {
+  final Map<String, dynamic> task;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+
+  const _TaskCard({required this.task, this.onTap, this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final priority = task['priority'] as String? ?? 'medium';
+    final description = task['description'] as String?;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 6),
+                  decoration: BoxDecoration(
+                    color: _priorityColor(priority),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task['title'] as String? ?? 'Untitled',
+                        style: const TextStyle(
+                          color: Color(0xFF172B4D),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (description != null && description.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (onDelete != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.close, size: 16),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _priorityColor(String priority) {
+    switch (priority) {
+      case 'urgent':
+        return AppColors.error;
+      case 'high':
+        return AppColors.warning;
+      case 'low':
+        return AppColors.success;
+      default:
+        return AppColors.info;
+    }
+  }
+}
+
+class _CanvaPage extends StatelessWidget {
+  final AppLocalizations l10n;
+  final _DrawTool tool;
+  final Color color;
+  final double width;
+  final List<Map<String, dynamic>> strokes;
+  final List<Map<String, dynamic>> texts;
+  final ValueChanged<_DrawTool> onTool;
+  final ValueChanged<Color> onColor;
+  final ValueChanged<double> onWidth;
+  final ValueChanged<Offset> onPanStart;
+  final ValueChanged<Offset> onPanUpdate;
+  final VoidCallback onPanEnd;
+  final ValueChanged<Offset> onTap;
+
+  const _CanvaPage({
+    required this.l10n,
+    required this.tool,
+    required this.color,
+    required this.width,
+    required this.strokes,
+    required this.texts,
+    required this.onTool,
+    required this.onColor,
+    required this.onWidth,
+    required this.onPanStart,
+    required this.onPanUpdate,
+    required this.onPanEnd,
+    required this.onTap,
+  });
+
+  static const _colors = [
+    Color(0xFF172B4D),
+    Color(0xFFEF4444),
+    Color(0xFF4A90E2),
+    Color(0xFF48BB78),
+    Color(0xFFF59E0B),
+    Color(0xFF7C3AED),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
+        Container(
+          width: 72,
+          color: const Color(0xFF1E1E1E),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              _toolButton(Icons.edit, l10n.pen, _DrawTool.pen),
+              _toolButton(Icons.auto_fix_high, l10n.eraser, _DrawTool.eraser),
+              _toolButton(Icons.title, l10n.addText, _DrawTool.text),
+              _toolButton(Icons.back_hand, l10n.pan, _DrawTool.hand),
+              const Spacer(),
+              for (final swatch in _colors)
+                GestureDetector(
+                  onTap: () => onColor(swatch),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: swatch,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color == swatch ? Colors.white : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              SizedBox(
+                height: 120,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: Slider(
+                    value: width,
+                    min: 1,
+                    max: 16,
+                    onChanged: onWidth,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-            fontSize: 14,
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 0.4,
+            maxScale: 3,
+            panEnabled: tool == _DrawTool.hand,
+            boundaryMargin: const EdgeInsets.all(800),
+            child: GestureDetector(
+              onTapUp: (details) => onTap(details.localPosition),
+              onPanStart: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                  ? (details) => onPanStart(details.localPosition)
+                  : null,
+              onPanUpdate: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                  ? (details) => onPanUpdate(details.localPosition)
+                  : null,
+              onPanEnd: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                  ? (_) => onPanEnd()
+                  : null,
+              child: Container(
+                width: 2400,
+                height: 1600,
+                color: Colors.white,
+                child: Stack(
+                  children: [
+                    CustomPaint(
+                      size: const Size(2400, 1600),
+                      painter: _StrokePainter(strokes),
+                    ),
+                    for (final text in texts) _textWidget(text),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
-}
 
-// ===== USER ITEM WIDGET =====
+  Widget _toolButton(IconData icon, String tooltip, _DrawTool value) {
+    final selected = tool == value;
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: () => onTool(value),
+      icon: Icon(icon, color: selected ? Colors.white : Colors.white70),
+      style: IconButton.styleFrom(
+        backgroundColor: selected ? AppColors.primary : Colors.transparent,
+      ),
+    );
+  }
 
-class _UserItem extends StatelessWidget {
-  final String name;
-  final bool isCurrentUser;
-  final bool isConnected;
-  final String? avatar;
-  final bool isMuted;
-  final bool isVoiceEnabled;
-
-  const _UserItem({
-    required this.name,
-    required this.isCurrentUser,
-    required this.isConnected,
-    this.avatar,
-    this.isMuted = false,
-    this.isVoiceEnabled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: isCurrentUser
-            ? AppColors.primary.withOpacity(0.1)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isCurrentUser
-              ? AppColors.primary.withOpacity(0.3)
-              : AppColors.border,
-          width: 1,
+  Widget _textWidget(Map<String, dynamic> text) {
+    final position = text['position'] as List?;
+    final dx = position != null && position.isNotEmpty ? (position[0] as num).toDouble() : 40.0;
+    final dy = position != null && position.length > 1 ? (position[1] as num).toDouble() : 40.0;
+    return Positioned(
+      left: dx,
+      top: dy,
+      child: Text(
+        text['text'] as String? ?? '',
+        style: TextStyle(
+          color: Color((text['color'] as num?)?.toInt() ?? 0xFF172B4D),
+          fontSize: (text['fontSize'] as num?)?.toDouble() ?? 20,
+          fontWeight: FontWeight.w600,
         ),
       ),
-      child: Row(
-        children: [
-          // Avatar
-          Stack(
+    );
+  }
+}
+
+class _StrokePainter extends CustomPainter {
+  final List<Map<String, dynamic>> strokes;
+  const _StrokePainter(this.strokes);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final stroke in strokes) {
+      final raw = stroke['points'] as List?;
+      if (raw == null || raw.length < 4) continue;
+      final path = Path();
+      path.moveTo((raw[0] as num).toDouble(), (raw[1] as num).toDouble());
+      for (var i = 2; i < raw.length - 1; i += 2) {
+        path.lineTo((raw[i] as num).toDouble(), (raw[i + 1] as num).toDouble());
+      }
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = Color((stroke['color'] as num?)?.toInt() ?? 0xFF172B4D)
+          ..strokeWidth = (stroke['width'] as num?)?.toDouble() ?? 3
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StrokePainter oldDelegate) => true;
+}
+
+class _RemoteAudioMount extends ConsumerWidget {
+  const _RemoteAudioMount();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final output = ref.read(whiteboardProvider.notifier).remoteAudio;
+    return ListenableBuilder(
+      listenable: output,
+      builder: (context, _) {
+        if (output.renderers.isEmpty) return const SizedBox.shrink();
+        return SizedBox(
+          height: 1,
+          child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isCurrentUser
-                      ? AppColors.gradientPrimary
-                      : LinearGradient(
-                          colors: [
-                            AppColors.secondary,
-                            AppColors.secondary.withOpacity(0.7),
-                          ],
-                        ),
-                ),
-                child: avatar != null && avatar!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          avatar!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                name.substring(0, 1).toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-              ),
-              // Online status indicator
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: isConnected ? AppColors.success : Colors.grey,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                ),
-              ),
+              for (final renderer in output.renderers)
+                SizedBox(width: 1, height: 1, child: RTCVideoView(renderer)),
             ],
           ),
-          const SizedBox(width: 12),
-
-          // Name
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (isCurrentUser)
-                  const Text(
-                    '(You)',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Mic status (only show when voice is enabled)
-          if (isVoiceEnabled) ...[
-            Icon(
-              isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-              size: 18,
-              color: isMuted ? AppColors.error : AppColors.success,
-            ),
-            const SizedBox(width: 8),
-          ],
-
-          // Status
-          Icon(
-            isConnected ? Icons.check_circle_rounded : Icons.circle_outlined,
-            size: 16,
-            color: isConnected ? AppColors.success : Colors.grey,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

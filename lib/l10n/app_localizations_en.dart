@@ -1054,7 +1054,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete the local backup only? The canvas on the server stays as it is.';
 
   @override
-  String draftSavedAt(String time) => 'Saved · $time';
+  String draftSavedAt(String time) {
+    return 'Saved · $time';
+  }
 
   @override
   String get addText => 'Add text';

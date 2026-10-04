@@ -1035,8 +1035,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get draftSaved => 'Đã lưu nháp lên server';
 
   @override
-  String get draftRestored =>
-      'Đã khôi phục nét chưa lưu và ghi lên server';
+  String get draftRestored => 'Đã khôi phục nét chưa lưu và ghi lên server';
 
   @override
   String get unsavedDraft => 'Chưa lưu lên server';
@@ -1049,7 +1048,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ xóa bản dự phòng trên máy? Bản trên server vẫn giữ nguyên.';
 
   @override
-  String draftSavedAt(String time) => 'Đã lưu · $time';
+  String draftSavedAt(String time) {
+    return 'Đã lưu · $time';
+  }
 
   @override
   String get addText => 'Thêm văn bản';

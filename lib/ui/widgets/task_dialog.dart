@@ -4,6 +4,7 @@ import '../../models/task_model.dart';
 /// Clean Trello-style Task Creation/Edit Dialog
 class TaskDialog extends StatefulWidget {
   final TaskModel? existingTask;
+  final String initialStatus;
   final List<Map<String, dynamic>> boardMembers;
   final Function({
     required String title,
@@ -19,6 +20,7 @@ class TaskDialog extends StatefulWidget {
   const TaskDialog({
     super.key,
     this.existingTask,
+    this.initialStatus = 'todo',
     required this.boardMembers,
     required this.onSave,
   });
@@ -53,7 +55,7 @@ class _TaskDialogState extends State<TaskDialog> {
     );
     _labelController = TextEditingController();
     _priority = widget.existingTask?.priority ?? 'medium';
-    _status = widget.existingTask?.status ?? 'todo';
+    _status = widget.existingTask?.status ?? widget.initialStatus;
     
     if (widget.existingTask?.deadline != null) {
       _deadline = widget.existingTask!.deadline;
