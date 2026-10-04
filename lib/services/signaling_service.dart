@@ -9,6 +9,7 @@ class SignalingService {
   final Function(Peer peer)? onPeerLeft;
   final Function(String peerId, Map<String, dynamic> signal)? onSignal;
   final Function(String socketId, bool isMuted)? onPeerMicUpdated;
+  final Function(Map<String, dynamic> operation)? onBoardOperation;
   final Function()? onDisconnected;
   final Function()? onReconnected;
 
@@ -23,6 +24,7 @@ class SignalingService {
     this.onPeerLeft,
     this.onSignal,
     this.onPeerMicUpdated,
+    this.onBoardOperation,
     this.onDisconnected,
     this.onReconnected,
   });
@@ -33,7 +35,8 @@ class SignalingService {
     debugPrint('🔌 Connecting to signaling server: $serverUrl');
     
     _socket = IO.io(serverUrl, <String, dynamic>{
-      'transports': ['websocket'],
+      'transports': ['polling', 'websocket'],
+      'upgrade': true,
       'autoConnect': false,
       'auth': {'token': token},
     });
@@ -69,6 +72,12 @@ class SignalingService {
       final signal = data['signal'] as Map<String, dynamic>;
       debugPrint('📡 Signal received from $peerId');
       onSignal?.call(peerId, signal);
+    });
+
+    _socket!.on('board_op', (data) {
+      if (data is Map) {
+        onBoardOperation?.call(Map<String, dynamic>.from(data));
+      }
     });
 
     _socket!.on('peer_mic_updated', (data) {
@@ -114,6 +123,11 @@ class SignalingService {
       'to': targetPeerId,
       'signal': signal,
     });
+  }
+
+  void sendBoardOperation(Map<String, dynamic> operation) {
+    if (!_isConnected) return;
+    _socket?.emit('board_op', operation);
   }
 
   void updateMicStatus(bool isMuted) {

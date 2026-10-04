@@ -3,14 +3,50 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../models/operation/operation.dart';
 
+/// Hidden <video> elements that actually play remote WebRTC audio on web.
+class RemoteAudioOutput extends ChangeNotifier {
+  final List<RTCVideoRenderer> renderers = [];
+  final Map<String, RTCVideoRenderer> _byPeer = {};
+
+  Future<void> play(String peerId, MediaStream stream) async {
+    var renderer = _byPeer[peerId];
+    if (renderer == null) {
+      renderer = RTCVideoRenderer();
+      await renderer.initialize();
+      _byPeer[peerId] = renderer;
+      renderers.add(renderer);
+    }
+    renderer.srcObject = stream;
+    notifyListeners();
+  }
+
+  Future<void> remove(String peerId) async {
+    final renderer = _byPeer.remove(peerId);
+    if (renderer == null) return;
+    renderers.remove(renderer);
+    renderer.srcObject = null;
+    await renderer.dispose();
+    notifyListeners();
+  }
+
+  Future<void> clear() async {
+    final ids = _byPeer.keys.toList();
+    for (final id in ids) {
+      await remove(id);
+    }
+  }
+}
+
 class WebRTCService {
   final String userId;
   final Function(String peerId, Operation operation)? onOperationReceived;
   final Function(String peerId)? onPeerConnected;
   final Function(String peerId)? onPeerDisconnected;
   final Function(String peerId, MediaStream stream)? onRemoteAudioStream;
+  final RemoteAudioOutput? audioOutput;
 
   final Map<String, RTCPeerConnection> _peerConnections = {};
+  final Map<String, void Function(Map<String, dynamic>)> _signalSenders = {};
   final Map<String, RTCDataChannel> _dataChannels = {};
   final Map<String, List<RTCIceCandidate>> _pendingIceCandidates = {};
   final Map<String, bool> _makingOffer = {};
@@ -27,6 +63,7 @@ class WebRTCService {
     this.onPeerConnected,
     this.onPeerDisconnected,
     this.onRemoteAudioStream,
+    this.audioOutput,
   });
 
   bool _isPolite(String peerId) {
@@ -53,6 +90,18 @@ class WebRTCService {
     };
   }
 
+  void _listenForAudio(RTCPeerConnection pc, String peerId) {
+    pc.onTrack = (event) {
+      debugPrint('🎵 Received remote track from $peerId: ${event.track.kind}');
+      if (event.track.kind != 'audio' || event.streams.isEmpty) return;
+      final stream = event.streams.first;
+      _remoteAudioStreams[peerId] = stream;
+      onRemoteAudioStream?.call(peerId, stream);
+      audioOutput?.play(peerId, stream);
+      debugPrint('✅ Remote audio stream attached for $peerId');
+    };
+  }
+
   Future<void> initPeerConnection(
     String peerId,
     Function(Map<String, dynamic>) onLocalDescription,
@@ -61,6 +110,8 @@ class WebRTCService {
 
     final pc = await createPeerConnection(_getIceConfiguration());
     _peerConnections[peerId] = pc;
+    _signalSenders[peerId] = onLocalDescription;
+    _listenForAudio(pc, peerId);
 
     // Monitor connection state
     pc.onConnectionState = (state) {
@@ -90,17 +141,6 @@ class WebRTCService {
 
     pc.onIceGatheringState = (state) {
       debugPrint('🔍 ICE gathering state with $peerId: $state');
-    };
-
-    // Handle incoming audio streams
-    pc.onTrack = (event) {
-      debugPrint('🎵 Received remote track from $peerId: ${event.track.kind}');
-      if (event.track.kind == 'audio' && event.streams.isNotEmpty) {
-        final stream = event.streams.first;
-        _remoteAudioStreams[peerId] = stream;
-        onRemoteAudioStream?.call(peerId, stream);
-        debugPrint('✅ Remote audio stream stored for $peerId');
-      }
     };
 
     // Create data channel with explicit configuration
@@ -149,6 +189,9 @@ class WebRTCService {
     Function(Map<String, dynamic>)? onLocalDescription,
   ) async {
     debugPrint('📡 Handling signal from $peerId: ${signal['type']}');
+    if (onLocalDescription != null) {
+      _signalSenders[peerId] = onLocalDescription;
+    }
 
     try {
       if (signal['type'] == 'offer') {
@@ -190,6 +233,7 @@ class WebRTCService {
     if (pc == null) {
       pc = await createPeerConnection(_getIceConfiguration());
       _peerConnections[peerId] = pc;
+      _listenForAudio(pc, peerId);
 
       // Monitor connection state
       pc.onConnectionState = (state) {
@@ -460,6 +504,9 @@ class WebRTCService {
     _pendingIceCandidates.remove(peerId);
     _makingOffer.remove(peerId);
     _ignoreOffer.remove(peerId);
+    _signalSenders.remove(peerId);
+    _remoteAudioStreams.remove(peerId);
+    audioOutput?.remove(peerId);
 
     debugPrint('🔌 Closed connection with $peerId');
   }
@@ -579,9 +626,13 @@ class WebRTCService {
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Send offer through signaling (you'll need to implement this)
-      // For now, just log it
-      debugPrint('🔄 Created renegotiation offer for $peerId');
+      final send = _signalSenders[peerId];
+      if (send == null) {
+        debugPrint('⚠️ No signaling path for renegotiation with $peerId');
+      } else {
+        send({'type': 'offer', 'sdp': offer.sdp});
+        debugPrint('🔄 Sent renegotiation offer to $peerId');
+      }
 
       _makingOffer[peerId] = false;
     } catch (e) {

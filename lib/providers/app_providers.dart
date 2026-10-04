@@ -344,6 +344,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   final Ref ref;
   SignalingService? _signaling;
   WebRTCService? _webrtc;
+  final RemoteAudioOutput remoteAudio = RemoteAudioOutput();
   SyncEngine? _syncEngine;
   String? _currentBoardId;
   Timer? _draftSaveTimer;
@@ -483,8 +484,8 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
           debugPrint('⏭️  Skipping backend save for: ${op.type.name}');
         }
 
-        // Always broadcast via WebRTC to peers for realtime sync
-        debugPrint('📡 Broadcasting operation via WebRTC: ${op.type.name}');
+        debugPrint('📡 Broadcasting operation: ${op.type.name}');
+        _signaling?.sendBoardOperation(op.toJson());
         _webrtc?.sendOperation(op);
       },
     );
@@ -511,9 +512,8 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
       },
       onRemoteAudioStream: (peerId, stream) {
         debugPrint('🎵 Received remote audio stream from $peerId');
-        // You can store this stream or play it directly
-        // For now, just log it - implement audio playback in UI later
       },
+      audioOutput: remoteAudio,
     );
 
     // Initialize signaling - sử dụng URL từ ConfigService
@@ -528,7 +528,10 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         for (final peer in peers) {
           debugPrint('   - Peer: ${peer.socketId} (user: ${peer.userId})');
         }
-        state = state.copyWith(peers: peers, isConnected: true);
+        state = state.copyWith(
+          peers: [for (final peer in peers) peer.copyWith(connected: true)],
+          isConnected: true,
+        );
 
         // Initiate WebRTC connections with existing peers
         // Perfect negotiation: only peer with higher userId creates offer
@@ -553,7 +556,9 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         debugPrint(
           '📥 New peer joined: ${peer.socketId} (user: ${peer.userId})',
         );
-        state = state.copyWith(peers: [...state.peers, peer]);
+        state = state.copyWith(
+          peers: [...state.peers, peer.copyWith(connected: true)],
+        );
 
         // Perfect negotiation: only peer with higher userId creates offer
         final myUserId = authState.user!.id;
@@ -581,6 +586,21 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         _webrtc!.handleSignal(from, signal, (responseSignal) {
           _signaling!.sendSignal(from, responseSignal);
         });
+      },
+      onBoardOperation: (data) {
+        try {
+          final json = Map<String, dynamic>.from(data);
+          final payload = json['payload'];
+          if (payload is Map) {
+            json['payload'] = Map<String, dynamic>.from(payload);
+          }
+          final operation = Operation.fromJson(json);
+          if (operation.actor == authState.user!.id) return;
+          _syncEngine?.receiveOperation(operation);
+          onRemoteOperation?.call(operation);
+        } catch (e) {
+          debugPrint('Error applying board operation: $e');
+        }
       },
       onPeerMicUpdated: (socketId, isMuted) {
         debugPrint(
@@ -914,6 +934,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     }
     _signaling?.disconnect();
     _webrtc?.closeAllConnections();
+    remoteAudio.clear();
     _syncEngine = null;
     _signaling = null;
     _webrtc = null;
