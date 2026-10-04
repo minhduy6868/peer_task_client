@@ -254,11 +254,25 @@ class ApiService {
 
       return response;
     } on SocketException {
-      throw ApiError.network();
+      await _handleConnectionError();
+      try {
+        return await request().timeout(const Duration(seconds: 30));
+      } on SocketException {
+        throw ApiError.network();
+      } on http.ClientException {
+        throw ApiError.network('Failed to connect to server');
+      }
     } on TimeoutException {
       throw ApiError.timeout();
     } on http.ClientException {
-      throw ApiError.network('Failed to connect to server');
+      await _handleConnectionError();
+      try {
+        return await request().timeout(const Duration(seconds: 30));
+      } on SocketException {
+        throw ApiError.network();
+      } on http.ClientException {
+        throw ApiError.network('Failed to connect to server');
+      }
     }
   }
 

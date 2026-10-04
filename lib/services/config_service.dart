@@ -62,11 +62,9 @@ class ConfigService {
         _cachedServerUrl = savedUrl;
         debugPrint('📱 Using saved server URL: $_cachedServerUrl');
         final isHealthy = await testConnection(_cachedServerUrl!);
-        if (!isHealthy) {
-          debugPrint('⚠️ Saved URL unhealthy, trying Firebase...');
-          await _tryLoadFromFirebase();
-        }
-        return;
+        if (isHealthy) return;
+        debugPrint('⚠️ Saved URL unhealthy, trying Firebase...');
+        if (await _tryLoadFromFirebase()) return;
       }
       
       // 2. Load from Firebase (REST API works on all platforms)

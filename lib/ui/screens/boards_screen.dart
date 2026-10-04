@@ -231,58 +231,12 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
           : null,
       body: boardsAsync.when(
         loading: () => _buildLoadingSkeleton(context),
-        error: (error, stack) => Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 32 : 16),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600),
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 24 : 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.1),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline_rounded, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.red),
-                  SizedBox(height: MediaQuery.of(context).size.width > 600 ? 16 : 12),
-                  Text('Oops! Something went wrong', 
-                    style: TextStyle(fontSize: MediaQuery.of(context).size.width > 600 ? 18 : 16, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.width > 600 ? 8 : 6),
-                  Text('$error', 
-                    style: TextStyle(color: Colors.grey, fontSize: MediaQuery.of(context).size.width > 600 ? 14 : 12),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.width > 600 ? 24 : 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667EEA),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: MediaQuery.of(context).size.width > 600 ? 24 : 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        error: (error, stack) => ErrorDisplay.buildErrorWidget(
+          error,
+          retryLabel: AppLocalizations.of(context)!.retry,
+          onRetry: () {
+            ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+          },
         ),
         data: (boards) {
           if (boards.isEmpty) {
