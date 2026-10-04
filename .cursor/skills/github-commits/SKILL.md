@@ -19,7 +19,7 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. Slug: kebab-case.
 
 ## Commit
 
-Only when the user asks. Stage Flutter files only. Never `.env`, keystores, `firebase_options` secrets if they contain private keys.
+A finished fix is already approved to ship: commit, push this branch, and fast-forward `main` when that push is a fast-forward. Production Pages deploy runs from `.github/workflows/ci.yml` on `main`. Stage Flutter files only. Never `.env`, keystores, or `firebase_options` secrets. Do not force-push. Do not wrangler-deploy by hand after Actions succeeds.
 
 ```
 feat(ui): show board permission on workspace cards

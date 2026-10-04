@@ -19,3 +19,13 @@ Scopes: `auth`, `workspace`, `board`, `task`, `p2p`, `ui`, `l10n`, `offline`.
 - One concern per commit. Never `--no-verify`, force-push `dev`/`main`, or commit `.env`.
 - PR into `dev`: title = same as commit style. Body: Summary + Test plan. Use `gh pr create` from `client/`.
 - Do not include `server/` files in this repo’s commits.
+
+## Ship
+
+The user asked that each finished fix is committed, pushed, and deployed. Do that without asking again.
+
+1. Commit only this repo, Conventional Commits, one concern each.
+2. `git push origin HEAD`.
+3. Fast-forward `main` (`git push origin HEAD:main`) when it is a fast-forward, so production updates.
+4. Push to `main` runs `.github/workflows/ci.yml`, which publishes https://peertask.pages.dev when `CLOUDFLARE_API_TOKEN` is set. If that job fails because the secret is missing, publish with the local Wrangler login. Do not publish twice after Actions succeeds.
+5. Skip secrets, questions, and reviews. If `main` cannot fast-forward, say so and do not force-push.
