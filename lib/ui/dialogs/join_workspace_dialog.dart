@@ -3,13 +3,34 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../utils/error_display.dart';
-class JoinWorkspaceDialog extends StatefulWidget {
-  final Function(String token) onJoinWithToken;
 
-  const JoinWorkspaceDialog({
-    super.key,
-    required this.onJoinWithToken,
-  });
+/// Pulls an invite token out of a raw code, a path URL, or a hash URL
+/// such as `https://peertask.pages.dev/#/join/<token>`.
+String? extractInviteToken(String raw) {
+  final input = raw.trim();
+  if (input.isEmpty) return null;
+
+  final uri = Uri.tryParse(input);
+  if (uri == null || !uri.hasScheme) {
+    final parts = input.split(RegExp(r'[?#\s]')).first.split('/').where((part) => part.isNotEmpty);
+    if (parts.isEmpty) return null;
+    return parts.last;
+  }
+
+  final queryToken = uri.queryParameters['token'];
+  if (queryToken != null && queryToken.isNotEmpty) return queryToken;
+
+  if (uri.fragment.isNotEmpty) {
+    final parts = uri.fragment.split('/').where((part) => part.isNotEmpty);
+    if (parts.isNotEmpty) return parts.last;
+  }
+
+  if (uri.pathSegments.isNotEmpty) return uri.pathSegments.last;
+  return null;
+}
+
+class JoinWorkspaceDialog extends StatefulWidget {
+  const JoinWorkspaceDialog({super.key});
 
   @override
   State<JoinWorkspaceDialog> createState() => _JoinWorkspaceDialogState();
@@ -18,12 +39,15 @@ class JoinWorkspaceDialog extends StatefulWidget {
 class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _linkController = TextEditingController();
-  bool _isJoining = false;
+  bool _sent = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && mounted) setState(() {});
+    });
   }
 
   @override
@@ -33,107 +57,82 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
     super.dispose();
   }
 
-  String? _extractToken(String input) {
-    // Extract token from full URL or use as-is if already a token
-    final uri = Uri.tryParse(input);
-    if (uri != null && uri.pathSegments.isNotEmpty) {
-      return uri.pathSegments.last;
-    }
-    return input.trim();
+  void _submit(String? token) {
+    if (_sent || token == null || token.isEmpty) return;
+    _sent = true;
+    Navigator.pop(context, token);
   }
 
-  Future<void> _joinWithLink() async {
-    final token = _extractToken(_linkController.text);
-    if (token == null || token.isEmpty) {
-      context.showWarningMessage('Please enter a valid invite link');
+  void _joinWithLink() {
+    final token = extractInviteToken(_linkController.text);
+    if (token == null) {
+      context.showWarningMessage(AppLocalizations.of(context)!.inviteCode);
       return;
     }
-
-    setState(() => _isJoining = true);
-
-    try {
-      await widget.onJoinWithToken(token);
-      if (mounted) {
-        Navigator.pop(context);
-        final l10n = AppLocalizations.of(context);
-        context.showSuccessMessage(l10n?.joinedSuccessfully ?? 'Successfully joined workspace!');
-      }
-    } catch (e) {
-      setState(() => _isJoining = false);
-      if (mounted) {
-        context.showErrorSnackBar(e);
-      }
-    }
+    _submit(token);
   }
 
   void _onQRScanned(BarcodeCapture capture) {
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode?.rawValue != null) {
-      final token = _extractToken(barcode!.rawValue!);
-      if (token != null) {
-        widget.onJoinWithToken(token);
-        Navigator.pop(context);
-      }
-    }
+    final raw = capture.barcodes.firstOrNull?.rawValue;
+    if (raw == null) return;
+    _submit(extractInviteToken(raw));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final media = MediaQuery.sizeOf(context);
+    final width = media.width > 460 ? 420.0 : media.width - 40;
+    final tabHeight = (media.height * 0.42).clamp(220.0, 320.0);
+
     return Dialog(
-      child: Container(
-        width: 500,
-        constraints: const BoxConstraints(maxHeight: 600),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: SizedBox(
+        width: width,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.login, color: Colors.white),
+                  const Icon(Icons.group_add_rounded, color: Color(0xFF172B4D)),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Join Workspace',
-                      style: TextStyle(
-                        color: Colors.white,
+                      l10n.joinWorkspace,
+                      style: const TextStyle(
+                        color: Color(0xFF172B4D),
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
             ),
-
-            // Tabs
             TabBar(
               controller: _tabController,
-              labelColor: Colors.green,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.green,
-              tabs: const [
-                Tab(icon: Icon(Icons.link_rounded), text: 'Invite Link'),
-                Tab(icon: Icon(Icons.qr_code_scanner), text: 'Scan QR'),
+              labelColor: const Color(0xFF172B4D),
+              unselectedLabelColor: const Color(0xFF6B778C),
+              indicatorColor: const Color(0xFF172B4D),
+              tabs: [
+                Tab(icon: const Icon(Icons.link_rounded), text: l10n.inviteLink),
+                Tab(icon: const Icon(Icons.qr_code_scanner), text: l10n.scanQR),
               ],
             ),
-
-            // Tab Content
-            Expanded(
+            SizedBox(
+              height: tabHeight,
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildLinkTab(),
-                  _buildQRScanTab(),
+                  _buildLinkTab(l10n),
+                  _tabController.index == 1 ? _buildQRScanTab(l10n) : const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -143,96 +142,78 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
     );
   }
 
-  Widget _buildLinkTab() {
-    return Padding(
+  Widget _buildLinkTab(AppLocalizations l10n) {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Enter Invite Link',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
           TextField(
             controller: _linkController,
-            decoration: const InputDecoration(
-              labelText: 'Invite link or token',
-              hintText: 'http://localhost:3000/join/abc123 or abc123',
-              prefixIcon: Icon(Icons.link),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.inviteCode,
+              prefixIcon: const Icon(Icons.link),
+              border: const OutlineInputBorder(),
             ),
-            maxLines: 2,
+            minLines: 1,
+            maxLines: 3,
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _isJoining ? null : _joinWithLink,
-            icon: _isJoining
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.check),
-            label: Text(_isJoining ? 'Joining...' : 'Join Workspace'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
+          FilledButton.icon(
+            onPressed: _sent ? null : _joinWithLink,
+            icon: const Icon(Icons.check),
+            label: Text(l10n.joinWorkspace),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF172B4D),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green[200]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.green[700], size: 20),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Paste the invite link you received or scan the QR code',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.scanQROrCopy,
+            style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQRScanTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
+  Widget _buildQRScanTab(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!, width: 2),
+                border: Border.all(color: const Color(0xFFE4E7EB)),
                 borderRadius: BorderRadius.circular(12),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: MobileScanner(
-                onDetect: _onQRScanned,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MobileScanner(
+                  onDetect: _onQRScanned,
+                  errorBuilder: (context, error, child) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        l10n.scanQROrCopy,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Color(0xFF6B778C)),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Point your camera at the QR code',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+          const SizedBox(height: 12),
+          Text(
+            l10n.scanQRToJoin,
+            style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

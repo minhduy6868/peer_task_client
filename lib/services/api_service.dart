@@ -607,8 +607,14 @@ class ApiService {
     );
   }
 
-  Future<void> joinWorkspace(String token) async {
-    _handleResponse(await _post('/workspaces/join/$token', {}), expectData: false);
+  Future<String?> joinWorkspace(String token) async {
+    final data = _handleResponse(
+      await _post('/workspaces/join/${Uri.encodeComponent(token)}', {}),
+    );
+    if (data is Map && data['workspaceId'] is String) {
+      return data['workspaceId'] as String;
+    }
+    return null;
   }
 
   Future<void> revokeInviteLink({

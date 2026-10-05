@@ -95,45 +95,24 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
     );
   }
 
-  void _showJoinWorkspaceDialog() {
-    showDialog(
+  Future<void> _showJoinWorkspaceDialog() async {
+    final token = await showDialog<String>(
       context: context,
-      builder: (context) => JoinWorkspaceDialog(
-        onJoinWithToken: (token) async {
-          try {
-            final api = ref.read(apiServiceProvider);
-            await api.joinWorkspace(token);
-            if (mounted) {
-              Navigator.pop(context);
-              
-              // Refresh workspaces list
-              ref.invalidate(workspacesProvider);
-              
-              // Wait a bit for the provider to refresh
-              await Future.delayed(const Duration(milliseconds: 300));
-              
-              // Get the updated workspaces
-              final workspaces = ref.read(workspacesProvider).value;
-              if (workspaces != null && workspaces.isNotEmpty) {
-                // Navigate to the most recently joined workspace (last in list)
-                final newWorkspace = workspaces.last;
-                if (mounted) {
-                  context.go('/workspace/${newWorkspace.id}/boards');
-                }
-              }
-              
-              final l10n = AppLocalizations.of(context)!;
-              context.showSuccessMessage(l10n.joinedSuccessfully);
-            }
-          } catch (e) {
-            if (mounted) {
-              Navigator.pop(context);
-              context.showErrorSnackBar(e);
-            }
-          }
-        },
-      ),
+      builder: (context) => const JoinWorkspaceDialog(),
     );
+    if (token == null || !mounted) return;
+
+    try {
+      final workspaceId = await ref.read(apiServiceProvider).joinWorkspace(token);
+      ref.invalidate(workspacesProvider);
+      if (!mounted) return;
+      if (workspaceId != null) {
+        context.go('/workspace/$workspaceId/boards');
+      }
+      context.showSuccessMessage(AppLocalizations.of(context)!.joinedSuccessfully);
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
+    }
   }
 
   @override
@@ -199,54 +178,10 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               child: _buildLoadingSkeleton(),
             ),
             error: (error, stack) => SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorLight.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.error_outline_rounded,
-                        size: 64,
-                        color: AppColors.error,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      '${l10n.error}!',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => ref.invalidate(workspacesProvider),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(l10n.loading),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: ErrorDisplay.buildErrorWidget(
+                error,
+                retryLabel: l10n.retry,
+                onRetry: () => ref.invalidate(workspacesProvider),
               ),
             ),
             data: (workspaces) {
@@ -289,8 +224,10 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 48),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 12,
+                            runSpacing: 12,
                             children: [
                               ElevatedButton.icon(
                                 onPressed: _showCreateWorkspaceDialog,
@@ -300,12 +237,11 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                    vertical: 18,
+                                    horizontal: 24,
+                                    vertical: 16,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
                               OutlinedButton.icon(
                                 onPressed: _showJoinWorkspaceDialog,
                                 icon: const Icon(Icons.group_add_rounded, size: 22),
@@ -313,8 +249,8 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.primary,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                    vertical: 18,
+                                    horizontal: 24,
+                                    vertical: 16,
                                   ),
                                 ),
                               ),

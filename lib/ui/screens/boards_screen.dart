@@ -58,7 +58,9 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (context) {
+        final dialogL10n = AppLocalizations.of(context)!;
+        return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: ConstrainedBox(
@@ -91,7 +93,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                             padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 12 : 8),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                                colors: [Color(0xFF172B4D), Color(0xFF4A90E2)],
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -104,7 +106,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              'Create New Board',
+                              dialogL10n.createNewBoard,
                               style: TextStyle(
                                 fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
                                 fontWeight: FontWeight.bold,
@@ -120,14 +122,14 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                       TextFormField(
                         controller: nameController,
                         decoration: InputDecoration(
-                          labelText: 'Board Name',
-                          hintText: 'Enter a creative name...',
-                          prefixIcon: const Icon(Icons.label_outline_rounded, color: Color(0xFF667EEA)),
+                          labelText: dialogL10n.boardName,
+                          hintText: dialogL10n.enterBoardName,
+                          prefixIcon: const Icon(Icons.label_outline_rounded, color: Color(0xFF172B4D)),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF172B4D), width: 2)),
                         ),
                         validator: ValidatorsL10n.required(context),
                         autofocus: true,
@@ -138,14 +140,14 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                       TextFormField(
                         controller: descController,
                         decoration: InputDecoration(
-                          labelText: 'Description (optional)',
-                          hintText: 'What is this board about?',
-                          prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF667EEA)),
+                          labelText: dialogL10n.boardDescription,
+                          hintText: dialogL10n.boardDescriptionOptional,
+                          prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF172B4D)),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF172B4D), width: 2)),
                         ),
                         maxLines: 3,
                       ),
@@ -157,7 +159,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                            child: Text(dialogL10n.cancel, style: const TextStyle(color: Colors.grey, fontSize: 16)),
                           ),
                           const SizedBox(width: 12),
                           Flexible(
@@ -191,11 +193,11 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF667EEA),
+                                backgroundColor: const Color(0xFF172B4D),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
+                              child: Text(dialogL10n.create, style: const TextStyle(fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],
@@ -207,7 +209,8 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             ),
           ),
         ),
-      ),
+      );
+      },
     );
   }
 
@@ -371,8 +374,10 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -380,11 +385,18 @@ class _HomeHeader extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Color(0xFF172B4D)),
           ),
           if (workspaceName.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(workspaceName, style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.w600)),
+            Text(
+              workspaceName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.w600),
+            ),
           ],
           const SizedBox(height: 16),
           Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF172B4D))),
@@ -402,6 +414,7 @@ class _HomeHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -482,6 +495,8 @@ class _BoardCard extends StatelessWidget {
                     children: [
                       Text(
                         board.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF172B4D)),
                       ),
                       if (board.description?.isNotEmpty == true) ...[

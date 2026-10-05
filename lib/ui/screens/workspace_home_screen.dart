@@ -93,38 +93,44 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
           ],
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _NavItem(
                   icon: Icons.dashboard_outlined,
                   selectedIcon: Icons.dashboard_rounded,
                   label: l10n.boards,
                   isSelected: currentTab == 0,
                   onTap: () => ref.read(_currentTabProvider.notifier).state = 0,
                 ),
-                _NavItem(
+              ),
+              Expanded(
+                child: _NavItem(
                   isWorkspace: true,
                   workspaceName: workspace?.name ?? '',
                   workspaceLabel: l10n.workspaces,
                   isSelected: false,
                   onTap: _showWorkspaceMenu,
                 ),
-                _NavItem(
+              ),
+              Expanded(
+                child: _NavItem(
                   icon: Icons.person_outline_rounded,
                   selectedIcon: Icons.person_rounded,
-                  label: authState.user?.name?.substring(0, 1).toUpperCase() ?? 
-                         authState.user?.email.substring(0, 1).toUpperCase() ?? 'U',
+                  label: authState.user?.name?.substring(0, 1).toUpperCase() ??
+                      authState.user?.email.substring(0, 1).toUpperCase() ??
+                      'U',
                   isAvatar: true,
                   avatarLabel: l10n.profile,
                   isSelected: currentTab == 1,
                   onTap: () => ref.read(_currentTabProvider.notifier).state = 1,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
         ),
       ),
     );
@@ -192,6 +198,9 @@ class _NavItem extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 workspaceLabel ?? 'Workspace',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.textTertiary,
                   fontSize: 10,
@@ -239,6 +248,9 @@ class _NavItem extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 avatarLabel ?? 'Profile',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: AppTextStyles.labelSmall.copyWith(
                   color: isSelected ? AppColors.primary : AppColors.textTertiary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -272,6 +284,9 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: AppTextStyles.labelSmall.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textTertiary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
