@@ -10,6 +10,7 @@ import 'providers/app_providers.dart';
 import 'providers/language_provider.dart';
 import 'services/storage_service.dart';
 import 'services/config_service.dart';
+import 'ui/screens/landing_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/reset_password_screen.dart';
@@ -109,9 +110,9 @@ class _MyAppState extends ConsumerState<MyApp> {
           return '/workspaces';
         }
 
-        // Allow public routes
-        if (path == '/login' || 
-            path == '/forgot-password' || 
+        if (path == '/' ||
+            path == '/login' ||
+            path == '/forgot-password' ||
             path.startsWith('/reset-password')) {
           return null;
         }
@@ -141,7 +142,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const WorkspaceSelectionScreen(),
+          builder: (context, state) => const LandingScreen(),
         ),
         GoRoute(
           path: '/workspaces',
@@ -232,7 +233,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       }
       return '/workspaces';
     }
-    return '/login';
+    return '/';
   }
 }
 

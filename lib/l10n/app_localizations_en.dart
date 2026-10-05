@@ -1095,6 +1095,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toolHintText => 'Tap the canvas to add text';
 
   @override
+  String get getStarted => 'Get started';
+
+  @override
+  String get landingHeadline => 'The board your team actually finishes';
+
+  @override
+  String get landingSubhead =>
+      'Columns for tasks, pages for drawing, and a live view of who is in the room.';
+
+  @override
+  String get landingTasksTitle => 'Task columns';
+
+  @override
+  String get landingTasksBody =>
+      'Move work from to-do to done without leaving the board.';
+
+  @override
+  String get landingCanvasTitle => 'Canvas pages';
+
+  @override
+  String get landingCanvasBody =>
+      'Sketch beside the tasks, then turn to a new page.';
+
+  @override
+  String get landingPresenceTitle => 'Who is here';
+
+  @override
+  String get landingPresenceBody =>
+      'See who is online, whose mic is on, and who is speaking.';
+
+  @override
+  String get landingPreviewCaption => 'A board, not another inbox';
+
+  @override
+  String get landingCta => 'Open a workspace in a minute.';
+
+  @override
   String get continueOffline => 'Continue offline';
 
   @override

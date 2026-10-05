@@ -94,11 +94,11 @@ class _OfflineUsernameScreenState extends ConsumerState<OfflineUsernameScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF1a1a2e),
-                      const Color(0xFF16213e),
-                      const Color(0xFF0f3460),
+                    colors: const [
+                      Color(0xFF2A2158),
                       AppColors.primaryDark,
+                      AppColors.primary,
+                      AppColors.secondary,
                     ],
                     stops: const [0.0, 0.3, 0.7, 1.0],
                   ),

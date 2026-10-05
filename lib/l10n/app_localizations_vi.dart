@@ -1089,6 +1089,43 @@ class AppLocalizationsVi extends AppLocalizations {
   String get toolHintText => 'Chạm canvas để thêm chữ';
 
   @override
+  String get getStarted => 'Bắt đầu';
+
+  @override
+  String get landingHeadline => 'Bảng công việc nhóm dùng thật';
+
+  @override
+  String get landingSubhead =>
+      'Cột việc, trang vẽ và ai đang ở trong phòng, gói trong một không gian.';
+
+  @override
+  String get landingTasksTitle => 'Cột công việc';
+
+  @override
+  String get landingTasksBody =>
+      'Chuyển việc từ cần làm sang xong ngay trên bảng.';
+
+  @override
+  String get landingCanvasTitle => 'Nhiều trang vẽ';
+
+  @override
+  String get landingCanvasBody =>
+      'Phác thảo cạnh công việc, rồi sang trang mới.';
+
+  @override
+  String get landingPresenceTitle => 'Ai đang trong phòng';
+
+  @override
+  String get landingPresenceBody =>
+      'Thấy người online, mic đang bật và ai đang nói.';
+
+  @override
+  String get landingPreviewCaption => 'Một bảng làm việc, không phải hộp thư';
+
+  @override
+  String get landingCta => 'Mở không gian làm việc trong một phút.';
+
+  @override
   String get continueOffline => 'Làm việc ngoại tuyến';
 
   @override

@@ -33,7 +33,7 @@ class BoardScreen extends ConsumerStatefulWidget {
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   _BoardPage _page = _BoardPage.tasks;
   _DrawTool _tool = _DrawTool.pen;
-  Color _color = const Color(0xFF172B4D);
+  Color _color = AppColors.primaryDark;
   double _width = 3;
   final double _textSize = 20;
   bool _voice = false;
@@ -749,8 +749,8 @@ class _TrelloBoard extends StatelessWidget {
               return Container(
                 decoration: BoxDecoration(
                   color: candidate.isEmpty
-                      ? const Color(0xFFEBECF0)
-                      : const Color(0xFFD6E4FF),
+                      ? AppColors.surfaceVariant
+                      : AppColors.primarySubtle,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -764,7 +764,7 @@ class _TrelloBoard extends StatelessWidget {
                               '${column.title}  ${column.tasks.length}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF172B4D),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -879,7 +879,7 @@ class _TaskCard extends StatelessWidget {
                       Text(
                         task['title'] as String? ?? 'Untitled',
                         style: const TextStyle(
-                          color: Color(0xFF172B4D),
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -968,9 +968,9 @@ class _CanvaPage extends StatelessWidget {
   });
 
   static const _colors = [
-    Color(0xFF172B4D),
+    AppColors.primaryDark,
     Color(0xFFEF4444),
-    Color(0xFF4A90E2),
+    AppColors.primary,
     Color(0xFF48BB78),
     Color(0xFFF59E0B),
     Color(0xFF7C3AED),

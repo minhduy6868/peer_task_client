@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Flutter UI
 
-- Material 3 + `AppTheme.lightTheme`. Colors from `AppColors` (primary `#4A90E2`). No one-off hex.
+- Material 3 + `AppTheme.lightTheme`. Colors from `AppColors` (soft violet `#8B7CFF`). No one-off hex.
 - Reuse `AppButton`, `AppDialog`, `AppToast`, `AppCard`.
 - Screens: `ConsumerWidget` / `ConsumerStatefulWidget`. Do not construct `ApiService` in `build`.
 - Routes live in `lib/main.dart`. Update `redirect` when adding paths.

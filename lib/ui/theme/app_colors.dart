@@ -1,42 +1,33 @@
 import 'package:flutter/material.dart';
 
-/// App Color Palette - Elegant Soft Blue Theme
-/// Bảng màu xanh dương nhẹ nhàng và sang trọng cho toàn bộ ứng dụng
+/// Soft violet palette for the product and the public landing.
 class AppColors {
   AppColors._(); // Private constructor
   
   // ============ Primary Colors (Màu chủ đạo - Xanh dương nhẹ) ============
   
-  /// Primary Blue - Xanh dương chính, nhẹ nhàng và sang trọng
-  static const Color primary = Color(0xFF4A90E2);
+  /// Soft violet
+  static const Color primary = Color(0xFF8B7CFF);
   
-  /// Primary Light - Xanh dương nhạt hơn
-  static const Color primaryLight = Color(0xFF7AB8F5);
+  static const Color primaryLight = Color(0xFFC4B8FF);
   
-  /// Primary Dark - Xanh dương đậm hơn
-  static const Color primaryDark = Color(0xFF2C5F8D);
+  static const Color primaryDark = Color(0xFF5B4AD4);
   
-  /// Primary Subtle - Xanh dương rất nhạt cho background
-  static const Color primarySubtle = Color(0xFFE8F4FD);
+  static const Color primarySubtle = Color(0xFFF3F0FF);
   
   // ============ Secondary Colors (Màu phụ) ============
   
-  /// Secondary - Xanh tím nhẹ kết hợp
-  static const Color secondary = Color(0xFF6C8EEF);
+  static const Color secondary = Color(0xFFA78BFA);
   
-  /// Secondary Light - Xanh tím nhạt
-  static const Color secondaryLight = Color(0xFF8FA8F7);
+  static const Color secondaryLight = Color(0xFFD4C6FF);
   
-  /// Secondary Dark - Xanh tím đậm
-  static const Color secondaryDark = Color(0xFF5574D9);
+  static const Color secondaryDark = Color(0xFF7C5CE6);
   
   // ============ Accent Colors (Màu nhấn) ============
   
-  /// Accent - Xanh cyan sáng
-  static const Color accent = Color(0xFF56CCF2);
+  static const Color accent = Color(0xFFC084FC);
   
-  /// Accent Purple - Tím nhẹ
-  static const Color accentPurple = Color(0xFF667EEA);
+  static const Color accentPurple = Color(0xFFB794F6);
   
   /// Accent Teal - Xanh ngọc
   static const Color accentTeal = Color(0xFF38B2AC);
@@ -61,16 +52,13 @@ class AppColors {
   /// Warning Light
   static const Color warningLight = Color(0xFFFEEBC8);
   
-  /// Info - Màu thông tin (xanh dương)
-  static const Color info = Color(0xFF4299E1);
+  static const Color info = Color(0xFF8B7CFF);
   
-  /// Info Light
-  static const Color infoLight = Color(0xFFBEE3F8);
+  static const Color infoLight = Color(0xFFE4DFFF);
   
   // ============ Background Colors (Màu nền) ============
   
-  /// Background - Nền chính (xanh dương rất nhạt)
-  static const Color background = Color(0xFFF8FBFF);
+  static const Color background = Color(0xFFF7F4FF);
   
   /// Surface - Màu bề mặt cards, dialogs
   static const Color surface = Color(0xFFFFFFFF);
@@ -78,16 +66,13 @@ class AppColors {
   /// Surface Variant - Bề mặt biến thể
   static const Color surfaceVariant = Color(0xFFFAFBFD);
   
-  /// Surface Light - Bề mặt sáng
-  static const Color surfaceLight = Color(0xFFF0F7FF);
+  static const Color surfaceLight = Color(0xFFF4F0FF);
   
-  /// Surface Hover - Màu khi hover
-  static const Color surfaceHover = Color(0xFFE8F4FD);
+  static const Color surfaceHover = Color(0xFFEDE7FF);
   
   // ============ Text Colors (Màu chữ) ============
   
-  /// Text Primary - Chữ chính
-  static const Color textPrimary = Color(0xFF2D3748);
+  static const Color textPrimary = Color(0xFF2C2440);
   
   /// Text Secondary - Chữ phụ
   static const Color textSecondary = Color(0xFF718096);
@@ -109,8 +94,7 @@ class AppColors {
   /// Border Light - Viền nhạt
   static const Color borderLight = Color(0xFFF0F4F8);
   
-  /// Border Focus - Viền khi focus (xanh dương)
-  static const Color borderFocus = Color(0xFF4A90E2);
+  static const Color borderFocus = Color(0xFF8B7CFF);
   
   /// Divider - Đường phân cách
   static const Color divider = Color(0xFFEDF2F7);
@@ -131,30 +115,26 @@ class AppColors {
   
   // ============ Gradients (Màu gradient) ============
   
-  /// Primary Gradient - Gradient xanh dương chính
   static const LinearGradient gradientPrimary = LinearGradient(
-    colors: [Color(0xFF4A90E2), Color(0xFF6C8EEF)],
+    colors: [Color(0xFF8B7CFF), Color(0xFFA78BFA)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Elegant Gradient - Gradient sang trọng
   static const LinearGradient gradientElegant = LinearGradient(
-    colors: [Color(0xFF4A90E2), Color(0xFF7AB8F5), Color(0xFF56CCF2)],
+    colors: [Color(0xFF5B4AD4), Color(0xFF8B7CFF), Color(0xFFC4B8FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Subtle Gradient - Gradient nhẹ cho background
   static const LinearGradient gradientSubtle = LinearGradient(
-    colors: [Color(0xFFE8F4FD), Color(0xFFF0F8FF)],
+    colors: [Color(0xFFF3F0FF), Color(0xFFFAF8FF)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   
-  /// Accent Gradient - Gradient nhấn
   static const LinearGradient gradientAccent = LinearGradient(
-    colors: [Color(0xFF56CCF2), Color(0xFF2F80ED)],
+    colors: [Color(0xFFC4B5FD), Color(0xFF8B7CFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -168,44 +148,38 @@ class AppColors {
   
   // ============ Board Card Gradients (Gradient cho board cards) ============
   
-  /// Board Gradient 1 - Xanh dương nhẹ
   static const LinearGradient boardGradient1 = LinearGradient(
-    colors: [Color(0xFF4A90E2), Color(0xFF6C8EEF)],
+    colors: [Color(0xFF8B7CFF), Color(0xFFA78BFA)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Board Gradient 2 - Xanh cyan
   static const LinearGradient boardGradient2 = LinearGradient(
-    colors: [Color(0xFF56CCF2), Color(0xFF2F80ED)],
+    colors: [Color(0xFFC084FC), Color(0xFF8B7CFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Board Gradient 3 - Xanh tím
   static const LinearGradient boardGradient3 = LinearGradient(
-    colors: [Color(0xFF667EEA), Color(0xFF4A90E2)],
+    colors: [Color(0xFFA78BFA), Color(0xFF7C5CE6)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Board Gradient 4 - Xanh pastel
   static const LinearGradient boardGradient4 = LinearGradient(
-    colors: [Color(0xFF7AB8F5), Color(0xFF9DCEFF)],
+    colors: [Color(0xFFC4B8FF), Color(0xFFE4DFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Board Gradient 5 - Xanh đậm
   static const LinearGradient boardGradient5 = LinearGradient(
-    colors: [Color(0xFF2C5F8D), Color(0xFF4A90E2)],
+    colors: [Color(0xFF5B4AD4), Color(0xFF8B7CFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  /// Board Gradient 6 - Xanh mint
   static const LinearGradient boardGradient6 = LinearGradient(
-    colors: [Color(0xFF38B2AC), Color(0xFF56CCF2)],
+    colors: [Color(0xFF7C5CE6), Color(0xFFC4B5FD)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -223,13 +197,13 @@ class AppColors {
   // ============ Shadow Colors (Màu đổ bóng) ============
   
   /// Shadow Light - Bóng nhẹ
-  static Color shadowLight = const Color(0xFF4A90E2).withOpacity(0.08);
+  static Color shadowLight = const Color(0xFF8B7CFF).withOpacity(0.08);
   
   /// Shadow Medium - Bóng trung bình
-  static Color shadowMedium = const Color(0xFF4A90E2).withOpacity(0.15);
+  static Color shadowMedium = const Color(0xFF8B7CFF).withOpacity(0.15);
   
   /// Shadow Heavy - Bóng đậm
-  static Color shadowHeavy = const Color(0xFF4A90E2).withOpacity(0.25);
+  static Color shadowHeavy = const Color(0xFF8B7CFF).withOpacity(0.25);
   
   // ============ Overlay Colors (Màu lớp phủ) ============
   
@@ -267,12 +241,12 @@ class AppColors {
   /// Elegant card shadow
   static List<BoxShadow> elegantCardShadow = [
     BoxShadow(
-      color: const Color(0xFF4A90E2).withOpacity(0.08),
+      color: const Color(0xFF8B7CFF).withOpacity(0.08),
       blurRadius: 20,
       offset: const Offset(0, 4),
     ),
     BoxShadow(
-      color: const Color(0xFF4A90E2).withOpacity(0.04),
+      color: const Color(0xFF8B7CFF).withOpacity(0.04),
       blurRadius: 10,
       offset: const Offset(0, 2),
     ),
@@ -281,12 +255,12 @@ class AppColors {
   /// Hover shadow
   static List<BoxShadow> hoverShadow = [
     BoxShadow(
-      color: const Color(0xFF4A90E2).withOpacity(0.2),
+      color: const Color(0xFF8B7CFF).withOpacity(0.2),
       blurRadius: 30,
       offset: const Offset(0, 10),
     ),
     BoxShadow(
-      color: const Color(0xFF4A90E2).withOpacity(0.1),
+      color: const Color(0xFF8B7CFF).withOpacity(0.1),
       blurRadius: 15,
       offset: const Offset(0, 5),
     ),

@@ -2186,6 +2186,72 @@ abstract class AppLocalizations {
   /// **'Tap the canvas to add text'**
   String get toolHintText;
 
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get getStarted;
+
+  /// No description provided for @landingHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'The board your team actually finishes'**
+  String get landingHeadline;
+
+  /// No description provided for @landingSubhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns for tasks, pages for drawing, and a live view of who is in the room.'**
+  String get landingSubhead;
+
+  /// No description provided for @landingTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task columns'**
+  String get landingTasksTitle;
+
+  /// No description provided for @landingTasksBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move work from to-do to done without leaving the board.'**
+  String get landingTasksBody;
+
+  /// No description provided for @landingCanvasTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas pages'**
+  String get landingCanvasTitle;
+
+  /// No description provided for @landingCanvasBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sketch beside the tasks, then turn to a new page.'**
+  String get landingCanvasBody;
+
+  /// No description provided for @landingPresenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is here'**
+  String get landingPresenceTitle;
+
+  /// No description provided for @landingPresenceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'See who is online, whose mic is on, and who is speaking.'**
+  String get landingPresenceBody;
+
+  /// No description provided for @landingPreviewCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'A board, not another inbox'**
+  String get landingPreviewCaption;
+
+  /// No description provided for @landingCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a workspace in a minute.'**
+  String get landingCta;
+
   /// No description provided for @continueOffline.
   ///
   /// In en, this message translates to:
