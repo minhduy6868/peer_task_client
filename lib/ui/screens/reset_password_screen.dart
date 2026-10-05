@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -43,7 +44,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       );
 
       if (mounted) {
-        context.showSuccessMessage('Password reset successful!');
+        context.showSuccessMessage(AppLocalizations.of(context)!.passwordResetDone);
         context.go('/login');
       }
     } catch (e) {
@@ -56,10 +57,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Reset Password'),
+        title: Text(l10n.createNewPassword),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -81,13 +83,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Create New Password',
+                    l10n.createNewPassword,
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please enter your new password',
+                    l10n.enterNewPassword,
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -95,7 +97,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
-                      labelText: 'New Password',
+                      labelText: l10n.newPassword,
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.lock_rounded),
                       suffixIcon: IconButton(
@@ -111,7 +113,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: l10n.confirmPassword,
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
@@ -131,7 +133,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Reset Password'),
+                        : Text(l10n.save),
                   ),
                 ],
               ),

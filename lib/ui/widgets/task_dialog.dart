@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/task_model.dart';
+import '../theme/app_colors.dart';
 
 /// Clean Trello-style Task Creation/Edit Dialog
 class TaskDialog extends StatefulWidget {
@@ -85,9 +87,8 @@ class _TaskDialogState extends State<TaskDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.existingTask != null;
     final screenSize = MediaQuery.of(context).size;
-    final dialogWidth = screenSize.width > 700 
-        ? 600.0 
-        : (screenSize.width > 500 ? screenSize.width * 0.85 : screenSize.width * 0.95);
+    final l10n = AppLocalizations.of(context)!;
+    final dialogWidth = screenSize.width > 640 ? 560.0 : screenSize.width - 40;
     
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -114,7 +115,7 @@ class _TaskDialogState extends State<TaskDialog> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    isEdit ? 'Edit Task' : 'Create Task',
+                    isEdit ? l10n.editTask : l10n.createTask,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -141,15 +142,15 @@ class _TaskDialogState extends State<TaskDialog> {
                       // Title
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Title *',
-                          hintText: 'Enter task title',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.title),
+                        decoration: InputDecoration(
+                          labelText: l10n.title,
+                          hintText: l10n.taskTitle,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.title),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a title';
+                            return l10n.taskTitleRequired;
                           }
                           return null;
                         },
@@ -160,113 +161,96 @@ class _TaskDialogState extends State<TaskDialog> {
                       // Description
                       TextFormField(
                         controller: _descController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Add more details...',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.description_rounded),
+                        decoration: InputDecoration(
+                          labelText: l10n.description,
+                          hintText: l10n.boardDescriptionOptional,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.description_rounded),
                         ),
                         maxLines: 3,
                       ),
                       const SizedBox(height: 16),
 
                       // Priority and Status
-                      Row(
-                        children: [
-                          // Priority
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: _priority,
-                              decoration: const InputDecoration(
-                                labelText: 'Priority',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.flag),
-                              ),
-                              items: [
-                                _buildPriorityItem('low', 'Low', Colors.green),
-                                _buildPriorityItem('medium', 'Medium', Colors.blue),
-                                _buildPriorityItem('high', 'High', Colors.orange),
-                                _buildPriorityItem('urgent', 'Urgent', Colors.red),
-                              ],
-                              onChanged: (value) {
-                                setState(() => _priority = value!);
-                              },
-                            ),
+                      _sideBySide(
+                        DropdownButtonFormField<String>(
+                          value: _priority,
+                          decoration: InputDecoration(
+                            labelText: l10n.priority,
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.flag),
                           ),
-                          const SizedBox(width: 16),
-                          // Status
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: _status,
-                              decoration: const InputDecoration(
-                                labelText: 'Status',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.list),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'todo', child: Text('To Do')),
-                                DropdownMenuItem(value: 'doing', child: Text('In Progress')),
-                                DropdownMenuItem(value: 'done', child: Text('Done')),
-                              ],
-                              onChanged: (value) {
-                                setState(() => _status = value!);
-                              },
-                            ),
+                          items: [
+                            _buildPriorityItem('low', l10n.low, AppColors.success),
+                            _buildPriorityItem('medium', l10n.medium, AppColors.info),
+                            _buildPriorityItem('high', l10n.high, AppColors.warning),
+                            _buildPriorityItem('urgent', l10n.urgent, AppColors.error),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _priority = value!);
+                          },
+                        ),
+                        DropdownButtonFormField<String>(
+                          value: _status,
+                          decoration: InputDecoration(
+                            labelText: l10n.status,
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.list),
                           ),
-                        ],
+                          items: [
+                            DropdownMenuItem(value: 'todo', child: Text(l10n.todo)),
+                            DropdownMenuItem(value: 'doing', child: Text(l10n.inProgress)),
+                            DropdownMenuItem(value: 'done', child: Text(l10n.done)),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _status = value!);
+                          },
+                        ),
                       ),
                       const SizedBox(height: 16),
 
                       // Deadline and Hours
-                      Row(
-                        children: [
-                          // Deadline
-                          Expanded(
-                            child: InkWell(
-                              onTap: _pickDeadline,
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Deadline',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.calendar_today_rounded),
-                                ),
-                                child: Text(
-                                  _deadline != null
-                                      ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
-                                      : 'Select date',
-                                  style: TextStyle(
-                                    color: _deadline != null ? null : Colors.grey,
-                                  ),
-                                ),
+                      _sideBySide(
+                        InkWell(
+                          onTap: _pickDeadline,
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: l10n.deadline,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.calendar_today_rounded),
+                              suffixIcon: _deadline == null
+                                  ? null
+                                  : IconButton(
+                                      icon: const Icon(Icons.clear, size: 20),
+                                      onPressed: () => setState(() => _deadline = null),
+                                    ),
+                            ),
+                            child: Text(
+                              _deadline != null
+                                  ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
+                                  : l10n.selectDate,
+                              style: TextStyle(
+                                color: _deadline != null ? null : AppColors.textTertiary,
                               ),
                             ),
                           ),
-                          if (_deadline != null)
-                            IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
-                              onPressed: () => setState(() => _deadline = null),
-                            ),
-                          const SizedBox(width: 16),
-                          // Estimated Hours
-                          Expanded(
-                            child: TextFormField(
-                              controller: _hoursController,
-                              decoration: const InputDecoration(
-                                labelText: 'Hours',
-                                hintText: '0',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.timer),
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
+                        ),
+                        TextFormField(
+                          controller: _hoursController,
+                          decoration: InputDecoration(
+                            labelText: l10n.estimatedHours,
+                            hintText: '0',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.timer),
                           ),
-                        ],
+                          keyboardType: TextInputType.number,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
                       // Assignees
-                      const Text(
-                        'Assignees',
+                      Text(
+                        l10n.assignees,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -277,8 +261,8 @@ class _TaskDialogState extends State<TaskDialog> {
                       const SizedBox(height: 16),
 
                       // Labels
-                      const Text(
-                        'Labels',
+                      Text(
+                        l10n.labels,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -321,13 +305,13 @@ class _TaskDialogState extends State<TaskDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _handleSave,
                     icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
-                    label: Text(isEdit ? 'Save' : 'Create'),
+                    label: Text(isEdit ? l10n.save : l10n.create),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
@@ -338,6 +322,31 @@ class _TaskDialogState extends State<TaskDialog> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _sideBySide(Widget left, Widget right) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 460) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              left,
+              const SizedBox(height: 16),
+              right,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: left),
+            const SizedBox(width: 16),
+            Expanded(child: right),
+          ],
+        );
+      },
     );
   }
 
@@ -373,7 +382,7 @@ class _TaskDialogState extends State<TaskDialog> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: widget.boardMembers.isEmpty
-          ? const Text('No members available', style: TextStyle(color: Colors.grey))
+          ? Text(AppLocalizations.of(context)!.noMembersAvailable, style: const TextStyle(color: AppColors.textSecondary))
           : Wrap(
               spacing: 8,
               runSpacing: 8,

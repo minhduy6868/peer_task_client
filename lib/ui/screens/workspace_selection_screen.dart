@@ -18,16 +18,16 @@ class WorkspaceSelectionScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScreen> {
-  String _getRoleDisplay(String? role) {
+  String _getRoleDisplay(String? role, AppLocalizations l10n) {
     switch (role) {
       case 'owner':
-        return 'Owner';
+        return l10n.owner;
       case 'editor':
-        return 'Editor';
+        return l10n.editor;
       case 'viewer':
-        return 'Viewer';
+        return l10n.viewer;
       default:
-        return 'Member';
+        return l10n.member;
     }
   }
 
@@ -398,7 +398,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            _getRoleDisplay(workspace.role),
+                            _getRoleDisplay(workspace.role, AppLocalizations.of(context)!),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,

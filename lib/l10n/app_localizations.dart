@@ -587,7 +587,7 @@ abstract class AppLocalizations {
   /// No description provided for @inviteByEmail.
   ///
   /// In en, this message translates to:
-  /// **'Invite by Email'**
+  /// **'Invite by email'**
   String get inviteByEmail;
 
   /// No description provided for @joinWorkspace.
@@ -2185,6 +2185,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap the canvas to add text'**
   String get toolHintText;
+
+  /// No description provided for @continueOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue offline'**
+  String get continueOffline;
+
+  /// No description provided for @sendResetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset link'**
+  String get sendResetLink;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to login'**
+  String get backToLogin;
+
+  /// No description provided for @emailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Email sent'**
+  String get emailSent;
+
+  /// No description provided for @resetEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email and we will send a reset link.'**
+  String get resetEmailHint;
+
+  /// No description provided for @resetEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for that email, a reset link is on the way.'**
+  String get resetEmailSent;
+
+  /// No description provided for @createNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new password'**
+  String get createNewPassword;
+
+  /// No description provided for @enterNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new password'**
+  String get enterNewPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @passwordResetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated'**
+  String get passwordResetDone;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
+
+  /// No description provided for @avatarUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar updated'**
+  String get avatarUpdated;
+
+  /// No description provided for @boardSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Board settings'**
+  String get boardSettings;
+
+  /// No description provided for @deleteBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete board'**
+  String get deleteBoard;
+
+  /// No description provided for @deleteBoardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this board and its tasks? This cannot be undone.'**
+  String get deleteBoardConfirm;
+
+  /// No description provided for @noMembersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No members available'**
+  String get noMembersAvailable;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get selectDate;
 }
 
 class _AppLocalizationsDelegate

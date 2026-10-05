@@ -479,84 +479,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             
-                            // Divider
                             const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    l10n.orContinueWith,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            // Social Login Buttons (placeholder)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: null, // Disabled for now
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      side: BorderSide(color: Colors.grey.shade300),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      foregroundColor: AppColors.textPrimary,
-                                      textStyle: const TextStyle(
-                                        inherit: true,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    icon: Icon(Icons.g_mobiledata, color: AppColors.textPrimary, size: 24),
-                                    label: Text(l10n.google),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: null, // Disabled for now
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      side: BorderSide(color: Colors.grey.shade300),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      foregroundColor: AppColors.textPrimary,
-                                      textStyle: const TextStyle(
-                                        inherit: true,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    icon: Icon(Icons.facebook, color: AppColors.textPrimary, size: 20),
-                                    label: const Text('Facebook'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Divider
-                            const SizedBox(height: 16),
                             Row(
                               children: [
                                 Expanded(child: Divider(color: AppColors.border)),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
-                                    'OR',
+                                    l10n.orContinueWith,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: AppColors.textSecondary,
@@ -581,7 +511,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       },
                                 icon: const Icon(Icons.offline_bolt_rounded),
                                 label: Text(
-                                  'Continue Offline',
+                                  l10n.continueOffline,
                                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),

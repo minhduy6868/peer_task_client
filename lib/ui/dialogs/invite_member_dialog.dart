@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
+import '../theme/app_colors.dart';
 
 import '../../utils/error_display.dart';
 class InviteMemberDialog extends StatefulWidget {
@@ -101,19 +102,23 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width > 540 ? 480.0 : size.width - 40;
+    final height = (size.height * 0.75).clamp(360.0, 560.0);
+
     return Dialog(
-      child: Container(
-        width: 500,
-        constraints: const BoxConstraints(maxHeight: 600),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: SizedBox(
+        width: width,
+        height: height,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
               ),
               child: Row(
                 children: [
@@ -123,9 +128,11 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Invite Members',
-                          style: TextStyle(
+                        Text(
+                          l10n.inviteMembers,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -133,6 +140,8 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
                         ),
                         Text(
                           widget.workspaceName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                       ],
@@ -145,16 +154,16 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> with SingleTick
                 ],
               ),
             ),
-
-            // Tabs
             TabBar(
               controller: _tabController,
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
-              tabs: const [
-                Tab(text: 'Invite Link & QR'),
-                Tab(text: 'Invite by Email'),
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.primary,
+              tabs: [
+                Tab(text: l10n.inviteLink),
+                Tab(text: l10n.inviteByEmail),
               ],
             ),
 

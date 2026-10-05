@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/error_display.dart';
 import '../../services/cloudinary_service.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/app_providers.dart';
@@ -64,56 +65,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ref.read(authStateProvider.notifier).updateUser(response);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Avatar updated successfully'),
-                ],
-              ),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          context.showSuccessMessage(AppLocalizations.of(context)!.avatarUpdated);
         }
       } on Exception catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.error, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Failed to upload avatar: $e'),
-                ],
-              ),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          context.showErrorSnackBar(e);
         }
       }
 
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Failed to pick image: $e'),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        context.showErrorSnackBar(e);
       }
     } finally {
       if (mounted) {
@@ -399,7 +361,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const Divider(height: 1, indent: 60),
                       _ModernListTile(
                         leading: Icons.lock_rounded,
-                        title: 'Change Password',
+                        title: l10n.changePassword,
                         trailing: Icons.chevron_right_rounded,
                         onTap: () async {
                           await showDialog<bool>(
@@ -423,24 +385,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         title: l10n.appTitle,
                         subtitle: 'Version 1.0.0',
                         onTap: null,
-                      ),
-                      const Divider(height: 1, indent: 60),
-                      _ModernListTile(
-                        leading: Icons.privacy_tip_rounded,
-                        title: 'Privacy Policy',
-                        trailing: Icons.chevron_right_rounded,
-                        onTap: () {
-                          // TODO: Show privacy policy
-                        },
-                      ),
-                      const Divider(height: 1, indent: 60),
-                      _ModernListTile(
-                        leading: Icons.article_rounded,
-                        title: 'Terms of Service',
-                        trailing: Icons.chevron_right_rounded,
-                        onTap: () {
-                          // TODO: Show terms
-                        },
                       ),
                     ],
                   ),

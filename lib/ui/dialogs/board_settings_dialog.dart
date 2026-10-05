@@ -5,6 +5,7 @@ import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../utils/error_display.dart';
+import '../theme/app_colors.dart';
 class BoardSettingsDialog extends ConsumerStatefulWidget {
   final String boardId;
   final String boardName;
@@ -26,57 +27,98 @@ class _BoardSettingsDialogState extends ConsumerState<BoardSettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final size = MediaQuery.sizeOf(context);
+    final wide = size.width >= 640;
+    final width = wide ? 640.0 : size.width - 32;
+    final height = (size.height * 0.8).clamp(360.0, 560.0);
+
     return Dialog(
-      child: Container(
-        width: 600,
-        height: 500,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.settings_rounded),
-                const SizedBox(width: 8),
-                Text(
-                  'Board Settings',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const Divider(),
-            Expanded(
-              child: Row(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  NavigationRail(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: (index) {
-                      setState(() => _selectedIndex = index);
-                    },
-                    labelType: NavigationRailLabelType.all,
-                    destinations: const [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.info_outline),
-                        label: Text('General'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.people),
-                        label: Text('Members'),
-                      ),
-                    ],
-                  ),
-                  const VerticalDivider(thickness: 1, width: 1),
+                  const Icon(Icons.settings_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: _buildContent(),
+                    child: Text(
+                      l10n.boardSettings,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-            ),
-          ],
+              const Divider(),
+              if (!wide)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => setState(() => _selectedIndex = 0),
+                        child: Text(
+                          l10n.general,
+                          style: TextStyle(
+                            color: _selectedIndex == 0 ? AppColors.primary : AppColors.textSecondary,
+                            fontWeight: _selectedIndex == 0 ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => setState(() => _selectedIndex = 1),
+                        child: Text(
+                          l10n.members,
+                          style: TextStyle(
+                            color: _selectedIndex == 1 ? AppColors.primary : AppColors.textSecondary,
+                            fontWeight: _selectedIndex == 1 ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              Expanded(
+                child: wide
+                    ? Row(
+                        children: [
+                          NavigationRail(
+                            selectedIndex: _selectedIndex,
+                            onDestinationSelected: (index) {
+                              setState(() => _selectedIndex = index);
+                            },
+                            labelType: NavigationRailLabelType.all,
+                            destinations: [
+                              NavigationRailDestination(
+                                icon: const Icon(Icons.info_outline),
+                                label: Text(l10n.general),
+                              ),
+                              NavigationRailDestination(
+                                icon: const Icon(Icons.people),
+                                label: Text(l10n.members),
+                              ),
+                            ],
+                          ),
+                          const VerticalDivider(thickness: 1, width: 1),
+                          Expanded(child: _buildContent()),
+                        ],
+                      )
+                    : _buildContent(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -138,17 +180,17 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
       children: [
         TextField(
           controller: _nameController,
-          decoration: const InputDecoration(
-            labelText: 'Board Name',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.boardName,
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _descController,
-          decoration: const InputDecoration(
-            labelText: 'Description',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.description,
+            border: const OutlineInputBorder(),
           ),
           maxLines: 3,
         ),
@@ -179,15 +221,15 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
             }
           },
           icon: const Icon(Icons.save),
-          label: const Text('Save Changes'),
+          label: Text(AppLocalizations.of(context)!.saveChanges),
         ),
         const SizedBox(height: 24),
         const Divider(),
         const SizedBox(height: 16),
         Text(
-          'Danger Zone',
+          AppLocalizations.of(context)!.dangerZone,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.red,
+            color: AppColors.error,
           ),
         ),
         const SizedBox(height: 8),
@@ -195,26 +237,27 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
           onPressed: () async {
             final confirm = await showDialog<bool>(
               context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Delete Board'),
-                content: const Text(
-                  'Are you sure? This will delete all tasks and data. This action cannot be undone.',
-                ),
+              builder: (context) {
+                final dialogL10n = AppLocalizations.of(context)!;
+                return AlertDialog(
+                title: Text(dialogL10n.deleteBoard),
+                content: Text(dialogL10n.deleteBoardConfirm),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
+                    child: Text(dialogL10n.cancel),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Delete'),
+                    child: Text(dialogL10n.delete),
                   ),
                 ],
-              ),
+              );
+              },
             );
 
             if (confirm == true && mounted) {
@@ -234,10 +277,10 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
             }
           },
           icon: const Icon(Icons.delete_forever),
-          label: const Text('Delete Board'),
+          label: Text(AppLocalizations.of(context)!.deleteBoard),
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.red,
-            side: const BorderSide(color: Colors.red),
+            foregroundColor: AppColors.error,
+            side: const BorderSide(color: AppColors.error),
           ),
         ),
       ],

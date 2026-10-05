@@ -8,12 +8,13 @@ import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
+import '../theme/app_colors.dart';
 
 const _boardAccents = [
-  Color(0xFF4A90E2),
-  Color(0xFF38B2AC),
-  Color(0xFF172B4D),
-  Color(0xFFF59E0B),
+  AppColors.primary,
+  AppColors.accentTeal,
+  AppColors.primaryDark,
+  AppColors.warning,
 ];
 
 final _workspaceNameProvider = FutureProvider.family<String, String>((ref, workspaceId) async {
@@ -93,7 +94,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                             padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 12 : 8),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF172B4D), Color(0xFF4A90E2)],
+                                colors: [AppColors.primary, AppColors.primaryLight],
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -110,7 +111,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                               style: TextStyle(
                                 fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2D3748),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -124,12 +125,12 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                         decoration: InputDecoration(
                           labelText: dialogL10n.boardName,
                           hintText: dialogL10n.enterBoardName,
-                          prefixIcon: const Icon(Icons.label_outline_rounded, color: Color(0xFF172B4D)),
+                          prefixIcon: const Icon(Icons.label_outline_rounded, color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF172B4D), width: 2)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         ),
                         validator: ValidatorsL10n.required(context),
                         autofocus: true,
@@ -142,12 +143,12 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                         decoration: InputDecoration(
                           labelText: dialogL10n.boardDescription,
                           hintText: dialogL10n.boardDescriptionOptional,
-                          prefixIcon: const Icon(Icons.description_outlined, color: Color(0xFF172B4D)),
+                          prefixIcon: const Icon(Icons.description_outlined, color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF172B4D), width: 2)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         ),
                         maxLines: 3,
                       ),
@@ -193,7 +194,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF172B4D),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
@@ -230,11 +231,11 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: AppColors.background,
       floatingActionButton: canCreateBoard
           ? FloatingActionButton.extended(
               onPressed: _showCreateBoardDialog,
-              backgroundColor: const Color(0xFF172B4D),
+              backgroundColor: AppColors.primary,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text(l10n.newBoard, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               elevation: 1,
@@ -381,13 +382,13 @@ class _HomeHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(greeting, style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13)),
+          Text(greeting, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 2),
           Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Color(0xFF172B4D)),
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.primary),
           ),
           if (workspaceName.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -395,11 +396,11 @@ class _HomeHeader extends StatelessWidget {
               workspaceName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.w600),
+              style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w600),
             ),
           ],
           const SizedBox(height: 16),
-          Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF172B4D))),
+          Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
           const SizedBox(height: 8),
           TextField(
             controller: searchController,
@@ -441,9 +442,9 @@ class _EmptyBoards extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.dashboard_outlined, size: 40, color: Color(0xFF6B778C)),
+            const Icon(Icons.dashboard_outlined, size: 40, color: AppColors.textSecondary),
             const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF172B4D))),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
             if (canCreate) ...[
               const SizedBox(height: 16),
               FilledButton(onPressed: onCreate, child: Text(action)),
@@ -497,7 +498,7 @@ class _BoardCard extends StatelessWidget {
                         board.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF172B4D)),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.primary),
                       ),
                       if (board.description?.isNotEmpty == true) ...[
                         const SizedBox(height: 4),
@@ -505,7 +506,7 @@ class _BoardCard extends StatelessWidget {
                           board.description!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       ],
                     ],

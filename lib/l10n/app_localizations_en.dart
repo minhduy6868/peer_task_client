@@ -271,7 +271,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteLink => 'Invite Link';
 
   @override
-  String get inviteByEmail => 'Invite by Email';
+  String get inviteByEmail => 'Invite by email';
 
   @override
   String get joinWorkspace => 'Join Workspace';
@@ -1093,4 +1093,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolHintText => 'Tap the canvas to add text';
+
+  @override
+  String get continueOffline => 'Continue offline';
+
+  @override
+  String get sendResetLink => 'Send reset link';
+
+  @override
+  String get backToLogin => 'Back to login';
+
+  @override
+  String get emailSent => 'Email sent';
+
+  @override
+  String get resetEmailHint =>
+      'Enter your email and we will send a reset link.';
+
+  @override
+  String get resetEmailSent =>
+      'If an account exists for that email, a reset link is on the way.';
+
+  @override
+  String get createNewPassword => 'Create a new password';
+
+  @override
+  String get enterNewPassword => 'Enter your new password';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get passwordResetDone => 'Password updated';
+
+  @override
+  String get changePassword => 'Change password';
+
+  @override
+  String get avatarUpdated => 'Avatar updated';
+
+  @override
+  String get boardSettings => 'Board settings';
+
+  @override
+  String get deleteBoard => 'Delete board';
+
+  @override
+  String get deleteBoardConfirm =>
+      'Delete this board and its tasks? This cannot be undone.';
+
+  @override
+  String get noMembersAvailable => 'No members available';
+
+  @override
+  String get selectDate => 'Select date';
 }

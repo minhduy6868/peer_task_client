@@ -267,7 +267,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inviteLink => 'Link mời';
 
   @override
-  String get inviteByEmail => 'Mời qua Email';
+  String get inviteByEmail => 'Mời bằng email';
 
   @override
   String get joinWorkspace => 'Tham gia nhóm';
@@ -1087,4 +1087,57 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get toolHintText => 'Chạm canvas để thêm chữ';
+
+  @override
+  String get continueOffline => 'Làm việc ngoại tuyến';
+
+  @override
+  String get sendResetLink => 'Gửi liên kết đặt lại';
+
+  @override
+  String get backToLogin => 'Về đăng nhập';
+
+  @override
+  String get emailSent => 'Đã gửi email';
+
+  @override
+  String get resetEmailHint => 'Nhập email để nhận liên kết đặt lại mật khẩu.';
+
+  @override
+  String get resetEmailSent =>
+      'Nếu email đã có tài khoản, liên kết đặt lại sẽ được gửi ngay.';
+
+  @override
+  String get createNewPassword => 'Tạo mật khẩu mới';
+
+  @override
+  String get enterNewPassword => 'Nhập mật khẩu mới';
+
+  @override
+  String get newPassword => 'Mật khẩu mới';
+
+  @override
+  String get passwordResetDone => 'Đã cập nhật mật khẩu';
+
+  @override
+  String get changePassword => 'Đổi mật khẩu';
+
+  @override
+  String get avatarUpdated => 'Đã cập nhật ảnh đại diện';
+
+  @override
+  String get boardSettings => 'Cài đặt bảng';
+
+  @override
+  String get deleteBoard => 'Xóa bảng';
+
+  @override
+  String get deleteBoardConfirm =>
+      'Xóa bảng này và các công việc? Không thể hoàn tác.';
+
+  @override
+  String get noMembersAvailable => 'Chưa có thành viên';
+
+  @override
+  String get selectDate => 'Chọn ngày';
 }

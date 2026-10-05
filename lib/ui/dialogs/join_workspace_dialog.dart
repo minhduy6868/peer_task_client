@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
+import '../theme/app_colors.dart';
 
 import '../../utils/error_display.dart';
 
@@ -97,13 +98,13 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
               padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.group_add_rounded, color: Color(0xFF172B4D)),
+                  const Icon(Icons.group_add_rounded, color: AppColors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       l10n.joinWorkspace,
                       style: const TextStyle(
-                        color: Color(0xFF172B4D),
+                        color: AppColors.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -118,9 +119,9 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
             ),
             TabBar(
               controller: _tabController,
-              labelColor: const Color(0xFF172B4D),
-              unselectedLabelColor: const Color(0xFF6B778C),
-              indicatorColor: const Color(0xFF172B4D),
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.primary,
               tabs: [
                 Tab(icon: const Icon(Icons.link_rounded), text: l10n.inviteLink),
                 Tab(icon: const Icon(Icons.qr_code_scanner), text: l10n.scanQR),
@@ -164,14 +165,14 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
             icon: const Icon(Icons.check),
             label: Text(l10n.joinWorkspace),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF172B4D),
+              backgroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             l10n.scanQROrCopy,
-            style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
       ),
@@ -186,7 +187,7 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
           Expanded(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE4E7EB)),
+                border: Border.all(color: AppColors.border),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ClipRRect(
@@ -199,7 +200,7 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
                       child: Text(
                         l10n.scanQROrCopy,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Color(0xFF6B778C)),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
                   ),
@@ -210,7 +211,7 @@ class _JoinWorkspaceDialogState extends State<JoinWorkspaceDialog> with SingleTi
           const SizedBox(height: 12),
           Text(
             l10n.scanQRToJoin,
-            style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
       ),

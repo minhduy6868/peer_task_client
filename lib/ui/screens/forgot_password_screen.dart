@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -47,10 +48,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title: Text(l10n.forgotPassword),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -60,14 +62,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
-            child: _emailSent ? _buildSuccessView() : _buildFormView(),
+            child: _emailSent ? _buildSuccessView(l10n) : _buildFormView(l10n),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(AppLocalizations l10n) {
     return Form(
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -81,23 +83,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Reset Password',
+            l10n.createNewPassword,
             style: Theme.of(context).textTheme.headlineMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Enter your email address and we\'ll send you a link to reset your password.',
+            l10n.resetEmailHint,
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           TextFormField(
             controller: _emailController,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.email),
+            decoration: InputDecoration(
+              labelText: l10n.email,
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.email),
             ),
             keyboardType: TextInputType.emailAddress,
             validator: ValidatorsL10n.email(context),
@@ -112,41 +114,41 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Send Reset Link'),
+                : Text(l10n.sendResetLink),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Back to Login'),
+            child: Text(l10n.backToLogin),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(AppLocalizations l10n) {
     return Column(
       children: [
         const Icon(
           Icons.check_circle,
           size: 80,
-          color: Colors.green,
+          color: AppColors.success,
         ),
         const SizedBox(height: 24),
         Text(
-          'Email Sent!',
+          l10n.emailSent,
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 16),
         Text(
-          'If an account exists for ${_emailController.text}, you will receive a password reset link shortly.',
+          l10n.resetEmailSent,
           style: Theme.of(context).textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Back to Login'),
+          child: Text(l10n.backToLogin),
         ),
       ],
     );
