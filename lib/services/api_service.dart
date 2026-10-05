@@ -830,13 +830,21 @@ class ApiService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getWorkspaceBoardSummary(String workspaceId) async {
+    return _mapList(_handleResponse(await _get('/boards/workspace/$workspaceId/summary')));
+  }
+
   Future<List<Map<String, dynamic>>> getMyTasks({
     String? status,
+    String? workspaceId,
+    bool open = false,
     int limit = 50,
   }) async {
     final queryParams = <String, String>{
       'limit': limit.toString(),
       if (status != null) 'status': status,
+      if (workspaceId != null) 'workspaceId': workspaceId,
+      if (open) 'open': 'true',
     };
     final uri = Uri.parse('$baseUrl/tasks/my-tasks').replace(queryParameters: queryParams);
     final response = await _requestWithRetry(() => http.get(uri, headers: _headers));

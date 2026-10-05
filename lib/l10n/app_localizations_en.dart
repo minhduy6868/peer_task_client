@@ -819,6 +819,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overdue => 'Overdue';
 
   @override
+  String get yourWork => 'Your work';
+
+  @override
+  String get nothingAssigned => 'Nothing is assigned to you in this workspace.';
+
+  @override
   String get dueDate => 'Due date';
 
   @override

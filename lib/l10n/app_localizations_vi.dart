@@ -813,6 +813,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get overdue => 'Quá hạn';
 
   @override
+  String get yourWork => 'Việc của bạn';
+
+  @override
+  String get nothingAssigned =>
+      'Chưa có việc nào được giao cho bạn trong workspace này.';
+
+  @override
   String get dueDate => 'Hạn chót';
 
   @override

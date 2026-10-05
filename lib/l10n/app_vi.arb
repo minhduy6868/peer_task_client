@@ -319,6 +319,8 @@
   "taskCard": "Thẻ công việc",
   "untitled": "Chưa đặt tên",
   "overdue": "Quá hạn",
+  "yourWork": "Việc của bạn",
+  "nothingAssigned": "Chưa có việc nào được giao cho bạn trong workspace này.",
   "dueDate": "Hạn chót",
   "assignees": "Người thực hiện",
   "moreAssignees": "Còn {count} người",

@@ -319,6 +319,8 @@
   "taskCard": "Task Card",
   "untitled": "Untitled",
   "overdue": "Overdue",
+  "yourWork": "Your work",
+  "nothingAssigned": "Nothing is assigned to you in this workspace.",
   "dueDate": "Due date",
   "assignees": "Assignees",
   "moreAssignees": "{count} more",

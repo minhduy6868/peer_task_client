@@ -1652,6 +1652,18 @@ abstract class AppLocalizations {
   /// **'Overdue'**
   String get overdue;
 
+  /// No description provided for @yourWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Your work'**
+  String get yourWork;
+
+  /// No description provided for @nothingAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is assigned to you in this workspace.'**
+  String get nothingAssigned;
+
   /// No description provided for @dueDate.
   ///
   /// In en, this message translates to:
