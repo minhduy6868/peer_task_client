@@ -13,3 +13,4 @@ alwaysApply: false
 - User-visible strings: `AppLocalizations.of(context)!` + both ARB files.
 - Errors: `ApiError.userMessage` / `utils/error_display.dart`.
 - Destructive actions: `AppDialog.showConfirm(..., isDanger: true)`.
+- Dialog width is at most the screen minus 40. Pair fields stack below 480px. Long labels ellipsize. No dead buttons. A dialog pops once.
