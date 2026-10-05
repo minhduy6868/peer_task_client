@@ -465,6 +465,7 @@
   "deleteBoard": "Delete board",
   "deleteBoardConfirm": "Delete this board and its tasks? This cannot be undone.",
   "noMembersAvailable": "No members available",
+  "addLabel": "Add a label",
   "selectDate": "Select date",
   "inviteByEmail": "Invite by email"
 }

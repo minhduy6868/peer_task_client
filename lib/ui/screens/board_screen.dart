@@ -107,17 +107,38 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   Future<void> _loadMembers() async {
     try {
-      final members = await ref.read(apiServiceProvider).getBoardMembers(widget.boardId);
+      final api = ref.read(apiServiceProvider);
+      final board = await api.getBoard(widget.boardId);
+      List<Map<String, dynamic>> rows = [];
+      try {
+        rows = await api.getWorkspaceMembers(board.workspaceId);
+      } catch (e) {
+        debugPrint('Workspace members failed: $e');
+      }
+      if (rows.isEmpty) {
+        rows = await api.getBoardMembers(widget.boardId);
+      }
+      final seen = <String>{};
+      final members = <Map<String, dynamic>>[];
+      for (final member in rows) {
+        final id = (member['user_id'] ?? member['id'])?.toString();
+        if (id == null || id.isEmpty || !seen.add(id)) continue;
+        members.add({
+          'id': id,
+          'name': member['name'],
+          'email': member['email'],
+        });
+      }
+      final user = ref.read(authStateProvider).user;
+      if (user != null && seen.add(user.id)) {
+        members.insert(0, {
+          'id': user.id,
+          'name': user.name,
+          'email': user.email,
+        });
+      }
       if (!mounted) return;
-      setState(() {
-        _members = members
-            .map((member) => {
-                  'id': member['user_id'] ?? member['id'],
-                  'name': member['name'],
-                  'email': member['email'],
-                })
-            .toList();
-      });
+      setState(() => _members = members);
     } catch (e) {
       debugPrint('Board members failed: $e');
     }
@@ -170,6 +191,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     String status = 'todo',
     String? description,
     String priority = 'medium',
+    DateTime? deadline,
+    List<String>? assignees,
+    List<String>? labels,
+    double? estimatedHours,
   }) async {
     try {
       final response = await ref.read(apiServiceProvider).createTask(
@@ -178,10 +203,27 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             description: description,
             status: status,
             priority: priority,
+            deadline: deadline,
+            assignees: assignees,
+            labels: labels,
+            estimatedHours: estimatedHours,
           );
       ref.read(whiteboardProvider.notifier).createOperation(
         OperationType.createObject,
-        {'id': response['id'], 'type': 'task', 'data': response},
+        {
+          'id': response['id'],
+          'type': 'task',
+          'data': {
+            ...response,
+            'title': title,
+            'description': description,
+            'status': status,
+            'priority': priority,
+            'assignees': assignees ?? response['assignees'] ?? [],
+            'labels': labels ?? response['labels'] ?? [],
+            'deadline': deadline?.toIso8601String() ?? response['deadline'],
+          },
+        },
         shouldSaveBackend: false,
       );
     } catch (e) {
@@ -230,6 +272,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   Future<void> _openTask(Map<String, dynamic>? existing, {String status = 'todo'}) async {
+    if (_members.isEmpty) await _loadMembers();
     TaskModel? model;
     if (existing != null) {
       model = TaskModel(
@@ -255,6 +298,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         existingTask: model,
         initialStatus: status,
         boardMembers: _members,
+        onDelete: existing == null ? null : () => _deleteTask(existing['id'] as String),
         onSave: ({
           required String title,
           String? description,
@@ -271,6 +315,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               description: description,
               status: status,
               priority: priority,
+              deadline: deadline,
+              assignees: assignees,
+              labels: labels,
+              estimatedHours: estimatedHours,
             );
             return;
           }
@@ -490,6 +538,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             child: _page == _BoardPage.tasks
           ? _TrelloBoard(
               l10n: l10n,
+              members: _members,
               columns: [
                 _ColumnData('todo', l10n.todo, scene.tasks.where((t) => t['status'] == 'todo')),
                 _ColumnData('doing', l10n.doing, scene.tasks.where((t) => t['status'] == 'doing')),
@@ -500,7 +549,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               onOpen: (task) => _openTask(task),
               onAdd: (status) => _openTask(null, status: status),
               onMove: _moveTask,
-              onDelete: _deleteTask,
             )
           : _CanvaPage(
               l10n: l10n,
@@ -717,17 +765,18 @@ class _TrelloBoard extends StatelessWidget {
   final void Function(Map<String, dynamic> task) onOpen;
   final void Function(String status) onAdd;
   final void Function(String taskId, String status) onMove;
-  final void Function(String taskId) onDelete;
+
+  final List<Map<String, dynamic>> members;
 
   const _TrelloBoard({
     required this.l10n,
     required this.columns,
+    required this.members,
     required this.controllers,
     required this.onQuickAdd,
     required this.onOpen,
     required this.onAdd,
     required this.onMove,
-    required this.onDelete,
   });
 
   @override
@@ -786,11 +835,21 @@ class _TrelloBoard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              '${column.title}  ${column.tasks.length}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
+                              column.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              '${column.tasks.length}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                           ),
                           IconButton(
@@ -816,7 +875,7 @@ class _TrelloBoard extends StatelessWidget {
                                 feedback: Material(
                                   elevation: 6,
                                   borderRadius: BorderRadius.circular(8),
-                                  child: SizedBox(width: 260, child: _TaskCard(task: task)),
+                                  child: SizedBox(width: 260, child: _TaskCard(task: task, members: members)),
                                 ),
                                 childWhenDragging: const SizedBox(width: 28, height: 36),
                                 child: const Padding(
@@ -827,8 +886,8 @@ class _TrelloBoard extends StatelessWidget {
                               Expanded(
                                 child: _TaskCard(
                                   task: task,
+                                  members: members,
                                   onTap: () => onOpen(task),
-                                  onDelete: () => onDelete(id),
                                 ),
                               ),
                             ],
@@ -876,15 +935,24 @@ class _TrelloBoard extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final Map<String, dynamic> task;
+  final List<Map<String, dynamic>> members;
   final VoidCallback? onTap;
-  final VoidCallback? onDelete;
 
-  const _TaskCard({required this.task, this.onTap, this.onDelete});
+  const _TaskCard({required this.task, required this.members, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final priority = task['priority'] as String? ?? 'medium';
     final description = task['description'] as String?;
+    final labels = _stringList(task['labels']);
+    final assigneeIds = _stringList(task['assignees']);
+    final deadline = task['deadline'] == null ? null : DateTime.tryParse(task['deadline'].toString());
+    final overdue = deadline != null && deadline.isBefore(DateTime.now()) && task['status'] != 'done';
+    final names = [
+      for (final id in assigneeIds.take(3))
+        _memberName(id),
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -893,57 +961,100 @@ class _TaskCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-            child: Row(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(top: 6),
-                  decoration: BoxDecoration(
-                    color: _priorityColor(priority),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                if (labels.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
                     children: [
-                      Text(
-                        task['title'] as String? ?? 'Untitled',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (description != null && description.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
+                      for (final label in labels.take(3))
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySubtle,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Text(
-                            description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            label,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryDark),
                           ),
                         ),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                ],
+                Text(
+                  task['title'] as String? ?? l10n.untitled,
+                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                 ),
-                if (onDelete != null)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.close, size: 16),
+                if (description != null && description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    ),
                   ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.flag, size: 14, color: _priorityColor(priority)),
+                    if (deadline != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.schedule, size: 14, color: overdue ? AppColors.error : AppColors.textSecondary),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${deadline.day}/${deadline.month}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: overdue ? AppColors.error : AppColors.textSecondary),
+                      ),
+                    ],
+                    const Spacer(),
+                    for (var i = 0; i < names.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 4),
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: AppColors.primaryDark,
+                        child: Text(
+                          names[i].isEmpty ? '?' : names[i][0].toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  List<String> _stringList(dynamic value) {
+    if (value is List) return value.map((item) => item.toString()).where((item) => item.isNotEmpty).toList();
+    if (value is String && value.isNotEmpty) return [value];
+    return const [];
+  }
+
+  String _memberName(String id) {
+    for (final member in members) {
+      if (member['id']?.toString() == id) {
+        final name = member['name']?.toString();
+        if (name != null && name.isNotEmpty) return name;
+        return member['email']?.toString() ?? '';
+      }
+    }
+    return '';
   }
 
   Color _priorityColor(String priority) {

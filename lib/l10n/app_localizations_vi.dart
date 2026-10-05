@@ -1183,5 +1183,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get noMembersAvailable => 'Chưa có thành viên';
 
   @override
+  String get addLabel => 'Thêm nhãn';
+
+  @override
   String get selectDate => 'Chọn ngày';
 }

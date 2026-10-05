@@ -8,6 +8,7 @@ class TaskDialog extends StatefulWidget {
   final TaskModel? existingTask;
   final String initialStatus;
   final List<Map<String, dynamic>> boardMembers;
+  final VoidCallback? onDelete;
   final Function({
     required String title,
     String? description,
@@ -24,6 +25,7 @@ class TaskDialog extends StatefulWidget {
     this.existingTask,
     this.initialStatus = 'todo',
     required this.boardMembers,
+    this.onDelete,
     required this.onSave,
   });
 
@@ -102,26 +104,20 @@ class _TaskDialogState extends State<TaskDialog> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    isEdit ? Icons.edit_rounded : Icons.add_task_rounded,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    isEdit ? l10n.editTask : l10n.createTask,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      isEdit ? l10n.editTask : l10n.createTask,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.of(context).pop(),
@@ -136,157 +132,26 @@ class _TaskDialogState extends State<TaskDialog> {
                 padding: const EdgeInsets.all(20),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          labelText: l10n.title,
-                          hintText: l10n.taskTitle,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.title),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return l10n.taskTitleRequired;
-                          }
-                          return null;
-                        },
-                        autofocus: !isEdit,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Description
-                      TextFormField(
-                        controller: _descController,
-                        decoration: InputDecoration(
-                          labelText: l10n.description,
-                          hintText: l10n.boardDescriptionOptional,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.description_rounded),
-                        ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Priority and Status
-                      _sideBySide(
-                        DropdownButtonFormField<String>(
-                          value: _priority,
-                          decoration: InputDecoration(
-                            labelText: l10n.priority,
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.flag),
-                          ),
-                          items: [
-                            _buildPriorityItem('low', l10n.low, AppColors.success),
-                            _buildPriorityItem('medium', l10n.medium, AppColors.info),
-                            _buildPriorityItem('high', l10n.high, AppColors.warning),
-                            _buildPriorityItem('urgent', l10n.urgent, AppColors.error),
-                          ],
-                          onChanged: (value) {
-                            setState(() => _priority = value!);
-                          },
-                        ),
-                        DropdownButtonFormField<String>(
-                          value: _status,
-                          decoration: InputDecoration(
-                            labelText: l10n.status,
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.list),
-                          ),
-                          items: [
-                            DropdownMenuItem(value: 'todo', child: Text(l10n.todo)),
-                            DropdownMenuItem(value: 'doing', child: Text(l10n.inProgress)),
-                            DropdownMenuItem(value: 'done', child: Text(l10n.done)),
-                          ],
-                          onChanged: (value) {
-                            setState(() => _status = value!);
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Deadline and Hours
-                      _sideBySide(
-                        InkWell(
-                          onTap: _pickDeadline,
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: l10n.deadline,
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.calendar_today_rounded),
-                              suffixIcon: _deadline == null
-                                  ? null
-                                  : IconButton(
-                                      icon: const Icon(Icons.clear, size: 20),
-                                      onPressed: () => setState(() => _deadline = null),
-                                    ),
-                            ),
-                            child: Text(
-                              _deadline != null
-                                  ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
-                                  : l10n.selectDate,
-                              style: TextStyle(
-                                color: _deadline != null ? null : AppColors.textTertiary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        TextFormField(
-                          controller: _hoursController,
-                          decoration: InputDecoration(
-                            labelText: l10n.estimatedHours,
-                            hintText: '0',
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.timer),
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Assignees
-                      Text(
-                        l10n.assignees,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildAssigneeSelector(),
-                      const SizedBox(height: 16),
-
-                      // Labels
-                      Text(
-                        l10n.labels,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildLabelInput(),
-                      if (_labels.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _labels.map((label) {
-                            return Chip(
-                              label: Text(label),
-                              deleteIcon: const Icon(Icons.close_rounded, size: 16),
-                              onDeleted: () {
-                                setState(() => _labels.remove(label));
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stacked = constraints.maxWidth < 560;
+                      final story = _storyFields(l10n);
+                      final meta = _metaFields(l10n);
+                      if (stacked) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [story, const SizedBox(height: 16), meta],
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: story),
+                          const SizedBox(width: 20),
+                          SizedBox(width: 240, child: meta),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -300,9 +165,20 @@ class _TaskDialogState extends State<TaskDialog> {
                   top: BorderSide(color: Colors.grey[300]!),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
+                  if (isEdit && widget.onDelete != null)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        widget.onDelete!();
+                      },
+                      child: Text(l10n.delete, style: const TextStyle(color: AppColors.error)),
+                    ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(l10n.cancel),
@@ -325,28 +201,110 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  Widget _sideBySide(Widget left, Widget right) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 460) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _storyFields(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _titleController,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          decoration: InputDecoration(hintText: l10n.taskTitle),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) return l10n.taskTitleRequired;
+            return null;
+          },
+          autofocus: widget.existingTask == null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _descController,
+          decoration: InputDecoration(
+            hintText: l10n.description,
+            alignLabelWithHint: true,
+          ),
+          minLines: 4,
+          maxLines: 8,
+        ),
+        const SizedBox(height: 16),
+        Text(l10n.labels, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(height: 8),
+        _buildLabelInput(),
+        if (_labels.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              left,
-              const SizedBox(height: 16),
-              right,
+              for (final label in _labels)
+                Chip(
+                  label: Text(label),
+                  visualDensity: VisualDensity.compact,
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () => setState(() => _labels.remove(label)),
+                ),
             ],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: left),
-            const SizedBox(width: 16),
-            Expanded(child: right),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _metaFields(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _status,
+          decoration: InputDecoration(labelText: l10n.status),
+          items: [
+            DropdownMenuItem(value: 'todo', child: Text(l10n.todo)),
+            DropdownMenuItem(value: 'doing', child: Text(l10n.inProgress)),
+            DropdownMenuItem(value: 'done', child: Text(l10n.done)),
           ],
-        );
-      },
+          onChanged: (value) => setState(() => _status = value!),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _priority,
+          decoration: InputDecoration(labelText: l10n.priority),
+          items: [
+            _buildPriorityItem('low', l10n.low, AppColors.success),
+            _buildPriorityItem('medium', l10n.medium, AppColors.info),
+            _buildPriorityItem('high', l10n.high, AppColors.warning),
+            _buildPriorityItem('urgent', l10n.urgent, AppColors.error),
+          ],
+          onChanged: (value) => setState(() => _priority = value!),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _pickDeadline,
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.deadline,
+              suffixIcon: _deadline == null
+                  ? const Icon(Icons.calendar_today_outlined, size: 18)
+                  : IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() => _deadline = null),
+                    ),
+            ),
+            child: Text(
+              _deadline != null ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}' : l10n.selectDate,
+              style: TextStyle(color: _deadline != null ? AppColors.textPrimary : AppColors.textTertiary),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _hoursController,
+          decoration: InputDecoration(labelText: l10n.estimatedHours, hintText: '0'),
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 16),
+        Text(l10n.assignees, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(height: 8),
+        _buildAssigneeSelector(),
+      ],
     );
   }
 
@@ -375,51 +333,70 @@ class _TaskDialogState extends State<TaskDialog> {
   }
 
   Widget _buildAssigneeSelector() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: widget.boardMembers.isEmpty
-          ? Text(AppLocalizations.of(context)!.noMembersAvailable, style: const TextStyle(color: AppColors.textSecondary))
-          : Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.boardMembers.map((member) {
-                final userId = member['id'] as String;
-                final userName = member['name'] as String?;
-                final userEmail = member['email'] as String?;
-                // Hiển thị tên nếu có, không thì hiển thị email
-                final displayName = (userName != null && userName.isNotEmpty) 
-                    ? userName 
-                    : (userEmail ?? 'Unknown');
-                final isSelected = _selectedAssignees.contains(userId);
-
-                return FilterChip(
-                  selected: isSelected,
-                  label: Text(displayName),
-                  avatar: CircleAvatar(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey[400],
-                    child: Text(
-                      displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+    final l10n = AppLocalizations.of(context)!;
+    if (widget.boardMembers.isEmpty) {
+      return Text(l10n.noMembersAvailable, style: const TextStyle(color: AppColors.textSecondary));
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 180),
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: widget.boardMembers.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 4),
+        itemBuilder: (context, index) {
+          final member = widget.boardMembers[index];
+          final userId = (member['id'] ?? member['user_id'])?.toString() ?? '';
+          if (userId.isEmpty) return const SizedBox.shrink();
+          final userName = member['name']?.toString();
+          final userEmail = member['email']?.toString();
+          final displayName = (userName != null && userName.isNotEmpty) ? userName : (userEmail ?? '?');
+          final selected = _selectedAssignees.contains(userId);
+          return Material(
+            color: selected ? AppColors.primarySubtle : AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                setState(() {
+                  if (selected) {
+                    _selectedAssignees.remove(userId);
+                  } else {
+                    _selectedAssignees.add(userId);
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: AppColors.primaryDark,
+                      child: Text(
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                  ),
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedAssignees.add(userId);
-                      } else {
-                        _selectedAssignees.remove(userId);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    Icon(
+                      selected ? Icons.check_circle : Icons.circle_outlined,
+                      size: 18,
+                      color: selected ? AppColors.primaryDark : AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
             ),
+          );
+        },
+      ),
     );
   }
 
@@ -429,8 +406,8 @@ class _TaskDialogState extends State<TaskDialog> {
         Expanded(
           child: TextField(
             controller: _labelController,
-            decoration: const InputDecoration(
-              hintText: 'Add a label',
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.addLabel,
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.label_rounded),
             ),
@@ -460,7 +437,7 @@ class _TaskDialogState extends State<TaskDialog> {
     final date = await showDatePicker(
       context: context,
       initialDate: _deadline ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date != null) {

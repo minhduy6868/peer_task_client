@@ -1189,5 +1189,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMembersAvailable => 'No members available';
 
   @override
+  String get addLabel => 'Add a label';
+
+  @override
   String get selectDate => 'Select date';
 }

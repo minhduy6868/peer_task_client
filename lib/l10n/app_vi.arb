@@ -465,6 +465,7 @@
   "deleteBoard": "Xóa bảng",
   "deleteBoardConfirm": "Xóa bảng này và các công việc? Không thể hoàn tác.",
   "noMembersAvailable": "Chưa có thành viên",
+  "addLabel": "Thêm nhãn",
   "selectDate": "Chọn ngày",
   "inviteByEmail": "Mời bằng email"
 }

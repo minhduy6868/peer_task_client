@@ -2360,6 +2360,12 @@ abstract class AppLocalizations {
   /// **'No members available'**
   String get noMembersAvailable;
 
+  /// No description provided for @addLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a label'**
+  String get addLabel;
+
   /// No description provided for @selectDate.
   ///
   /// In en, this message translates to:
