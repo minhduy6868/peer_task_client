@@ -429,6 +429,9 @@
   "textSize": "Text size",
   "width": "Width",
   "you": "You",
+  "addPage": "Add page",
+  "pageLabel": "Page",
+  "speaking": "Speaking",
   "toolHintPen": "Draw on the canvas",
   "toolHintEraser": "Erase strokes",
   "toolHintText": "Tap the canvas to add text"

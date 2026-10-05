@@ -2144,6 +2144,24 @@ abstract class AppLocalizations {
   /// **'You'**
   String get you;
 
+  /// No description provided for @addPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add page'**
+  String get addPage;
+
+  /// No description provided for @pageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page'**
+  String get pageLabel;
+
+  /// No description provided for @speaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking'**
+  String get speaking;
+
   /// No description provided for @toolHintPen.
   ///
   /// In en, this message translates to:

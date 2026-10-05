@@ -13,6 +13,7 @@ _$PeerImpl _$$PeerImplFromJson(Map<String, dynamic> json) => _$PeerImpl(
   userName: json['userName'] as String?,
   avatar: json['avatar'] as String?,
   isMuted: json['isMuted'] as bool? ?? false,
+  isSpeaking: json['isSpeaking'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$$PeerImplToJson(_$PeerImpl instance) =>
@@ -23,4 +24,5 @@ Map<String, dynamic> _$$PeerImplToJson(_$PeerImpl instance) =>
       'userName': instance.userName,
       'avatar': instance.avatar,
       'isMuted': instance.isMuted,
+      'isSpeaking': instance.isSpeaking,
     };

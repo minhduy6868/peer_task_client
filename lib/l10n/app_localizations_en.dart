@@ -1074,6 +1074,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get you => 'You';
 
   @override
+  String get addPage => 'Add page';
+
+  @override
+  String get pageLabel => 'Page';
+
+  @override
+  String get speaking => 'Speaking';
+
+  @override
   String get toolHintPen => 'Draw on the canvas';
 
   @override

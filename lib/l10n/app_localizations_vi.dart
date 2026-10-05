@@ -1068,6 +1068,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get you => 'Bạn';
 
   @override
+  String get addPage => 'Thêm trang';
+
+  @override
+  String get pageLabel => 'Trang';
+
+  @override
+  String get speaking => 'Đang nói';
+
+  @override
   String get toolHintPen => 'Vẽ trên canvas';
 
   @override

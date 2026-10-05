@@ -294,6 +294,7 @@ class WhiteboardState {
   final List<WhiteboardObject> objects;
   final List<TaskNode> taskNodes;
   final List<Peer> peers;
+  final bool localSpeaking;
   final bool isConnected;
   final double zoom;
   final Offset pan;
@@ -305,6 +306,7 @@ class WhiteboardState {
     this.objects = const [],
     this.taskNodes = const [],
     this.peers = const [],
+    this.localSpeaking = false,
     this.isConnected = false,
     this.zoom = 1.0,
     this.pan = Offset.zero,
@@ -317,6 +319,7 @@ class WhiteboardState {
     List<WhiteboardObject>? objects,
     List<TaskNode>? taskNodes,
     List<Peer>? peers,
+    bool? localSpeaking,
     bool? isConnected,
     double? zoom,
     Offset? pan,
@@ -329,6 +332,7 @@ class WhiteboardState {
       objects: objects ?? this.objects,
       taskNodes: taskNodes ?? this.taskNodes,
       peers: peers ?? this.peers,
+      localSpeaking: localSpeaking ?? this.localSpeaking,
       isConnected: isConnected ?? this.isConnected,
       zoom: zoom ?? this.zoom,
       pan: pan ?? this.pan,
@@ -493,6 +497,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     // Initialize WebRTC
     _webrtc = WebRTCService(
       userId: authState.user!.id,
+      onLocalSpeaking: updateSpeaking,
       onOperationReceived: (peerId, operation) {
         debugPrint(
           '📥 Received operation from $peerId: ${operation.type.name}',
@@ -609,7 +614,19 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         // Update peer state
         final updatedPeers = state.peers.map((peer) {
           if (peer.socketId == socketId) {
-            return peer.copyWith(isMuted: isMuted);
+            return peer.copyWith(
+              isMuted: isMuted,
+              isSpeaking: isMuted ? false : peer.isSpeaking,
+            );
+          }
+          return peer;
+        }).toList();
+        state = state.copyWith(peers: updatedPeers);
+      },
+      onPeerSpeaking: (socketId, speaking) {
+        final updatedPeers = state.peers.map((peer) {
+          if (peer.socketId == socketId) {
+            return peer.copyWith(isSpeaking: speaking && !peer.isMuted);
           }
           return peer;
         }).toList();
@@ -922,6 +939,13 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   void updateMicStatus(bool isMuted) {
     debugPrint('🎤 Updating my mic status: ${isMuted ? 'muted' : 'unmuted'}');
     _signaling?.updateMicStatus(isMuted);
+    if (isMuted) updateSpeaking(false);
+  }
+
+  void updateSpeaking(bool speaking) {
+    if (state.localSpeaking == speaking) return;
+    state = state.copyWith(localSpeaking: speaking);
+    _signaling?.updateSpeaking(speaking);
   }
 
   void disconnect() {
@@ -934,6 +958,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     }
     _signaling?.disconnect();
     _webrtc?.closeAllConnections();
+    state = state.copyWith(localSpeaking: false, peers: []);
     remoteAudio.clear();
     _syncEngine = null;
     _signaling = null;

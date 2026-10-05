@@ -12,6 +12,7 @@ class Peer with _$Peer {
     String? userName,  // Tên hiển thị thật của người dùng
     String? avatar,    // URL avatar
     @Default(false) bool isMuted,  // Trạng thái mic
+    @Default(false) bool isSpeaking,
   }) = _Peer;
 
   factory Peer.fromJson(Map<String, dynamic> json) => _$PeerFromJson(json);

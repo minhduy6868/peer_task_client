@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../models/operation/operation.dart';
@@ -43,6 +45,7 @@ class WebRTCService {
   final Function(String peerId)? onPeerConnected;
   final Function(String peerId)? onPeerDisconnected;
   final Function(String peerId, MediaStream stream)? onRemoteAudioStream;
+  final void Function(bool speaking)? onLocalSpeaking;
   final RemoteAudioOutput? audioOutput;
 
   final Map<String, RTCPeerConnection> _peerConnections = {};
@@ -56,6 +59,12 @@ class WebRTCService {
   MediaStream? _localAudioStream;
   final Map<String, MediaStream> _remoteAudioStreams = {};
   bool _isAudioEnabled = false;
+  Timer? _levelTimer;
+  int _levelEpoch = 0;
+  RTCPeerConnection? _meterPc;
+  bool _speaking = false;
+  DateTime? _quietSince;
+  double? _lastEnergy;
 
   WebRTCService({
     required this.userId,
@@ -63,6 +72,7 @@ class WebRTCService {
     this.onPeerConnected,
     this.onPeerDisconnected,
     this.onRemoteAudioStream,
+    this.onLocalSpeaking,
     this.audioOutput,
   });
 
@@ -512,6 +522,7 @@ class WebRTCService {
   }
 
   void closeAllConnections() {
+    _stopLevelWatch();
     for (final peerId in _peerConnections.keys.toList()) {
       closePeerConnection(peerId);
     }
@@ -557,6 +568,8 @@ class WebRTCService {
       }
 
       _isAudioEnabled = true;
+      await _attachMeter();
+      _watchLevel();
       debugPrint('🎤 Audio streaming started successfully');
       return true;
     } catch (e) {
@@ -569,6 +582,7 @@ class WebRTCService {
   Future<void> stopAudioStream() async {
     try {
       debugPrint('🔇 Stopping audio stream...');
+      _stopLevelWatch();
 
       if (_localAudioStream != null) {
         // Stop all audio tracks
@@ -639,6 +653,96 @@ class WebRTCService {
       debugPrint('❌ Failed to renegotiate with $peerId: $e');
       _makingOffer[peerId] = false;
     }
+  }
+
+  Future<void> _attachMeter() async {
+    await _meterPc?.close();
+    _meterPc = null;
+    if (_localAudioStream == null) return;
+    final pc = await createPeerConnection({'iceServers': []});
+    for (final track in _localAudioStream!.getAudioTracks()) {
+      await pc.addTrack(track, _localAudioStream!);
+    }
+    _meterPc = pc;
+  }
+
+  void _watchLevel() {
+    final epoch = ++_levelEpoch;
+    _levelTimer?.cancel();
+    _quietSince = null;
+    _lastEnergy = null;
+    _levelTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      unawaited(_sampleLevel(epoch));
+    });
+  }
+
+  void _stopLevelWatch() {
+    _levelEpoch++;
+    _levelTimer?.cancel();
+    _levelTimer = null;
+    _quietSince = null;
+    _lastEnergy = null;
+    _emitSpeaking(false, force: true);
+    final meter = _meterPc;
+    _meterPc = null;
+    meter?.close();
+  }
+
+  Future<void> _sampleLevel(int epoch) async {
+    if (epoch != _levelEpoch || !_isAudioEnabled) return;
+    try {
+      final pc = _peerConnections.values.isNotEmpty
+          ? _peerConnections.values.first
+          : _meterPc;
+      if (pc == null || epoch != _levelEpoch) return;
+      final level = _levelFrom(await pc.getStats());
+      if (epoch != _levelEpoch) return;
+      _emitSpeaking(level > 0.02);
+    } catch (e) {
+      debugPrint('Mic level sample failed: $e');
+    }
+  }
+
+  double _levelFrom(List<StatsReport> stats) {
+    var level = 0.0;
+    double? energy;
+    for (final report in stats) {
+      final audioLevel = report.values['audioLevel'];
+      if (audioLevel is num) {
+        level = math.max(level, audioLevel.toDouble());
+      }
+      final total = report.values['totalAudioEnergy'];
+      if (total is num) energy = total.toDouble();
+    }
+    if (level == 0 && energy != null && _lastEnergy != null) {
+      if (energy - _lastEnergy! > 0.001) level = 0.05;
+    }
+    if (energy != null) _lastEnergy = energy;
+    return level;
+  }
+
+  void _emitSpeaking(bool hot, {bool force = false}) {
+    if (hot) {
+      _quietSince = null;
+      if (_speaking && !force) return;
+      _speaking = true;
+      onLocalSpeaking?.call(true);
+      return;
+    }
+    if (force) {
+      _quietSince = null;
+      if (!_speaking) return;
+      _speaking = false;
+      onLocalSpeaking?.call(false);
+      return;
+    }
+    _quietSince ??= DateTime.now();
+    if (!_speaking) return;
+    if (DateTime.now().difference(_quietSince!) < const Duration(milliseconds: 300)) {
+      return;
+    }
+    _speaking = false;
+    onLocalSpeaking?.call(false);
   }
 
   /// Get remote audio stream for a specific peer

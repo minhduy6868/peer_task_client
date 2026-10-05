@@ -27,7 +27,8 @@ mixin _$Peer {
   String? get userName =>
       throw _privateConstructorUsedError; // Tên hiển thị thật của người dùng
   String? get avatar => throw _privateConstructorUsedError; // URL avatar
-  bool get isMuted => throw _privateConstructorUsedError;
+  bool get isMuted => throw _privateConstructorUsedError; // Trạng thái mic
+  bool get isSpeaking => throw _privateConstructorUsedError;
 
   /// Serializes this Peer to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -50,6 +51,7 @@ abstract class $PeerCopyWith<$Res> {
     String? userName,
     String? avatar,
     bool isMuted,
+    bool isSpeaking,
   });
 }
 
@@ -74,6 +76,7 @@ class _$PeerCopyWithImpl<$Res, $Val extends Peer>
     Object? userName = freezed,
     Object? avatar = freezed,
     Object? isMuted = null,
+    Object? isSpeaking = null,
   }) {
     return _then(
       _value.copyWith(
@@ -101,6 +104,10 @@ class _$PeerCopyWithImpl<$Res, $Val extends Peer>
                 ? _value.isMuted
                 : isMuted // ignore: cast_nullable_to_non_nullable
                       as bool,
+            isSpeaking: null == isSpeaking
+                ? _value.isSpeaking
+                : isSpeaking // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -122,6 +129,7 @@ abstract class _$$PeerImplCopyWith<$Res> implements $PeerCopyWith<$Res> {
     String? userName,
     String? avatar,
     bool isMuted,
+    bool isSpeaking,
   });
 }
 
@@ -143,6 +151,7 @@ class __$$PeerImplCopyWithImpl<$Res>
     Object? userName = freezed,
     Object? avatar = freezed,
     Object? isMuted = null,
+    Object? isSpeaking = null,
   }) {
     return _then(
       _$PeerImpl(
@@ -170,6 +179,10 @@ class __$$PeerImplCopyWithImpl<$Res>
             ? _value.isMuted
             : isMuted // ignore: cast_nullable_to_non_nullable
                   as bool,
+        isSpeaking: null == isSpeaking
+            ? _value.isSpeaking
+            : isSpeaking // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -185,6 +198,7 @@ class _$PeerImpl implements _Peer {
     this.userName,
     this.avatar,
     this.isMuted = false,
+    this.isSpeaking = false,
   });
 
   factory _$PeerImpl.fromJson(Map<String, dynamic> json) =>
@@ -206,10 +220,14 @@ class _$PeerImpl implements _Peer {
   @override
   @JsonKey()
   final bool isMuted;
+  // Trạng thái mic
+  @override
+  @JsonKey()
+  final bool isSpeaking;
 
   @override
   String toString() {
-    return 'Peer(socketId: $socketId, userId: $userId, connected: $connected, userName: $userName, avatar: $avatar, isMuted: $isMuted)';
+    return 'Peer(socketId: $socketId, userId: $userId, connected: $connected, userName: $userName, avatar: $avatar, isMuted: $isMuted, isSpeaking: $isSpeaking)';
   }
 
   @override
@@ -225,7 +243,9 @@ class _$PeerImpl implements _Peer {
             (identical(other.userName, userName) ||
                 other.userName == userName) &&
             (identical(other.avatar, avatar) || other.avatar == avatar) &&
-            (identical(other.isMuted, isMuted) || other.isMuted == isMuted));
+            (identical(other.isMuted, isMuted) || other.isMuted == isMuted) &&
+            (identical(other.isSpeaking, isSpeaking) ||
+                other.isSpeaking == isSpeaking));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -238,6 +258,7 @@ class _$PeerImpl implements _Peer {
     userName,
     avatar,
     isMuted,
+    isSpeaking,
   );
 
   /// Create a copy of Peer
@@ -262,6 +283,7 @@ abstract class _Peer implements Peer {
     final String? userName,
     final String? avatar,
     final bool isMuted,
+    final bool isSpeaking,
   }) = _$PeerImpl;
 
   factory _Peer.fromJson(Map<String, dynamic> json) = _$PeerImpl.fromJson;
@@ -277,7 +299,9 @@ abstract class _Peer implements Peer {
   @override
   String? get avatar; // URL avatar
   @override
-  bool get isMuted;
+  bool get isMuted; // Trạng thái mic
+  @override
+  bool get isSpeaking;
 
   /// Create a copy of Peer
   /// with the given fields replaced by the non-null parameter values.

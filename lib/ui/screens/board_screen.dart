@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/operation/operation.dart';
+import '../../models/peer/peer.dart';
 import '../../models/task_model.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
@@ -36,6 +37,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   double _width = 3;
   final double _textSize = 20;
   bool _voice = false;
+  String _canvasPageId = 'default';
 
   final _textController = TextEditingController();
   final Map<String, TextEditingController> _quickAdd = {
@@ -349,6 +351,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       'actor': ref.read(authStateProvider).user?.id ?? 'unknown',
       'actorName': _displayName(),
       'isEraser': eraser,
+      'pageId': _activePageId(),
     };
   }
 
@@ -383,6 +386,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           'color': _color.toARGB32(),
           'fontSize': _textSize,
           'actorName': _displayName(),
+          'pageId': _activePageId(),
         },
       },
       shouldSaveBackend: true,
@@ -429,6 +433,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final board = ref.watch(currentBoardProvider).value;
     final scene = _scene(state.operations);
     final title = board?.name.isNotEmpty == true ? board!.name : l10n.boards;
+    final user = ref.watch(authStateProvider).user;
+    final selfName = user?.name?.isNotEmpty == true ? user!.name! : (user?.email ?? l10n.you);
+    final pageId = _activePageId(scene);
+    final canvasPages = scene.pages.isEmpty
+        ? [
+            {'id': 'default', 'name': '${l10n.pageLabel} 1', 'index': 0},
+          ]
+        : scene.pages;
+    final pageIndex = canvasPages.indexWhere((page) => page['id'] == pageId);
 
     return Scaffold(
       backgroundColor: _page == _BoardPage.tasks
@@ -450,6 +463,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onCanvas: () => setState(() => _page = _BoardPage.canvas),
           ),
           IconButton(
+            tooltip: l10n.members,
+            onPressed: () => _showMembers(l10n, selfName),
+            icon: const Icon(Icons.group_outlined),
+          ),
+          IconButton(
             tooltip: _voice ? 'Mute' : 'Call',
             onPressed: _toggleVoice,
             icon: Icon(_voice ? Icons.mic_rounded : Icons.mic_off_rounded),
@@ -457,7 +475,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _page == _BoardPage.tasks
+      body: Column(
+        children: [
+          _PresenceBar(
+            selfName: selfName,
+            selfMuted: !_voice,
+            selfSpeaking: _voice && state.localSpeaking,
+            peers: state.peers,
+            youLabel: l10n.you,
+            onName: (name) => AppToast.show(context, message: name),
+          ),
+          Expanded(
+            child: _page == _BoardPage.tasks
           ? _TrelloBoard(
               l10n: l10n,
               columns: [
@@ -477,8 +506,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               tool: _tool,
               color: _color,
               width: _width,
-              strokes: scene.strokes,
-              texts: scene.texts,
+              strokes: scene.strokes.where((item) => _onPage(item, pageId, scene.pages)).toList(),
+              texts: scene.texts.where((item) => _onPage(item, pageId, scene.pages)).toList(),
+              pageLabel: canvasPages[pageIndex < 0 ? 0 : pageIndex]['name'] as String? ?? l10n.pageLabel,
+              canPrevious: pageIndex > 0,
+              canNext: pageIndex >= 0 && pageIndex < canvasPages.length - 1,
+              onPrevious: () => _shiftCanvasPage(-1),
+              onNext: () => _shiftCanvasPage(1),
+              onAddPage: () => _addCanvasPage(l10n),
               onTool: (tool) => setState(() => _tool = tool),
               onColor: (color) => setState(() => _color = color),
               onWidth: (value) => setState(() => _width = value),
@@ -489,6 +524,77 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                 if (_tool == _DrawTool.text) _addText(point);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _activePageId([_Scene? scene]) {
+    final pages = (scene ?? _scene(ref.read(whiteboardProvider).operations)).pages;
+    if (pages.isEmpty) return 'default';
+    if (pages.any((page) => page['id'] == _canvasPageId)) return _canvasPageId;
+    return pages.first['id'] as String? ?? 'default';
+  }
+
+  bool _onPage(Map<String, dynamic> item, String pageId, List<Map<String, dynamic>> pages) {
+    final first = pages.isEmpty ? 'default' : pages.first['id'] as String? ?? 'default';
+    final id = item['pageId'] as String?;
+    if (id == null || id.isEmpty) return pageId == first;
+    return id == pageId;
+  }
+
+  void _shiftCanvasPage(int delta) {
+    final scene = _scene(ref.read(whiteboardProvider).operations);
+    final pages = scene.pages.isEmpty
+        ? <Map<String, dynamic>>[
+            {'id': 'default'},
+          ]
+        : scene.pages;
+    final ids = pages.map((page) => page['id'] as String).toList();
+    final current = ids.contains(_canvasPageId) ? _canvasPageId : ids.first;
+    final next = ids.indexOf(current) + delta;
+    if (next < 0 || next >= ids.length) return;
+    setState(() => _canvasPageId = ids[next]);
+  }
+
+  void _addCanvasPage(AppLocalizations l10n) {
+    final notifier = ref.read(whiteboardProvider.notifier);
+    final scene = _scene(ref.read(whiteboardProvider).operations);
+    var count = scene.pages.length;
+    if (count == 0) {
+      notifier.createOperation(OperationType.createObject, {
+        'id': 'default',
+        'type': 'page',
+        'data': {'name': '${l10n.pageLabel} 1', 'index': 0},
+      });
+      count = 1;
+    }
+    final id = 'page-${DateTime.now().millisecondsSinceEpoch}';
+    notifier.createOperation(OperationType.createObject, {
+      'id': id,
+      'type': 'page',
+      'data': {'name': '${l10n.pageLabel} ${count + 1}', 'index': count},
+    });
+    setState(() => _canvasPageId = id);
+  }
+
+  void _showMembers(AppLocalizations l10n, String selfName) {
+    final user = ref.read(authStateProvider).user;
+    final peers = ref.read(whiteboardProvider).peers;
+    final speaking = ref.read(whiteboardProvider).localSpeaking;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => _MemberSheet(
+        l10n: l10n,
+        members: _members,
+        peers: peers,
+        selfId: user?.id,
+        selfName: selfName,
+        selfMuted: !_voice,
+        selfSpeaking: _voice && speaking,
+      ),
     );
   }
 
@@ -496,6 +602,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final strokes = <Map<String, dynamic>>[];
     final texts = <Map<String, dynamic>>[];
     final tasks = <Map<String, dynamic>>[];
+    final pages = <Map<String, dynamic>>[];
     for (final op in operations) {
       final id = op.payload['id'] as String?;
       final type = op.payload['type'] as String?;
@@ -504,6 +611,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         strokes.removeWhere((item) => item['id'] == id);
         texts.removeWhere((item) => item['id'] == id);
         tasks.removeWhere((item) => item['id'] == id);
+        pages.removeWhere((item) => item['id'] == id);
         continue;
       }
       final data = {'id': id, ...Map<String, dynamic>.from(op.payload['data'] ?? {})};
@@ -516,9 +624,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       } else if (type == 'task') {
         tasks.removeWhere((item) => item['id'] == id);
         tasks.add(data);
+      } else if (type == 'page') {
+        pages.removeWhere((item) => item['id'] == id);
+        pages.add(data);
       }
     }
-    return _Scene(strokes, texts, tasks);
+    pages.sort((a, b) => ((a['index'] as num?) ?? 0).compareTo((b['index'] as num?) ?? 0));
+    return _Scene(strokes, texts, tasks, pages);
   }
 }
 
@@ -526,7 +638,8 @@ class _Scene {
   final List<Map<String, dynamic>> strokes;
   final List<Map<String, dynamic>> texts;
   final List<Map<String, dynamic>> tasks;
-  const _Scene(this.strokes, this.texts, this.tasks);
+  final List<Map<String, dynamic>> pages;
+  const _Scene(this.strokes, this.texts, this.tasks, this.pages);
 }
 
 class _ColumnData {
@@ -818,6 +931,12 @@ class _CanvaPage extends StatelessWidget {
   final double width;
   final List<Map<String, dynamic>> strokes;
   final List<Map<String, dynamic>> texts;
+  final String pageLabel;
+  final bool canPrevious;
+  final bool canNext;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onAddPage;
   final ValueChanged<_DrawTool> onTool;
   final ValueChanged<Color> onColor;
   final ValueChanged<double> onWidth;
@@ -833,6 +952,12 @@ class _CanvaPage extends StatelessWidget {
     required this.width,
     required this.strokes,
     required this.texts,
+    required this.pageLabel,
+    required this.canPrevious,
+    required this.canNext,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onAddPage,
     required this.onTool,
     required this.onColor,
     required this.onWidth,
@@ -900,7 +1025,10 @@ class _CanvaPage extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: InteractiveViewer(
+          child: Column(
+            children: [
+              Expanded(
+                child: InteractiveViewer(
             minScale: 0.4,
             maxScale: 3,
             panEnabled: tool == _DrawTool.hand,
@@ -932,8 +1060,46 @@ class _CanvaPage extends StatelessWidget {
               ),
             ),
           ),
+              ),
+              _pageBar(),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _pageBar() {
+    return Material(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: pageLabel,
+              onPressed: canPrevious ? onPrevious : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Expanded(
+              child: Text(
+                pageLabel,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            IconButton(
+              onPressed: canNext ? onNext : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+            TextButton.icon(
+              onPressed: onAddPage,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addPage),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -996,6 +1162,254 @@ class _StrokePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _StrokePainter oldDelegate) => true;
+}
+
+class _PresenceBar extends StatelessWidget {
+  final String selfName;
+  final bool selfMuted;
+  final bool selfSpeaking;
+  final List<Peer> peers;
+  final String youLabel;
+  final ValueChanged<String> onName;
+
+  const _PresenceBar({
+    required this.selfName,
+    required this.selfMuted,
+    required this.selfSpeaking,
+    required this.peers,
+    required this.youLabel,
+    required this.onName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: SizedBox(
+        height: 72,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [
+            _PresenceAvatar(
+              name: selfName,
+              label: youLabel,
+              muted: selfMuted,
+              speaking: selfSpeaking,
+              online: true,
+              onTap: () => onName(selfName),
+            ),
+            for (final peer in peers)
+              _PresenceAvatar(
+                name: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+                muted: peer.isMuted,
+                speaking: peer.isSpeaking && !peer.isMuted,
+                online: peer.connected,
+                onTap: () => onName(
+                  peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PresenceAvatar extends StatelessWidget {
+  final String name;
+  final String? label;
+  final bool muted;
+  final bool speaking;
+  final bool online;
+  final VoidCallback onTap;
+
+  const _PresenceAvatar({
+    required this.name,
+    this.label,
+    required this.muted,
+    required this.speaking,
+    required this.online,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 56,
+          child: Column(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: speaking ? AppColors.primary : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color(0xFFD6E4FF),
+                      child: Text(initial, style: const TextStyle(fontSize: 13)),
+                    ),
+                  ),
+                  Positioned(
+                    right: -1,
+                    bottom: -1,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: online ? AppColors.success : Colors.grey,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: -2,
+                    bottom: -2,
+                    child: Icon(
+                      muted ? Icons.mic_off : Icons.mic,
+                      size: 12,
+                      color: muted ? AppColors.error : AppColors.success,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label ?? name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberSheet extends StatelessWidget {
+  final AppLocalizations l10n;
+  final List<Map<String, dynamic>> members;
+  final List<Peer> peers;
+  final String? selfId;
+  final String selfName;
+  final bool selfMuted;
+  final bool selfSpeaking;
+
+  const _MemberSheet({
+    required this.l10n,
+    required this.members,
+    required this.peers,
+    required this.selfId,
+    required this.selfName,
+    required this.selfMuted,
+    required this.selfSpeaking,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <_MemberRow>[];
+    final seen = <String>{};
+    if (selfId != null) {
+      seen.add(selfId!);
+      rows.add(_MemberRow(selfName, true, selfMuted, selfSpeaking, true));
+    }
+    for (final member in members) {
+      final id = member['id']?.toString();
+      if (id == null || seen.contains(id)) continue;
+      seen.add(id);
+      final peer = _peer(id);
+      final online = peer != null;
+      rows.add(_MemberRow(
+        member['name']?.toString().isNotEmpty == true
+            ? member['name'].toString()
+            : (member['email']?.toString() ?? id),
+        online,
+        peer?.isMuted ?? true,
+        (peer?.isSpeaking ?? false) && peer?.isMuted == false,
+        false,
+      ));
+    }
+    for (final peer in peers) {
+      if (seen.contains(peer.userId)) continue;
+      rows.add(_MemberRow(
+        peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+        true,
+        peer.isMuted,
+        peer.isSpeaking && !peer.isMuted,
+        false,
+      ));
+    }
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(l10n.members, style: Theme.of(context).textTheme.titleMedium),
+            ),
+          ),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: rows.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final row = rows[index];
+                final status = row.speaking
+                    ? l10n.speaking
+                    : (row.online ? l10n.online : l10n.offline);
+                return ListTile(
+                  leading: Icon(
+                    row.online ? (row.muted ? Icons.mic_off : Icons.mic) : Icons.person_outline,
+                    color: row.speaking
+                        ? AppColors.primary
+                        : (row.online ? AppColors.success : Colors.grey),
+                  ),
+                  title: Text(row.you ? '${row.name} (${l10n.you})' : row.name),
+                  subtitle: Text(status),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Peer? _peer(String id) {
+    for (final peer in peers) {
+      if (peer.userId == id) return peer;
+    }
+    return null;
+  }
+}
+
+class _MemberRow {
+  final String name;
+  final bool online;
+  final bool muted;
+  final bool speaking;
+  final bool you;
+  const _MemberRow(this.name, this.online, this.muted, this.speaking, this.you);
 }
 
 class _RemoteAudioMount extends ConsumerWidget {

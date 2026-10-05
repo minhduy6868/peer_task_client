@@ -9,6 +9,7 @@ class SignalingService {
   final Function(Peer peer)? onPeerLeft;
   final Function(String peerId, Map<String, dynamic> signal)? onSignal;
   final Function(String socketId, bool isMuted)? onPeerMicUpdated;
+  final Function(String socketId, bool speaking)? onPeerSpeaking;
   final Function(Map<String, dynamic> operation)? onBoardOperation;
   final Function()? onDisconnected;
   final Function()? onReconnected;
@@ -24,6 +25,7 @@ class SignalingService {
     this.onPeerLeft,
     this.onSignal,
     this.onPeerMicUpdated,
+    this.onPeerSpeaking,
     this.onBoardOperation,
     this.onDisconnected,
     this.onReconnected,
@@ -87,6 +89,12 @@ class SignalingService {
       onPeerMicUpdated?.call(socketId, isMuted);
     });
 
+    _socket!.on('peer_speaking', (data) {
+      final socketId = data['socketId'] as String;
+      final speaking = data['speaking'] == true;
+      onPeerSpeaking?.call(socketId, speaking);
+    });
+
     _socket!.onDisconnect((_) {
       debugPrint('❌ Disconnected from signaling server');
       _isConnected = false;
@@ -133,6 +141,11 @@ class SignalingService {
   void updateMicStatus(bool isMuted) {
     if (!_isConnected) return;
     _socket?.emit('update_mic_status', {'isMuted': isMuted});
+  }
+
+  void updateSpeaking(bool speaking) {
+    if (!_isConnected) return;
+    _socket?.emit('speaking', {'speaking': speaking});
   }
 
   void disconnect() {

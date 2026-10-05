@@ -429,6 +429,9 @@
   "textSize": "Cỡ chữ",
   "width": "Nét",
   "you": "Bạn",
+  "addPage": "Thêm trang",
+  "pageLabel": "Trang",
+  "speaking": "Đang nói",
   "toolHintPen": "Vẽ trên canvas",
   "toolHintEraser": "Tẩy nét vẽ",
   "toolHintText": "Chạm canvas để thêm chữ"
