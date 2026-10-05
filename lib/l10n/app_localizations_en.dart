@@ -238,6 +238,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myBoards => 'My Boards';
 
   @override
+  String get searchBoards => 'Search boards';
+
+  @override
   String get newBoard => 'New Board';
 
   @override

@@ -110,6 +110,7 @@
   "boardName": "Tên bảng",
   "boardDescription": "Mô tả bảng",
   "myBoards": "Bảng của tôi",
+  "searchBoards": "Tìm bảng",
   "newBoard": "Bảng mới",
   "createNewBoard": "Tạo bảng mới",
   "enterBoardName": "Nhập tên sáng tạo...",

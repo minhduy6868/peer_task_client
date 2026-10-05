@@ -110,6 +110,7 @@
   "boardName": "Board Name",
   "boardDescription": "Board Description",
   "myBoards": "My Boards",
+  "searchBoards": "Search boards",
   "newBoard": "New Board",
   "createNewBoard": "Create New Board",
   "enterBoardName": "Enter a creative name...",

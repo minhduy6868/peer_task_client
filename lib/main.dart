@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,11 +48,24 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  GoRouter? _router;
+
+  @override
+  void dispose() {
+    _router?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final locale = ref.watch(languageProvider);
 
@@ -77,8 +91,9 @@ class MyApp extends ConsumerWidget {
       );
     }
 
-    final router = GoRouter(
+    _router ??= GoRouter(
       initialLocation: _getInitialLocation(ref),
+      overridePlatformDefaultLocation: _browserLocation() != null,
       refreshListenable: _AuthStateNotifier(ref),
       redirect: (context, state) {
         final isAuthenticated = authState.isAuthenticated;
@@ -194,11 +209,20 @@ class MyApp extends ConsumerWidget {
         Locale('en'),
         Locale('vi'),
       ],
-      routerConfig: router,
+      routerConfig: _router!,
     );
   }
 
+  String? _browserLocation() {
+    if (!kIsWeb) return null;
+    final fragment = Uri.base.fragment;
+    if (fragment.isEmpty || fragment == '/') return null;
+    return fragment.startsWith('/') ? fragment : '/$fragment';
+  }
+
   String _getInitialLocation(WidgetRef ref) {
+    final browser = _browserLocation();
+    if (browser != null) return browser;
     final authState = ref.read(authStateProvider);
     if (authState.isAuthenticated) {
       final storage = ref.read(storageServiceProvider);

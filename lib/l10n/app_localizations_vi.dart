@@ -235,6 +235,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get myBoards => 'Bảng của tôi';
 
   @override
+  String get searchBoards => 'Tìm bảng';
+
+  @override
   String get newBoard => 'Bảng mới';
 
   @override

@@ -8,7 +8,18 @@ import '../../utils/error_display.dart';
 import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
-import '../theme/app_colors.dart';
+
+const _boardAccents = [
+  Color(0xFF4A90E2),
+  Color(0xFF38B2AC),
+  Color(0xFF172B4D),
+  Color(0xFFF59E0B),
+];
+
+final _workspaceNameProvider = FutureProvider.family<String, String>((ref, workspaceId) async {
+  final workspace = await ref.watch(apiServiceProvider).getWorkspace(workspaceId);
+  return workspace.name;
+});
 
 final workspaceBoardsProvider = FutureProvider.family<List<Board>, String>((ref, workspaceId) async {
   final api = ref.watch(apiServiceProvider);
@@ -31,6 +42,15 @@ class BoardsScreen extends ConsumerStatefulWidget {
 }
 
 class _BoardsScreenState extends ConsumerState<BoardsScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _showCreateBoardDialog() {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -195,6 +215,10 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
   Widget build(BuildContext context) {
     final boardsAsync = ref.watch(workspaceBoardsProvider(widget.workspaceId));
     final roleAsync = ref.watch(currentWorkspaceRoleProvider(widget.workspaceId));
+    final workspaceName = ref.watch(_workspaceNameProvider(widget.workspaceId)).value;
+    final l10n = AppLocalizations.of(context)!;
+    final user = ref.watch(authStateProvider).user;
+    final greetingName = user?.name?.isNotEmpty == true ? user!.name! : (user?.email ?? '');
 
     // Check if user can create boards (owner or editor)
     final canCreateBoard = roleAsync.maybeWhen(
@@ -203,30 +227,14 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('My Boards', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        shadowColor: Colors.black.withOpacity(0.05),
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
-            onPressed: () {},
-            tooltip: 'Search boards',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF4F6F8),
       floatingActionButton: canCreateBoard
           ? FloatingActionButton.extended(
               onPressed: _showCreateBoardDialog,
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFF172B4D),
               icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: const Text('New Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              elevation: 2,
+              label: Text(l10n.newBoard, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              elevation: 1,
             )
           : null,
       body: boardsAsync.when(
@@ -239,152 +247,61 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
           },
         ),
         data: (boards) {
-          if (boards.isEmpty) {
-            return Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 32 : 16),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 48 : 24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.1),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 24 : 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.dashboard_customize_rounded, size: MediaQuery.of(context).size.width > 600 ? 64 : 48, color: Colors.white),
-                      ),
-                      SizedBox(height: MediaQuery.of(context).size.width > 600 ? 24 : 16),
-                      Text(
-                        canCreateBoard 
-                          ? '🎨 Ready to Create?'
-                          : '📋 No Boards Yet',
-                        style: TextStyle(fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: MediaQuery.of(context).size.width > 600 ? 12 : 8),
-                      Text(
-                        canCreateBoard 
-                          ? 'Create your first board and start collaborating!'
-                          : 'Ask your workspace admin to add you to a board.',
-                        style: TextStyle(color: Colors.grey, fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (canCreateBoard) ...[
-                        SizedBox(height: MediaQuery.of(context).size.width > 600 ? 32 : 24),
-                        ElevatedButton.icon(
-                          onPressed: _showCreateBoardDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF667EEA),
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: MediaQuery.of(context).size.width > 600 ? 32 : 24,
-                              vertical: MediaQuery.of(context).size.width > 600 ? 16 : 12,
-                            ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 8,
-                          ),
-                          icon: Icon(Icons.add_circle_outline_rounded, size: MediaQuery.of(context).size.width > 600 ? 24 : 20),
-                          label: Text('Create Board', style: TextStyle(fontSize: MediaQuery.of(context).size.width > 600 ? 16 : 14, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+          final query = _query.trim().toLowerCase();
+          final visible = query.isEmpty
+              ? boards
+              : boards.where((board) {
+                  final name = board.name.toLowerCase();
+                  final description = board.description?.toLowerCase() ?? '';
+                  return name.contains(query) || description.contains(query);
+                }).toList();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _HomeHeader(
+                greeting: l10n.welcome,
+                name: greetingName,
+                workspaceName: workspaceName ?? '',
+                boardsLabel: l10n.myBoards,
+                searchController: _searchController,
+                searchHint: l10n.searchBoards,
+                onSearch: (value) => setState(() => _query = value),
               ),
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 24 : 16),
-                sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Icon(Icons.grid_view, size: MediaQuery.of(context).size.width > 600 ? 28 : 24, color: const Color(0xFF667EEA)),
-                      SizedBox(width: MediaQuery.of(context).size.width > 600 ? 12 : 8),
-                      Expanded(
-                        child: Text(
-                          '${boards.length} Board${boards.length > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            fontSize: MediaQuery.of(context).size.width > 600 ? 24 : 20,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2D3748),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width > 600 ? 24 : 16),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: MediaQuery.of(context).size.width > 900 
-                        ? 350 
-                        : (MediaQuery.of(context).size.width > 600 ? 300 : double.infinity),
-                    crossAxisSpacing: MediaQuery.of(context).size.width > 600 ? 20 : 16,
-                    mainAxisSpacing: MediaQuery.of(context).size.width > 600 ? 20 : 16,
-                    childAspectRatio: MediaQuery.of(context).size.width > 600 ? 1.4 : 1.3,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final board = boards[index];
-                      final gradients = [
-                        [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                        [const Color(0xFFF093FB), const Color(0xFFF5576C)],
-                        [const Color(0xFF4FACFE), const Color(0xFF00F2FE)],
-                        [const Color(0xFF43E97B), const Color(0xFF38F9D7)],
-                        [const Color(0xFFFA709A), const Color(0xFFFEE140)],
-                        [const Color(0xFF30CFD0), const Color(0xFF330867)],
-                      ];
-                      final gradient = gradients[index % gradients.length];
-                      
-                      return _BoardCard(
-                        board: board,
-                        gradient: gradient,
-                        onTap: () => context.go('/board/${board.id}'),
-                        onSettings: () async {
-                          final result = await showDialog(
-                            context: context,
-                            builder: (context) => BoardSettingsDialog(
-                              boardId: board.id,
-                              boardName: board.name,
-                              boardDescription: board.description,
-                            ),
+              Expanded(
+                child: visible.isEmpty
+                    ? _EmptyBoards(
+                        canCreate: canCreateBoard && boards.isEmpty,
+                        onCreate: _showCreateBoardDialog,
+                        title: boards.isEmpty ? l10n.myBoards : l10n.searchBoards,
+                        action: l10n.createBoard,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
+                        itemCount: visible.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final board = visible[index];
+                          return _BoardCard(
+                            board: board,
+                            accent: _boardAccents[index % _boardAccents.length],
+                            onTap: () => context.go('/board/${board.id}'),
+                            onSettings: () async {
+                              final result = await showDialog(
+                                context: context,
+                                builder: (context) => BoardSettingsDialog(
+                                  boardId: board.id,
+                                  boardName: board.name,
+                                  boardDescription: board.description,
+                                ),
+                              );
+                              if ((result == 'deleted' || result == true) && mounted) {
+                                ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                              }
+                            },
                           );
-                          
-                          if ((result == 'deleted' || result == true) && mounted) {
-                            ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
-                          }
                         },
-                      );
-                    },
-                    childCount: boards.length,
-                  ),
-                ),
+                      ),
               ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
             ],
           );
         },
@@ -433,157 +350,159 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
   }
 }
 
-class _BoardCard extends StatefulWidget {
+class _HomeHeader extends StatelessWidget {
+  final String greeting;
+  final String name;
+  final String workspaceName;
+  final String boardsLabel;
+  final TextEditingController searchController;
+  final String searchHint;
+  final ValueChanged<String> onSearch;
+
+  const _HomeHeader({
+    required this.greeting,
+    required this.name,
+    required this.workspaceName,
+    required this.boardsLabel,
+    required this.searchController,
+    required this.searchHint,
+    required this.onSearch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(greeting, style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13)),
+          const SizedBox(height: 2),
+          Text(
+            name,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Color(0xFF172B4D)),
+          ),
+          if (workspaceName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(workspaceName, style: const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.w600)),
+          ],
+          const SizedBox(height: 16),
+          Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF172B4D))),
+          const SizedBox(height: 8),
+          TextField(
+            controller: searchController,
+            onChanged: onSearch,
+            decoration: InputDecoration(
+              hintText: searchHint,
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.white,
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyBoards extends StatelessWidget {
+  final bool canCreate;
+  final VoidCallback onCreate;
+  final String title;
+  final String action;
+
+  const _EmptyBoards({
+    required this.canCreate,
+    required this.onCreate,
+    required this.title,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.dashboard_outlined, size: 40, color: Color(0xFF6B778C)),
+            const SizedBox(height: 12),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF172B4D))),
+            if (canCreate) ...[
+              const SizedBox(height: 16),
+              FilledButton(onPressed: onCreate, child: Text(action)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BoardCard extends StatelessWidget {
   final Board board;
-  final List<Color> gradient;
+  final Color accent;
   final VoidCallback onTap;
   final VoidCallback onSettings;
 
   const _BoardCard({
     required this.board,
-    required this.gradient,
+    required this.accent,
     required this.onTap,
     required this.onSettings,
   });
 
   @override
-  State<_BoardCard> createState() => _BoardCardState();
-}
-
-class _BoardCardState extends State<_BoardCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: _isHovered 
-                      ? AppColors.primary.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.05),
-                  blurRadius: _isHovered ? 12 : 6,
-                  offset: Offset(0, _isHovered ? 4 : 2),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 6,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
                 ),
-              ],
-            ),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with icon and settings
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.dashboard_rounded,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
-                      onPressed: widget.onSettings,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      iconSize: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Board name
-                Text(
-                  widget.board.name,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                
-                // Description or placeholder
-                Text(
-                  widget.board.description?.isNotEmpty == true
-                      ? widget.board.description!
-                      : 'No description',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-                
-                // Footer with date
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        _formatDate(widget.board.updatedAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                        board.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF172B4D)),
                       ),
+                      if (board.description?.isNotEmpty == true) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          board.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Color(0xFF6B778C), fontSize: 13),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              IconButton(onPressed: onSettings, icon: const Icon(Icons.more_horiz)),
+            ],
           ),
         ),
       ),
     );
   }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inDays > 7) {
-      return '${date.day}/${date.month}/${date.year}';
-    } else if (diff.inDays > 0) {
-      return '${diff.inDays}d ago';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours}h ago';
-    } else {
-      return 'just now';
-    }
-  }
 }
+

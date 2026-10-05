@@ -524,6 +524,12 @@ abstract class AppLocalizations {
   /// **'My Boards'**
   String get myBoards;
 
+  /// No description provided for @searchBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'Search boards'**
+  String get searchBoards;
+
   /// No description provided for @newBoard.
   ///
   /// In en, this message translates to:
