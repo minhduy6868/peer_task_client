@@ -97,7 +97,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.read(authStateProvider).user;
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.gradientPrimary,
+        color: AppColors.primarySubtle,
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -105,9 +105,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           user?.name?.substring(0, 1).toUpperCase() ?? 
           user?.email.substring(0, 1).toUpperCase() ?? 'U',
           style: const TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryDark,
           ),
         ),
       ),
@@ -125,184 +125,87 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Beautiful Header with Avatar
           SliverAppBar(
-            expandedHeight: 280,
             pinned: true,
-            stretch: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
+            title: Text(l10n.profile),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+              child: Row(
                 children: [
-                  // Gradient Background
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.8),
-                          AppColors.accent,
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Decorative Circles
-                  Positioned(
-                    top: -50,
-                    right: -50,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.1),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -30,
-                    left: -30,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                    ),
-                  ),
-                  // Profile Content
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Avatar with Edit Button
-                          Stack(
-                            children: [
-                              Hero(
-                                tag: 'user-avatar',
-                                child: Container(
-                                  width: 110,
-                                  height: 110,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 4,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: user?.avatar != null && user!.avatar!.isNotEmpty
-                                      ? ClipOval(
-                                          child: _buildAvatarImage(user.avatar!),
-                                        )
-                                      : Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                              colors: [
-                                                Colors.white.withOpacity(0.9),
-                                                Colors.white.withOpacity(0.7),
-                                              ],
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              user?.name?.substring(0, 1).toUpperCase() ?? 
-                                              user?.email.substring(0, 1).toUpperCase() ?? 'U',
-                                              style: TextStyle(
-                                                fontSize: 36,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                  Stack(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: user?.avatar != null && user!.avatar!.isNotEmpty
+                            ? ClipOval(child: _buildAvatarImage(user.avatar!))
+                            : Container(
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primarySubtle,
+                                  shape: BoxShape.circle,
                                 ),
-                              ),
-                              // Camera Button
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: _isUploadingAvatar
-                                        ? SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.primary,
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.camera_alt_rounded,
-                                            color: AppColors.primary,
-                                            size: 20,
-                                          ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  user?.name?.substring(0, 1).toUpperCase() ??
+                                      user?.email.substring(0, 1).toUpperCase() ??
+                                      'U',
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Name
-                          Text(
-                            user?.name ?? 'User',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          // Email
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: GestureDetector(
+                          onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                          child: Container(
+                            width: 24,
+                            height: 24,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.surface,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.border),
                             ),
-                            child: Text(
-                              user?.email ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            child: _isUploadingAvatar
+                                ? const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.camera_alt_rounded, size: 14, color: AppColors.primaryDark),
                           ),
-                        ],
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.name ?? user?.email ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          user?.email ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -392,47 +295,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 32),
 
                   // Logout Button
-                  Container(
+                  SizedBox(
                     width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.error,
-                          AppColors.error.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.error.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton.icon(
+                    child: OutlinedButton.icon(
                       onPressed: () async {
                         await ref.read(authStateProvider.notifier).logout();
                         if (context.mounted) {
                           context.go('/login');
                         }
                       },
-                      icon: const Icon(Icons.logout_rounded, size: 22),
-                      label: Text(
-                        l10n.logout,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: Text(l10n.logout),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
                       ),
                     ),
                   ),
@@ -494,7 +370,7 @@ class _ModernSettingsSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: AppColors.border.withOpacity(0.5),
               width: 1,

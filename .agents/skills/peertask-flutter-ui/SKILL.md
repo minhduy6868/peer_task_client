@@ -9,7 +9,7 @@ Light utility app. Tasks are the product. Drawing is a second page on the board.
 
 ## UX
 
-- One palette: `AppColors` and `AppTextStyles`. Primary is soft violet `#8B7CFF`, background `#F7F4FF`, surface white. No one-off hex and no `Colors.blue` / `Colors.green` / `Colors.red` for chrome.
+- One palette: `AppColors` and `AppTextStyles`. Soft violet `#8B7CFF`, background `#F7F4FF`, surface white. Radius 8–12, hairline borders, compact controls. App bars stay light with a bottom border. No full-bleed colored bars, no one-off hex, no `Colors.blue` / `Colors.green` / `Colors.red` for chrome.
 - Every user-visible string uses `AppLocalizations.of(context)!`. Add the key to both `lib/l10n/app_en.arb` and `app_vi.arb`, then run `flutter gen-l10n`.
 - Dialogs use `insetPadding` and a width of at most `screenWidth - 40`. Never set `width: 500` (or any fixed width) on a phone. `TabBarView`, camera, and lists need a parent with a real height (`SizedBox` or `Expanded` inside a bounded box).
 - Below 480px, put paired fields and action buttons in a `Column` or `Wrap`. Names and nav labels use `maxLines: 1` and `TextOverflow.ellipsis`.

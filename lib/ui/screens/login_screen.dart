@@ -180,18 +180,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             
                             // Title
                             Text(
-                              _isRegisterMode ? l10n.startYourAdventure : l10n.signInToAdventure,
+                              l10n.landingHeadline,
                               style: const TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                height: 1.2,
-                                letterSpacing: 1,
+                                height: 1.05,
+                                letterSpacing: -0.8,
                               ),
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              l10n.collaborativeDescription,
+                              l10n.landingSubhead,
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white.withOpacity(0.7),
@@ -267,12 +267,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             
                             // Title
                             Text(
-                              _isRegisterMode ? l10n.signUpTitle : l10n.signInTitle,
+                              _isRegisterMode ? l10n.signUp : l10n.signIn,
                               style: TextStyle(
                                 fontSize: isWideScreen ? 32 : (isTablet ? 30 : 26),
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
-                                letterSpacing: 1,
+                                letterSpacing: -0.4,
                               ),
                             ),
                             SizedBox(height: isTablet ? 10 : 8),

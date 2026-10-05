@@ -243,17 +243,17 @@ class _OfflineUsernameScreenState extends ConsumerState<OfflineUsernameScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          color: AppColors.primarySubtle,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_rounded,
-                              color: Colors.blue[600],
-                              size: 24,
+                            const Icon(
+                              Icons.info_outline,
+                              color: AppColors.primaryDark,
+                              size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -262,17 +262,17 @@ class _OfflineUsernameScreenState extends ConsumerState<OfflineUsernameScreen> {
                                 children: [
                                   Text(
                                     'Local Collaboration',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.blue[700],
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'All boards and data stay on your device. Share board codes with others nearby.',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Colors.blue[600],
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
                                 ],

@@ -14,6 +14,7 @@ import '../../models/whiteboard_object/whiteboard_object.dart';
 import '../../services/storage_service.dart';
 import '../../services/p2p/p2p_manager.dart';
 import '../../utils/platform_utils.dart';
+import '../theme/app_colors.dart';
 
 enum DrawingTool { pen, eraser, text }
 
@@ -1115,7 +1116,7 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
           children: [
             Flexible(
               child: Text(
-                '📱 ${boardState.boardName}',
+                boardState.boardName,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1124,7 +1125,7 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: AppColors.primarySubtle,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

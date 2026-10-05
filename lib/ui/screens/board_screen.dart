@@ -444,14 +444,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final pageIndex = canvasPages.indexWhere((page) => page['id'] == pageId);
 
     return Scaffold(
-      backgroundColor: _page == _BoardPage.tasks
-          ? const Color(0xFFF1F2F4)
-          : AppColors.surface,
+      backgroundColor: AppColors.background,
       bottomNavigationBar: const _RemoteAudioMount(),
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _leave),
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
@@ -461,7 +456,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             icon: const Icon(Icons.group_outlined),
           ),
           IconButton(
-            tooltip: _voice ? 'Mute' : 'Call',
+            tooltip: _voice ? l10n.endVoiceCall : l10n.startVoiceCall,
             onPressed: _toggleVoice,
             icon: Icon(_voice ? Icons.mic_rounded : Icons.mic_off_rounded),
           ),
@@ -677,8 +672,9 @@ class _PageSwitch extends StatelessWidget {
       height: 36,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -697,13 +693,13 @@ class _PageSwitch extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
+          color: selected ? AppColors.primarySubtle : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppColors.primaryDark : Colors.white,
+            color: selected ? AppColors.primaryDark : AppColors.textSecondary,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),

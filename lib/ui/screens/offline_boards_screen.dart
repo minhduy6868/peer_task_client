@@ -206,150 +206,23 @@ class _OfflineBoardsScreenState extends ConsumerState<OfflineBoardsScreen> {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Beautiful App Bar with gradient
           SliverAppBar(
-            expandedHeight: 140,
             pinned: true,
-            stretch: true,
-            backgroundColor: AppColors.primary,
             leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () => _showExitConfirmDialog(context),
             ),
+            title: const Text('Offline Boards'),
             actions: [
-              // Username chip
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Center(
-                  child: GestureDetector(
-                    onTap: _showChangeNameDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.white,
-                            child: Text(
-                              username.isNotEmpty
-                                  ? username[0].toUpperCase()
-                                  : 'G',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              username,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.edit,
-                            size: 13,
-                            color: Colors.white70,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              TextButton.icon(
+                onPressed: _showChangeNameDialog,
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: Text(
+                  username,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Offline Boards',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black26)],
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary,
-                      AppColors.secondary,
-                      AppColors.accentPurple,
-                    ],
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Decorative circles
-                    Positioned(
-                      top: -30,
-                      right: -30,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: -40,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.08),
-                        ),
-                      ),
-                    ),
-                    // Icon
-                    Positioned(
-                      top: 50,
-                      right: 30,
-                      child: Icon(
-                        Icons.cloud_off_rounded,
-                        size: 50,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
 
           // Content

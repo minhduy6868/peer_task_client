@@ -72,12 +72,8 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             child: Container(
               padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 32 : 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF5F7FA), Colors.white],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: SingleChildScrollView(
                 child: Form(
@@ -93,14 +89,12 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                           Container(
                             padding: EdgeInsets.all(MediaQuery.of(context).size.width > 600 ? 12 : 8),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.primary, AppColors.primaryLight],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.primarySubtle,
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.add_circle_outline_rounded,
-                              color: Colors.white,
+                              color: AppColors.primaryDark,
                               size: MediaQuery.of(context).size.width > 600 ? 28 : 24,
                             ),
                           ),
@@ -404,7 +398,7 @@ class _HomeHeader extends StatelessWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.primary),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: AppColors.textPrimary),
           ),
           if (workspaceName.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -412,11 +406,11 @@ class _HomeHeader extends StatelessWidget {
               workspaceName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.w600),
             ),
           ],
           const SizedBox(height: 16),
-          Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+          Text(boardsLabel, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           const SizedBox(height: 8),
           TextField(
             controller: searchController,
@@ -514,7 +508,7 @@ class _BoardCard extends StatelessWidget {
                         board.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.primary),
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary),
                       ),
                       if (board.description?.isNotEmpty == true) ...[
                         const SizedBox(height: 4),

@@ -26,25 +26,26 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       
       // Modern AppBar with subtle shadow
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        iconTheme: const IconThemeData(
+        iconTheme: IconThemeData(
           color: AppColors.textPrimary,
-          size: 24,
+          size: 20,
         ),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           inherit: true,
           color: AppColors.textPrimary,
-          fontSize: 22,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-          height: 1.4,
+          letterSpacing: -0.2,
+          height: 1.3,
         ),
-        shadowColor: AppColors.shadowLight,
+        shape: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       
       // Modern Cards with subtle elevation
@@ -53,8 +54,8 @@ class AppTheme {
         elevation: 0,
         shadowColor: AppColors.shadowLight,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.border.withOpacity(0.5), width: 1),
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: AppColors.border),
         ),
         margin: const EdgeInsets.all(0),
       ),
@@ -66,22 +67,33 @@ class AppTheme {
           foregroundColor: Colors.white,
           elevation: 0,
           shadowColor: AppColors.shadowMedium,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
       
-      // Modern Outlined Buttons
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primaryDark,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+      ),
+      
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-          side: const BorderSide(color: AppColors.primary, width: 2),
+          foregroundColor: AppColors.textPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
       
@@ -97,26 +109,26 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceLight,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.border.withOpacity(0.5), width: 1.5),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2.5),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderSide: BorderSide(color: AppColors.primaryDark, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.error, width: 2.5),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         labelStyle: const TextStyle(
           color: AppColors.textSecondary,
@@ -169,7 +181,7 @@ class AppTheme {
         elevation: 8,
         shadowColor: AppColors.shadowMedium,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
         ),
         titleTextStyle: const TextStyle(
           color: AppColors.textPrimary,
@@ -195,7 +207,7 @@ class AppTheme {
           letterSpacing: 0.25,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
         ),
         behavior: SnackBarBehavior.floating,
         elevation: 4,
@@ -208,7 +220,7 @@ class AppTheme {
         elevation: 2,
         highlightElevation: 6,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       
@@ -216,7 +228,7 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
         ),
         titleTextStyle: const TextStyle(
           color: AppColors.textPrimary,

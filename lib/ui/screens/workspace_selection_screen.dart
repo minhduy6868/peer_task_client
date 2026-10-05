@@ -124,46 +124,13 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Modern App Bar
-          SliverAppBar.large(
-            expandedHeight: 160,
+          SliverAppBar(
             pinned: true,
-            backgroundColor: AppColors.surface,
-            foregroundColor: AppColors.textPrimary,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                l10n.selectWorkspace,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary.withOpacity(0.1),
-                      AppColors.accent.withOpacity(0.05),
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.workspaces_rounded,
-                    size: 60,
-                    color: AppColors.primary.withOpacity(0.3),
-                  ),
-                ),
-              ),
-            ),
+            title: Text(l10n.workspaces),
             actions: [
               IconButton(
                 icon: const Icon(Icons.logout_rounded),
-                tooltip: 'Logout',
+                tooltip: l10n.logout,
                 onPressed: () {
                   ref.read(authStateProvider.notifier).logout();
                   context.go('/login');
@@ -194,20 +161,19 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 140,
-                            height: 140,
+                            width: 64,
+                            height: 64,
                             decoration: BoxDecoration(
-                              gradient: AppColors.gradientPrimary,
-                              shape: BoxShape.circle,
-                              boxShadow: AppColors.elegantCardShadow,
+                              color: AppColors.primarySubtle,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
-                              Icons.workspaces_rounded,
-                              size: 70,
-                              color: Colors.white,
+                              Icons.workspaces_outlined,
+                              size: 28,
+                              color: AppColors.primaryDark,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 20),
                           Text(
                             l10n.welcome,
                             style: AppTextStyles.headlineMedium.copyWith(
@@ -264,21 +230,11 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.all(20),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 380,
-                    childAspectRatio: 1.5,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final workspace = workspaces[index];
-                      return _buildWorkspaceCard(workspace);
-                    },
-                    childCount: workspaces.length,
-                  ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                sliver: SliverList.separated(
+                  itemCount: workspaces.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) => _buildWorkspaceCard(workspaces[index]),
                 ),
               );
             },
@@ -311,151 +267,58 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
   }
 
   Widget _buildWorkspaceCard(workspace) {
-    final gradientIndex = workspace.name.hashCode % AppColors.boardGradients.length;
-    final gradient = AppColors.boardGradients[gradientIndex];
-    
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: AppColors.border.withOpacity(0.5),
-          width: 1,
-        ),
-      ),
+    final initial = workspace.name.isEmpty ? '?' : workspace.name.substring(0, 1).toUpperCase();
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () async {
           final storage = ref.read(storageServiceProvider);
           await storage.saveLastWorkspace(workspace.id);
           context.go('/workspace/${workspace.id}/boards');
         },
-        borderRadius: BorderRadius.circular(24),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                AppColors.surfaceLight,
-              ],
-            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: gradient,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          workspace.name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getRoleIcon(workspace.role),
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _getRoleDisplay(workspace.role, AppLocalizations.of(context)!),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const Spacer(),
-                Text(
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   workspace.name,
-                  style: AppTextStyles.titleLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Open workspace',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _getRoleDisplay(workspace.role, AppLocalizations.of(context)!),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 18),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  IconData _getRoleIcon(String? role) {
-    switch (role) {
-      case 'owner':
-        return Icons.admin_panel_settings_rounded;
-      case 'editor':
-        return Icons.edit_rounded;
-      case 'viewer':
-        return Icons.visibility_rounded;
-      default:
-        return Icons.person_rounded;
-    }
   }
 
   Widget _buildLoadingSkeleton() {
