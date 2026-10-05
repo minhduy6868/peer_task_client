@@ -38,20 +38,25 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with SingleTicker
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          AnimatedBuilder(
-            animation: _motion,
-            builder: (context, child) {
-              final t = _motion.value * math.pi * 2;
-              return Stack(
-                children: [
-                  _orb(const Alignment(-1.1, -0.8), 280, AppColors.primaryLight, math.sin(t) * 18),
-                  _orb(const Alignment(1.15, -0.2), 340, AppColors.accent, math.cos(t) * 22),
-                  _orb(const Alignment(-0.4, 1.2), 260, AppColors.secondaryLight, math.sin(t + 1) * 16),
-                ],
-              );
-            },
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _motion,
+                builder: (context, child) {
+                  final t = _motion.value * math.pi * 2;
+                  return Stack(
+                    children: [
+                      _orb(const Alignment(-1.1, -0.8), 280, AppColors.primaryLight, math.sin(t) * 18),
+                      _orb(const Alignment(1.15, -0.2), 340, AppColors.accent, math.cos(t) * 22),
+                      _orb(const Alignment(-0.4, 1.2), 260, AppColors.secondaryLight, math.sin(t + 1) * 16),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
-          SafeArea(
+          Positioned.fill(
+            child: SafeArea(
             child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _nav(context, l10n, wide)),
@@ -60,6 +65,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with SingleTicker
                 SliverToBoxAdapter(child: _close(context, l10n)),
               ],
             ),
+          ),
           ),
         ],
       ),

@@ -76,6 +76,62 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
       const SettingsScreen(),
     ];
 
+    final wide = MediaQuery.sizeOf(context).width >= 960;
+    final boardsItem = _NavItem(
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      label: l10n.boards,
+      isSelected: currentTab == 0,
+      onTap: () => ref.read(_currentTabProvider.notifier).state = 0,
+    );
+    final workspaceItem = _NavItem(
+      isWorkspace: true,
+      workspaceName: workspace?.name ?? '',
+      workspaceLabel: l10n.workspaces,
+      isSelected: false,
+      onTap: _showWorkspaceMenu,
+    );
+    final profileItem = _NavItem(
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: authState.user?.name?.substring(0, 1).toUpperCase() ??
+          authState.user?.email.substring(0, 1).toUpperCase() ??
+          'U',
+      isAvatar: true,
+      avatarLabel: l10n.profile,
+      isSelected: currentTab == 1,
+      onTap: () => ref.read(_currentTabProvider.notifier).state = 1,
+    );
+
+    if (wide) {
+      return Scaffold(
+        body: Row(
+          children: [
+            Container(
+              width: 104,
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(right: BorderSide(color: AppColors.border)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    boardsItem,
+                    workspaceItem,
+                    const Spacer(),
+                    profileItem,
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(child: IndexedStack(index: currentTab, children: screens)),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: currentTab,
@@ -97,37 +153,9 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             children: [
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.dashboard_outlined,
-                  selectedIcon: Icons.dashboard_rounded,
-                  label: l10n.boards,
-                  isSelected: currentTab == 0,
-                  onTap: () => ref.read(_currentTabProvider.notifier).state = 0,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  isWorkspace: true,
-                  workspaceName: workspace?.name ?? '',
-                  workspaceLabel: l10n.workspaces,
-                  isSelected: false,
-                  onTap: _showWorkspaceMenu,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.person_outline_rounded,
-                  selectedIcon: Icons.person_rounded,
-                  label: authState.user?.name?.substring(0, 1).toUpperCase() ??
-                      authState.user?.email.substring(0, 1).toUpperCase() ??
-                      'U',
-                  isAvatar: true,
-                  avatarLabel: l10n.profile,
-                  isSelected: currentTab == 1,
-                  onTap: () => ref.read(_currentTabProvider.notifier).state = 1,
-                ),
-              ),
+              Expanded(child: boardsItem),
+              Expanded(child: workspaceItem),
+              Expanded(child: profileItem),
             ],
           ),
         ),

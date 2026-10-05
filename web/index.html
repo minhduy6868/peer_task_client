@@ -29,8 +29,14 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>client</title>
+  <title>PeerTask</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Camera and call previews must not sit above Flutter buttons. */
+    video, flt-platform-view, flt-platform-view * {
+      pointer-events: none !important;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

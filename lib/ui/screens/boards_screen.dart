@@ -259,7 +259,12 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                   final description = board.description?.toLowerCase() ?? '';
                   return name.contains(query) || description.contains(query);
                 }).toList();
-          return Column(
+          final side = MediaQuery.sizeOf(context).width > 1200
+              ? (MediaQuery.sizeOf(context).width - 1120) / 2
+              : 0.0;
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: side),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _HomeHeader(
@@ -279,34 +284,45 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                         title: boards.isEmpty ? l10n.myBoards : l10n.searchBoards,
                         action: l10n.createBoard,
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
-                        itemCount: visible.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final board = visible[index];
-                          return _BoardCard(
-                            board: board,
-                            accent: _boardAccents[index % _boardAccents.length],
-                            onTap: () => context.go('/board/${board.id}'),
-                            onSettings: () async {
-                              final result = await showDialog(
-                                context: context,
-                                builder: (context) => BoardSettingsDialog(
-                                  boardId: board.id,
-                                  boardName: board.name,
-                                  boardDescription: board.description,
-                                ),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 860;
+                          return GridView.builder(
+                            padding: EdgeInsets.fromLTRB(wide ? 28 : 20, 4, wide ? 28 : 20, 96),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: wide ? 2 : 1,
+                              mainAxisExtent: 92,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemCount: visible.length,
+                            itemBuilder: (context, index) {
+                              final board = visible[index];
+                              return _BoardCard(
+                                board: board,
+                                accent: _boardAccents[index % _boardAccents.length],
+                                onTap: () => context.go('/board/${board.id}'),
+                                onSettings: () async {
+                                  final result = await showDialog(
+                                    context: context,
+                                    builder: (context) => BoardSettingsDialog(
+                                      boardId: board.id,
+                                      boardName: board.name,
+                                      boardDescription: board.description,
+                                    ),
+                                  );
+                                  if ((result == 'deleted' || result == true) && mounted) {
+                                    ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                                  }
+                                },
                               );
-                              if ((result == 'deleted' || result == true) && mounted) {
-                                ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
-                              }
                             },
                           );
                         },
                       ),
               ),
             ],
+          ),
           );
         },
       ),

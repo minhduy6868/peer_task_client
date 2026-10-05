@@ -455,13 +455,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _leave),
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
-          _PageSwitch(
-            tasks: _page == _BoardPage.tasks,
-            tasksLabel: l10n.tasks,
-            canvasLabel: l10n.canvas,
-            onTasks: () => setState(() => _page = _BoardPage.tasks),
-            onCanvas: () => setState(() => _page = _BoardPage.canvas),
-          ),
           IconButton(
             tooltip: l10n.members,
             onPressed: () => _showMembers(l10n, selfName),
@@ -484,6 +477,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             peers: state.peers,
             youLabel: l10n.you,
             onName: (name) => AppToast.show(context, message: name),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _PageSwitch(
+                tasks: _page == _BoardPage.tasks,
+                tasksLabel: l10n.tasks,
+                canvasLabel: l10n.canvas,
+                onTasks: () => setState(() => _page = _BoardPage.tasks),
+                onCanvas: () => setState(() => _page = _BoardPage.canvas),
+              ),
+            ),
           ),
           Expanded(
             child: _page == _BoardPage.tasks
@@ -732,16 +738,39 @@ class _TrelloBoard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 980;
+        final views = [
+          for (final column in columns) _column(column, wide ? null : constraints.maxHeight - 32),
+        ];
+        if (wide) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < views.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 12),
+                  Expanded(child: views[i]),
+                ],
+              ],
+            ),
+          );
+        }
         return ListView.separated(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.all(16),
-      itemCount: columns.length,
+      itemCount: views.length,
       separatorBuilder: (_, __) => const SizedBox(width: 12),
-      itemBuilder: (context, index) {
-        final column = columns[index];
-        return SizedBox(
-          width: 300,
-          height: constraints.maxHeight - 32,
+      itemBuilder: (context, index) => SizedBox(width: 300, height: constraints.maxHeight - 32, child: views[index]),
+    );
+      },
+    );
+  }
+
+  Widget _column(_ColumnData column, double? height) {
+    return SizedBox(
+          width: height == null ? null : 300,
+          height: height,
           child: DragTarget<String>(
             onWillAcceptWithDetails: (_) => true,
             onAcceptWithDetails: (details) => onMove(details.data, column.status),
@@ -783,22 +812,30 @@ class _TrelloBoard extends StatelessWidget {
                         itemBuilder: (context, taskIndex) {
                           final task = column.tasks[taskIndex];
                           final id = task['id'] as String? ?? '';
-                          return LongPressDraggable<String>(
-                            data: id,
-                            feedback: Material(
-                              elevation: 6,
-                              borderRadius: BorderRadius.circular(8),
-                              child: SizedBox(width: 280, child: _TaskCard(task: task)),
-                            ),
-                            childWhenDragging: Opacity(
-                              opacity: 0.4,
-                              child: _TaskCard(task: task),
-                            ),
-                            child: _TaskCard(
-                              task: task,
-                              onTap: () => onOpen(task),
-                              onDelete: () => onDelete(id),
-                            ),
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Draggable<String>(
+                                data: id,
+                                feedback: Material(
+                                  elevation: 6,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(width: 260, child: _TaskCard(task: task)),
+                                ),
+                                childWhenDragging: const SizedBox(width: 28, height: 36),
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 8),
+                                  child: Icon(Icons.drag_indicator, size: 20, color: AppColors.textTertiary),
+                                ),
+                              ),
+                              Expanded(
+                                child: _TaskCard(
+                                  task: task,
+                                  onTap: () => onOpen(task),
+                                  onDelete: () => onDelete(id),
+                                ),
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -816,13 +853,13 @@ class _TrelloBoard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
                           ),
+                          suffixIcon: IconButton(
+                            tooltip: l10n.addTask,
+                            onPressed: () => _submitQuickAdd(column.status),
+                            icon: const Icon(Icons.add),
+                          ),
                         ),
-                        onSubmitted: (value) {
-                          final title = value.trim();
-                          if (title.isEmpty) return;
-                          controllers[column.status]?.clear();
-                          onQuickAdd(column.status, title);
-                        },
+                        onSubmitted: (_) => _submitQuickAdd(column.status),
                       ),
                     ),
                   ],
@@ -831,10 +868,13 @@ class _TrelloBoard extends StatelessWidget {
             },
           ),
         );
-      },
-    );
-      },
-    );
+  }
+
+  void _submitQuickAdd(String status) {
+    final title = controllers[status]?.text.trim() ?? '';
+    if (title.isEmpty) return;
+    controllers[status]?.clear();
+    onQuickAdd(status, title);
   }
 }
 
@@ -983,21 +1023,23 @@ class _CanvaPage extends StatelessWidget {
         Container(
           width: 72,
           color: const Color(0xFF1E1E1E),
-          child: Column(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             children: [
-              const SizedBox(height: 12),
               _toolButton(Icons.edit, l10n.pen, _DrawTool.pen),
               _toolButton(Icons.auto_fix_high, l10n.eraser, _DrawTool.eraser),
               _toolButton(Icons.title, l10n.addText, _DrawTool.text),
               _toolButton(Icons.back_hand, l10n.pan, _DrawTool.hand),
-              const Spacer(),
+              const SizedBox(height: 12),
               for (final swatch in _colors)
-                GestureDetector(
+                Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => onColor(swatch),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    width: 28,
-                    height: 28,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: swatch,
                       shape: BoxShape.circle,
@@ -1007,6 +1049,7 @@ class _CanvaPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
                 ),
               SizedBox(
                 height: 120,
@@ -1418,7 +1461,8 @@ class _RemoteAudioMount extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final output = ref.read(whiteboardProvider.notifier).remoteAudio;
-    return ListenableBuilder(
+        return IgnorePointer(
+          child: ListenableBuilder(
       listenable: output,
       builder: (context, _) {
         if (output.renderers.isEmpty) return const SizedBox.shrink();
@@ -1432,6 +1476,7 @@ class _RemoteAudioMount extends ConsumerWidget {
           ),
         );
       },
+    ),
     );
   }
 }
