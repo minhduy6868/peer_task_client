@@ -1133,6 +1133,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get landingCta => 'Mở không gian làm việc trong một phút.';
 
   @override
+  String get landingFeaturesHeading => 'Một chỗ cho cả công việc';
+
+  @override
+  String get landingPreviewKickoff => 'Khởi động';
+
+  @override
+  String get landingPreviewInvite => 'Mời nhóm';
+
+  @override
+  String get landingPreviewLayout => 'Bố cục';
+
+  @override
+  String get landingPreviewVoice => 'Thoại';
+
+  @override
   String get continueOffline => 'Làm việc ngoại tuyến';
 
   @override

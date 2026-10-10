@@ -2264,6 +2264,36 @@ abstract class AppLocalizations {
   /// **'Open a workspace in a minute.'**
   String get landingCta;
 
+  /// No description provided for @landingFeaturesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'One place for the work'**
+  String get landingFeaturesHeading;
+
+  /// No description provided for @landingPreviewKickoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Kickoff'**
+  String get landingPreviewKickoff;
+
+  /// No description provided for @landingPreviewInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get landingPreviewInvite;
+
+  /// No description provided for @landingPreviewLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout'**
+  String get landingPreviewLayout;
+
+  /// No description provided for @landingPreviewVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get landingPreviewVoice;
+
   /// No description provided for @continueOffline.
   ///
   /// In en, this message translates to:

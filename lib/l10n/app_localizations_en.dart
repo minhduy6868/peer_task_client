@@ -1138,6 +1138,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingCta => 'Open a workspace in a minute.';
 
   @override
+  String get landingFeaturesHeading => 'One place for the work';
+
+  @override
+  String get landingPreviewKickoff => 'Kickoff';
+
+  @override
+  String get landingPreviewInvite => 'Invite';
+
+  @override
+  String get landingPreviewLayout => 'Layout';
+
+  @override
+  String get landingPreviewVoice => 'Voice';
+
+  @override
   String get continueOffline => 'Continue offline';
 
   @override
