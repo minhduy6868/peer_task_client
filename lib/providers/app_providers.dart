@@ -542,6 +542,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
         // Perfect negotiation: only peer with higher userId creates offer
         final myUserId = authState.user!.id;
         for (final peer in peers) {
+          _webrtc!.rememberPeer(peer.socketId, peer.userId);
           final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
           if (shouldInitiate) {
             debugPrint(
@@ -567,6 +568,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
 
         // Perfect negotiation: only peer with higher userId creates offer
         final myUserId = authState.user!.id;
+        _webrtc!.rememberPeer(peer.socketId, peer.userId);
         final shouldInitiate = myUserId.compareTo(peer.userId) > 0;
         if (shouldInitiate) {
           debugPrint(
@@ -640,7 +642,11 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
     );
 
     debugPrint('🔌 Connecting to signaling server...');
-    _signaling!.connect(authState.accessToken!);
+    final token = api.accessToken ?? authState.accessToken;
+    if (token == null) {
+      throw ApiError.unauthorized();
+    }
+    _signaling!.connect(token);
     debugPrint('🚪 Joining room: $boardId');
     _signaling!.joinRoom(boardId);
 

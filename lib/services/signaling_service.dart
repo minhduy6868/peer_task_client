@@ -53,25 +53,34 @@ class SignalingService {
 
     _socket!.on('room_joined', (data) {
       debugPrint('📥 Room joined event received');
-      final peers = (data['peers'] as List?)
-          ?.map((p) => Peer.fromJson(p as Map<String, dynamic>))
-          .toList() ?? [];
+      final raw = _asMap(data);
+      final peers = <Peer>[];
+      for (final item in (raw?['peers'] as List?) ?? const []) {
+        final peer = _peerFrom(item);
+        if (peer != null) peers.add(peer);
+      }
       onRoomJoined?.call(peers);
     });
 
     _socket!.on('peer_joined', (data) {
-      debugPrint('📥 Peer joined: ${data['socketId']}');
-      onPeerJoined?.call(Peer.fromJson(data as Map<String, dynamic>));
+      final peer = _peerFrom(data);
+      if (peer == null) return;
+      debugPrint('📥 Peer joined: ${peer.socketId}');
+      onPeerJoined?.call(peer);
     });
 
     _socket!.on('peer_left', (data) {
-      debugPrint('📤 Peer left: ${data['socketId']}');
-      onPeerLeft?.call(Peer.fromJson(data as Map<String, dynamic>));
+      final peer = _peerFrom(data);
+      if (peer == null) return;
+      debugPrint('📤 Peer left: ${peer.socketId}');
+      onPeerLeft?.call(peer);
     });
 
     _socket!.on('signal', (data) {
-      final peerId = data['from'] as String;
-      final signal = data['signal'] as Map<String, dynamic>;
+      final raw = _asMap(data);
+      final peerId = raw?['from']?.toString();
+      final signal = _asMap(raw?['signal']);
+      if (peerId == null || signal == null) return;
       debugPrint('📡 Signal received from $peerId');
       onSignal?.call(peerId, signal);
     });
@@ -109,6 +118,10 @@ class SignalingService {
 
     _socket!.onError((error) {
       debugPrint('❌ Socket error: $error');
+    });
+
+    _socket!.on('connect_error', (error) {
+      debugPrint('❌ Signaling connect_error: $error');
     });
 
     _socket!.connect();
@@ -155,5 +168,29 @@ class SignalingService {
     _socket = null;
     _isConnected = false;
     _currentBoardId = null;
+  }
+}
+
+Map<String, dynamic>? _asMap(dynamic data) {
+  if (data is Map<String, dynamic>) return data;
+  if (data is Map) return Map<String, dynamic>.from(data);
+  return null;
+}
+
+Peer? _peerFrom(dynamic data) {
+  final json = _asMap(data);
+  if (json == null) return null;
+  final socketId = json['socketId']?.toString();
+  final userId = json['userId']?.toString();
+  if (socketId == null || socketId.isEmpty || userId == null || userId.isEmpty) {
+    return null;
+  }
+  json['socketId'] = socketId;
+  json['userId'] = userId;
+  try {
+    return Peer.fromJson(json);
+  } catch (e) {
+    debugPrint('Peer payload skipped: $e');
+    return null;
   }
 }

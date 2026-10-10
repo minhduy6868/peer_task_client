@@ -70,8 +70,10 @@ class _MyAppState extends ConsumerState<MyApp> {
     final authState = ref.watch(authStateProvider);
     final locale = ref.watch(languageProvider);
 
-    // Show loading screen while checking auth
-    if (authState.isLoading) {
+    // Only the first boot replaces the app. Login also sets isLoading, and
+    // swapping the router then keeps the old redirect, so a successful
+    // login stays on this page until a full reload.
+    if (_router == null && authState.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -97,7 +99,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       overridePlatformDefaultLocation: _browserLocation() != null,
       refreshListenable: _AuthStateNotifier(ref),
       redirect: (context, state) {
-        final isAuthenticated = authState.isAuthenticated;
+        final current = ref.read(authStateProvider);
+        if (current.isLoading) return null;
+        final isAuthenticated = current.isAuthenticated;
         final path = state.matchedLocation;
         
         // If authenticated and on login page, redirect to workspaces

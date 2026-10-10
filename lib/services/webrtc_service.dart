@@ -76,9 +76,19 @@ class WebRTCService {
     this.audioOutput,
   });
 
-  bool _isPolite(String peerId) {
-    // Use userId comparison to determine polite peer (stable ordering)
-    return userId.compareTo(peerId) > 0;
+  final Map<String, String> _peerUsers = {};
+
+  /// Lower user id accepts the remote offer when both sides offer at once.
+  /// The socket id is not a user id, so the comparison has to use the one
+  /// recorded when the peer joined.
+  void rememberPeer(String socketId, String userId) {
+    _peerUsers[socketId] = userId;
+  }
+
+  bool _isPolite(String socketId) {
+    final remoteUserId = _peerUsers[socketId];
+    if (remoteUserId == null || remoteUserId.isEmpty) return true;
+    return userId.compareTo(remoteUserId) < 0;
   }
 
   Map<String, dynamic> _getIceConfiguration() {
@@ -173,20 +183,21 @@ class WebRTCService {
       }
     }
 
+    // Candidates start during setLocalDescription. Listen first or the
+    // first ones never reach the other peer and the call stays silent.
+    pc.onIceCandidate = (candidate) {
+      if (candidate.candidate == null || candidate.candidate!.isEmpty) return;
+      debugPrint(
+        '🧊 Generated ICE candidate (offer): ${candidate.candidate?.substring(0, 50)}...',
+      );
+      onLocalDescription({'type': 'ice', 'candidate': candidate.toMap()});
+    };
+
     // Use perfect negotiation - track if we're making an offer
     _makingOffer[peerId] = true;
     try {
-      // Create offer
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-
-      pc.onIceCandidate = (candidate) {
-        debugPrint(
-          '🧊 Generated ICE candidate (offer): ${candidate.candidate?.substring(0, 50)}...',
-        );
-        onLocalDescription({'type': 'ice', 'candidate': candidate.toMap()});
-      };
-
       onLocalDescription({'type': 'offer', 'sdp': offer.sdp});
     } finally {
       _makingOffer[peerId] = false;
@@ -510,6 +521,7 @@ class WebRTCService {
 
     _peerConnections[peerId]?.close();
     _peerConnections.remove(peerId);
+    _peerUsers.remove(peerId);
 
     _pendingIceCandidates.remove(peerId);
     _makingOffer.remove(peerId);
