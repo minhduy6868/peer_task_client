@@ -277,4 +277,24 @@ void main() {
     expect(find.text('Redesign home dashboard'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('BoardsScreen adapts on compact 360px mobile viewport without overflow', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildTestApp(home: const BoardsScreen(workspaceId: 'ws-1'), locale: const Locale('vi')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Sprint Planning'), findsOneWidget);
+    // Scroll to see subsequent boards in ListView
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Design System'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
