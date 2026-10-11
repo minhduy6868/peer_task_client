@@ -35,7 +35,6 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
 
   final Set<String> _favoriteIds = {};
   final Map<String, int> _boardsCountCache = {};
-  final Map<String, int> _tasksCountCache = {};
 
   static const Color saasPrimary = Color(0xFF8B5CF6);
   static const Color saasBackground = Color(0xFFFFF9F0); // Warm Cream background
@@ -78,8 +77,6 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
           if (mounted) {
             setState(() {
               _boardsCountCache[ws.id] = boards.length;
-              // Sum tasks count across boards if available
-              _tasksCountCache[ws.id] = boards.length * 3; // Estimated baseline
             });
           }
         } catch (_) {}
@@ -387,9 +384,18 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
   }
 
   void _copyInviteCode(Workspace workspace) async {
-    await Clipboard.setData(ClipboardData(text: workspace.id));
-    if (mounted) {
-      context.showSuccessMessage('Đã sao chép mã workspace vào clipboard!');
+    try {
+      final invite = await ref.read(apiServiceProvider).createInviteLink(
+            workspaceId: workspace.id,
+          );
+      final token = invite['token'] ?? invite['inviteLink'];
+      if (token is! String || token.isEmpty) return;
+      await Clipboard.setData(ClipboardData(text: token));
+      if (mounted) {
+        context.showSuccessMessage('Đã sao chép mã mời');
+      }
+    } catch (e) {
+      if (mounted) context.showErrorSnackBar(e);
     }
   }
 
@@ -730,8 +736,8 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
             ElevatedButton.icon(
               onPressed: _showCreateWorkspaceDialog,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text(
-                'Create Workspace',
+                label: const Text(
+                'Tạo workspace',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
@@ -791,8 +797,8 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                   },
                   onCopyInvite: () => _copyInviteCode(workspaces[i]),
                   onDelete: () => _deleteWorkspace(workspaces[i]),
+                  canManage: workspaces[i].role == 'owner',
                   boardsCount: _boardsCountCache[workspaces[i].id] ?? 0,
-                  tasksCount: _tasksCountCache[workspaces[i].id] ?? 0,
                   isListView: false,
                 ),
               ),
@@ -824,8 +830,8 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
             },
             onCopyInvite: () => _copyInviteCode(workspaces[i]),
             onDelete: () => _deleteWorkspace(workspaces[i]),
+            canManage: workspaces[i].role == 'owner',
             boardsCount: _boardsCountCache[workspaces[i].id] ?? 0,
-            tasksCount: _tasksCountCache[workspaces[i].id] ?? 0,
             isListView: true,
           ),
       ],

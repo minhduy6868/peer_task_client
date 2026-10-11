@@ -15,6 +15,7 @@ import 'ui/screens/login_screen.dart';
 import 'ui/screens/forgot_password_screen.dart';
 import 'ui/screens/reset_password_screen.dart';
 import 'ui/screens/workspace_selection_screen.dart';
+import 'ui/screens/settings_screen.dart';
 import 'ui/screens/workspace_home_screen.dart';
 import 'ui/screens/board_screen.dart';
 import 'ui/screens/offline_username_screen.dart';
@@ -132,7 +133,8 @@ class _MyAppState extends ConsumerState<MyApp> {
         if (isAuthenticated && 
             (path.startsWith('/workspace/') || 
              path.startsWith('/board/') ||
-             path == '/workspaces')) {
+             path == '/workspaces' ||
+             path == '/settings')) {
           return null;
         }
 
@@ -151,6 +153,10 @@ class _MyAppState extends ConsumerState<MyApp> {
         GoRoute(
           path: '/workspaces',
           builder: (context, state) => const WorkspaceSelectionScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
           path: '/workspace/:id/boards',

@@ -26,9 +26,10 @@ class WorkspaceCard extends StatefulWidget {
   final VoidCallback onSettings;
   final VoidCallback onCopyInvite;
   final VoidCallback onDelete;
+  final bool canManage;
   final bool isListView;
   final int boardsCount;
-  final int tasksCount;
+  final int? tasksCount;
 
   const WorkspaceCard({
     super.key,
@@ -40,9 +41,10 @@ class WorkspaceCard extends StatefulWidget {
     required this.onSettings,
     required this.onCopyInvite,
     required this.onDelete,
+    this.canManage = false,
     this.isListView = false,
     this.boardsCount = 0,
-    this.tasksCount = 0,
+    this.tasksCount,
   });
 
   @override
@@ -278,17 +280,19 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const Spacer(),
-                          const Icon(Icons.check_circle_outline_rounded, size: 15, color: textMuted),
-                          const SizedBox(width: 5),
-                          Text(
-                            '${widget.tasksCount} nhiệm vụ',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: textMuted,
-                              fontWeight: FontWeight.w500,
+                          if (widget.tasksCount != null) ...[
+                            const Spacer(),
+                            const Icon(Icons.check_circle_outline_rounded, size: 15, color: textMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${widget.tasksCount} nhiệm vụ',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ],
@@ -373,10 +377,12 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
                               const Icon(Icons.folder_outlined, size: 13, color: textMuted),
                               const SizedBox(width: 3),
                               Text('${widget.boardsCount} bảng', style: const TextStyle(fontSize: 11.5, color: textMuted)),
-                              const SizedBox(width: 10),
-                              const Icon(Icons.check_circle_outline_rounded, size: 13, color: textMuted),
-                              const SizedBox(width: 3),
-                              Text('${widget.tasksCount} nhiệm vụ', style: const TextStyle(fontSize: 11.5, color: textMuted)),
+                              if (widget.tasksCount != null) ...[
+                                const SizedBox(width: 10),
+                                const Icon(Icons.check_circle_outline_rounded, size: 13, color: textMuted),
+                                const SizedBox(width: 3),
+                                Text('${widget.tasksCount} nhiệm vụ', style: const TextStyle(fontSize: 11.5, color: textMuted)),
+                              ],
                             ],
                           ),
                         ],
@@ -392,10 +398,12 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
                         const Icon(Icons.folder_outlined, size: 15, color: textMuted),
                         const SizedBox(width: 4),
                         Text('${widget.boardsCount} bảng', style: const TextStyle(fontSize: 12, color: textMuted)),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.check_circle_outline_rounded, size: 15, color: textMuted),
-                        const SizedBox(width: 4),
-                        Text('${widget.tasksCount} nhiệm vụ', style: const TextStyle(fontSize: 12, color: textMuted)),
+                        if (widget.tasksCount != null) ...[
+                          const SizedBox(width: 16),
+                          const Icon(Icons.check_circle_outline_rounded, size: 15, color: textMuted),
+                          const SizedBox(width: 4),
+                          Text('${widget.tasksCount} nhiệm vụ', style: const TextStyle(fontSize: 12, color: textMuted)),
+                        ],
                       ],
                     ),
                     const SizedBox(width: 12),
@@ -470,16 +478,17 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
             ],
           ),
         ),
-        const PopupMenuItem(
-          value: 'invite',
-          child: Row(
-            children: [
-              Icon(Icons.link_rounded, size: 16, color: textMuted),
-              SizedBox(width: 8),
-              Text('Sao chép mã mời', style: TextStyle(fontSize: 13)),
-            ],
+        if (widget.canManage)
+          const PopupMenuItem(
+            value: 'invite',
+            child: Row(
+              children: [
+                Icon(Icons.link_rounded, size: 16, color: textMuted),
+                SizedBox(width: 8),
+                Text('Sao chép mã mời', style: TextStyle(fontSize: 13)),
+              ],
+            ),
           ),
-        ),
         const PopupMenuItem(
           value: 'settings',
           child: Row(
@@ -490,17 +499,19 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
             ],
           ),
         ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
-              SizedBox(width: 8),
-              Text('Rời / Xóa', style: TextStyle(fontSize: 13, color: Color(0xFFEF4444))),
-            ],
+        if (widget.canManage) ...[
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                SizedBox(width: 8),
+                Text('Xóa', style: TextStyle(fontSize: 13, color: Color(0xFFEF4444))),
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
