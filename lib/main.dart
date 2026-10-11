@@ -59,9 +59,28 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   GoRouter? _router;
+  late final _AuthRefreshNotifier _authRefreshNotifier;
+  ProviderSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authRefreshNotifier = _AuthRefreshNotifier();
+    _authSubscription = ref.listenManual<AuthState>(
+      authStateProvider,
+      (previous, next) {
+        if (previous?.isAuthenticated != next.isAuthenticated ||
+            previous?.isLoading != next.isLoading) {
+          _authRefreshNotifier.notify();
+        }
+      },
+    );
+  }
 
   @override
   void dispose() {
+    _authSubscription?.close();
+    _authRefreshNotifier.dispose();
     _router?.dispose();
     super.dispose();
   }
@@ -98,7 +117,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     _router ??= GoRouter(
       initialLocation: _getInitialLocation(ref),
       overridePlatformDefaultLocation: _browserLocation() != null,
-      refreshListenable: _AuthStateNotifier(ref),
+      refreshListenable: _authRefreshNotifier,
       redirect: (context, state) {
         final current = ref.read(authStateProvider);
         if (current.isLoading) return null;
@@ -247,12 +266,6 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 }
 
-class _AuthStateNotifier extends ChangeNotifier {
-  final WidgetRef ref;
-
-  _AuthStateNotifier(this.ref) {
-    ref.listen(authStateProvider, (previous, next) {
-      notifyListeners();
-    });
-  }
+class _AuthRefreshNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
 }

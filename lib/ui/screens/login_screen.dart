@@ -46,10 +46,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await authNotifier.login(email, password);
       }
 
+      if (!mounted) return;
+
       // Check for errors in authState
       final authState = ref.read(authStateProvider);
-      if (authState.error != null && mounted) {
+      if (authState.error != null) {
         context.showErrorSnackBar(authState.error!);
+      } else if (authState.isAuthenticated) {
+        final storage = ref.read(storageServiceProvider);
+        final lastWorkspaceId = storage.getLastWorkspace();
+        if (lastWorkspaceId != null && lastWorkspaceId.isNotEmpty) {
+          context.go('/workspace/$lastWorkspaceId/boards');
+        } else {
+          context.go('/workspaces');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -353,6 +363,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
                               style: TextStyle(fontSize: isTablet ? 16 : 15),
                               validator: ValidatorsL10n.email(context),
                             ),
@@ -361,6 +372,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             // Password Field
                             TextFormField(
                               controller: _passwordController,
+                              textInputAction: _isRegisterMode ? TextInputAction.next : TextInputAction.done,
+                              onFieldSubmitted: (_) {
+                                if (!_isRegisterMode && !authState.isLoading) {
+                                  _submit();
+                                }
+                              },
                               decoration: InputDecoration(
                                 hintText: l10n.passwordPlaceholder,
                                 prefixIcon: Icon(Icons.lock_outline, color: AppColors.textSecondary, size: 20),
@@ -410,6 +427,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _nameController,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) {
+                                  if (!authState.isLoading) {
+                                    _submit();
+                                  }
+                                },
                                 decoration: InputDecoration(
                                   hintText: l10n.namePlaceholder,
                                   prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary, size: 20),
@@ -532,8 +555,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(height: 24),
                             
                             // Toggle Mode
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   _isRegisterMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
