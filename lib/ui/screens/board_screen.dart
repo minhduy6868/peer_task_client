@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,71 @@ import '../theme/app_text_styles.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/task_dialog.dart';
+
+List<String> _stringList(dynamic value) {
+  if (value is List) {
+    return value
+        .map((item) => item.toString())
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+  if (value is String && value.isNotEmpty) {
+    final trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is List) {
+          return decoded
+              .map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList();
+        }
+      } catch (_) {}
+    }
+    return [trimmed];
+  }
+  return const [];
+}
+
+({
+  String? cleanDescription,
+  int checklistTotal,
+  int checklistDone,
+}) _parseCardDescription(String? raw) {
+  if (raw == null || raw.trim().isEmpty) {
+    return (cleanDescription: null, checklistTotal: 0, checklistDone: 0);
+  }
+  int total = 0;
+  int done = 0;
+  final notesLines = <String>[];
+  final lines = raw.replaceAll('\r', '').split('\n');
+  final checkRegex = RegExp(r'^\s*-\s*\[([ xX])\]\s*(.*)$');
+
+  for (final line in lines) {
+    final trimmed = line.trim();
+    if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) {
+      continue;
+    }
+    final match = checkRegex.firstMatch(line);
+    if (match != null) {
+      total++;
+      if (match.group(1)!.toLowerCase() == 'x') {
+        done++;
+      }
+      continue;
+    }
+    if (trimmed.isNotEmpty) {
+      notesLines.add(trimmed);
+    }
+  }
+
+  final notes = notesLines.join(' ').trim();
+  return (
+    cleanDescription: notes.isEmpty ? null : notes,
+    checklistTotal: total,
+    checklistDone: done,
+  );
+}
 
 enum _BoardPage { tasks, canvas }
 
@@ -49,6 +115,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   List<Offset> _points = [];
   String? _strokeId;
+  bool _isDrawing = false;
+  Offset? _currentDrawPoint;
   List<Map<String, dynamic>> _members = [];
   String? _currentBoardId;
 
@@ -283,9 +351,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         description: existing['description'] as String?,
         status: existing['status'] as String? ?? status,
         priority: existing['priority'] as String? ?? 'medium',
-        assignees: (existing['assignees'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        assignees: _stringList(existing['assignees']),
         assigneeList: const [],
-        labels: (existing['labels'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        labels: _stringList(existing['labels']),
+        deadline: existing['deadline'] != null
+            ? DateTime.tryParse(existing['deadline'].toString())
+            : null,
         position: (existing['position'] as num?)?.toInt() ?? 0,
         createdBy: existing['created_by'] as String? ?? '',
         createdAt: DateTime.now(),
@@ -295,6 +366,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     if (!mounted) return;
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => TaskDialog(
         existingTask: model,
         initialStatus: status,
@@ -324,22 +396,39 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             return;
           }
           final taskId = existing['id'] as String;
-          final response = await ref.read(apiServiceProvider).updateTask(
-                taskId: taskId,
-                title: title,
-                description: description,
-                assignees: assignees,
-                priority: priority,
-                status: status,
-                deadline: deadline,
-                labels: labels,
-                estimatedHours: estimatedHours,
-              );
-          ref.read(whiteboardProvider.notifier).createOperation(
-            OperationType.updateObject,
-            {'id': taskId, 'type': 'task', 'data': response},
-            shouldSaveBackend: false,
-          );
+          try {
+            final response = await ref.read(apiServiceProvider).updateTask(
+                  taskId: taskId,
+                  title: title,
+                  description: description,
+                  assignees: assignees ?? [],
+                  priority: priority,
+                  status: status,
+                  deadline: deadline,
+                  labels: labels ?? [],
+                  estimatedHours: estimatedHours,
+                );
+            ref.read(whiteboardProvider.notifier).createOperation(
+              OperationType.updateObject,
+              {
+                'id': taskId,
+                'type': 'task',
+                'data': {
+                  ...response,
+                  'title': title,
+                  'description': description,
+                  'status': status,
+                  'priority': priority,
+                  'assignees': assignees ?? _stringList(response['assignees']),
+                  'labels': labels ?? _stringList(response['labels']),
+                  'deadline': deadline?.toIso8601String() ?? response['deadline'],
+                },
+              },
+              shouldSaveBackend: false,
+            );
+          } catch (e) {
+            if (mounted && context.mounted) context.showErrorSnackBar(e);
+          }
         },
       ),
     );
@@ -351,6 +440,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final eraser = _tool == _DrawTool.eraser;
     _strokeId = 'stroke-$now';
     _points = [point];
+    setState(() {
+      _isDrawing = true;
+      _currentDrawPoint = point;
+    });
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.createObject,
       {
@@ -360,11 +453,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       },
       shouldSaveBackend: true,
     );
+    _broadcastCursor(point, drawing: true);
   }
 
   void _panUpdate(Offset point) {
     if (_strokeId == null || _tool == _DrawTool.text) return;
-    setState(() => _points.add(point));
+    setState(() {
+      _points.add(point);
+      _currentDrawPoint = point;
+    });
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.updateObject,
       {
@@ -374,6 +471,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       },
       shouldSaveBackend: false,
     );
+    _broadcastCursor(point, drawing: true);
   }
 
   void _panEnd() {
@@ -387,20 +485,65 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       },
       shouldSaveBackend: true,
     );
-    _strokeId = null;
-    _points = [];
+    _broadcastCursor(null, drawing: false);
+    setState(() {
+      _strokeId = null;
+      _points = [];
+      _isDrawing = false;
+      _currentDrawPoint = null;
+    });
+  }
+
+  void _broadcastCursor(Offset? point, {required bool drawing}) {
+    final user = ref.read(authStateProvider).user;
+    final uId = user?.id ?? 'unknown';
+    final uName = _displayName();
+    if (!drawing) {
+      ref.read(whiteboardProvider.notifier).createOperation(
+        OperationType.deleteObject,
+        {
+          'id': 'cursor-$uId',
+          'type': 'cursor',
+        },
+        shouldSaveBackend: false,
+      );
+      return;
+    }
+    ref.read(whiteboardProvider.notifier).createOperation(
+      OperationType.updateObject,
+      {
+        'id': 'cursor-$uId',
+        'type': 'cursor',
+        'data': {
+          'userId': uId,
+          'userName': uName,
+          'x': point?.dx ?? 0,
+          'y': point?.dy ?? 0,
+          'drawing': true,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'pageId': _activePageId(),
+        },
+      },
+      shouldSaveBackend: false,
+    );
   }
 
   Map<String, dynamic> _strokeData(bool eraser) {
     final paint = eraser ? Colors.white : _color;
+    final currentUser = ref.read(authStateProvider).user;
+    final uId = currentUser?.id ?? 'unknown';
+    final uName = _displayName();
     return {
       'points': _points.expand((p) => [p.dx, p.dy]).toList(),
       'color': paint.toARGB32(),
       'width': eraser ? _width * 4 : _width,
-      'actor': ref.read(authStateProvider).user?.id ?? 'unknown',
-      'actorName': _displayName(),
+      'actor': uId,
+      'actorName': uName,
+      'userId': uId,
+      'userName': uName,
       'isEraser': eraser,
       'pageId': _activePageId(),
+      'createdAt': DateTime.now().toIso8601String(),
     };
   }
 
@@ -601,25 +744,81 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       ),
       body: Column(
         children: [
-          _PresenceBar(
-            selfName: selfName,
-            selfMuted: !_voice,
-            selfSpeaking: _voice && state.localSpeaking,
-            peers: state.peers,
-            youLabel: l10n.you,
-            onName: (name) => AppToast.show(context, message: name),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: _PageSwitch(
-                tasks: _page == _BoardPage.tasks,
-                tasksLabel: l10n.tasks,
-                canvasLabel: l10n.canvas,
-                onTasks: () => setState(() => _page = _BoardPage.tasks),
-                onCanvas: () => setState(() => _page = _BoardPage.canvas),
-              ),
+          Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+            ),
+            child: Row(
+              children: [
+                _PageSwitch(
+                  tasks: _page == _BoardPage.tasks,
+                  tasksLabel: l10n.tasks,
+                  canvasLabel: l10n.canvas,
+                  onTasks: () => setState(() => _page = _BoardPage.tasks),
+                  onCanvas: () => setState(() => _page = _BoardPage.canvas),
+                ),
+                const SizedBox(width: 14),
+                Container(width: 1, height: 22, color: const Color(0xFFE5E7EB)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _PresenceAvatar(
+                          name: selfName,
+                          label: l10n.you,
+                          muted: !_voice,
+                          speaking: _voice && state.localSpeaking,
+                          online: true,
+                          onTap: () => AppToast.show(context, message: selfName),
+                        ),
+                        for (final peer in state.peers.take(4))
+                          _PresenceAvatar(
+                            name: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+                            muted: peer.isMuted,
+                            speaking: peer.isSpeaking && !peer.isMuted,
+                            online: peer.connected,
+                            onTap: () => AppToast.show(
+                              context,
+                              message: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+                            ),
+                          ),
+                        if (state.peers.length > 4)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Material(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(20),
+                              child: InkWell(
+                                onTap: () => _showMembers(l10n, selfName),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                                  ),
+                                  child: Text(
+                                    '+${state.peers.length - 4}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -660,6 +859,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
               onTap: (point) {
                 if (_tool == _DrawTool.text) _addText(point);
               },
+              currentUserId: user?.id ?? 'unknown',
+              currentUserName: selfName,
+              activeCursors: scene.activeCursors,
+              localDrawing: _isDrawing,
+              localPoint: _currentDrawPoint,
             ),
           ),
         ],
@@ -740,6 +944,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final texts = <Map<String, dynamic>>[];
     final tasks = <Map<String, dynamic>>[];
     final pages = <Map<String, dynamic>>[];
+    final cursors = <String, Map<String, dynamic>>{};
     for (final op in operations) {
       final id = op.payload['id'] as String?;
       final type = op.payload['type'] as String?;
@@ -749,12 +954,23 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         texts.removeWhere((item) => item['id'] == id);
         tasks.removeWhere((item) => item['id'] == id);
         pages.removeWhere((item) => item['id'] == id);
+        cursors.remove(id);
+        if (id.startsWith('cursor-')) {
+          cursors.remove(id.replaceFirst('cursor-', ''));
+        }
         continue;
       }
       final data = {'id': id, ...Map<String, dynamic>.from(op.payload['data'] ?? {})};
       if (type == 'stroke') {
         strokes.removeWhere((item) => item['id'] == id);
         strokes.add(data);
+      } else if (type == 'cursor') {
+        final uId = (data['userId'] ?? op.actor).toString();
+        if (data['drawing'] == true) {
+          cursors[uId] = data;
+        } else {
+          cursors.remove(uId);
+        }
       } else if (type == 'text') {
         texts.removeWhere((item) => item['id'] == id);
         texts.add(data);
@@ -767,7 +983,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       }
     }
     pages.sort((a, b) => ((a['index'] as num?) ?? 0).compareTo((b['index'] as num?) ?? 0));
-    return _Scene(strokes, texts, tasks, pages);
+    return _Scene(strokes, texts, tasks, pages, cursors);
   }
 }
 
@@ -776,7 +992,8 @@ class _Scene {
   final List<Map<String, dynamic>> texts;
   final List<Map<String, dynamic>> tasks;
   final List<Map<String, dynamic>> pages;
-  const _Scene(this.strokes, this.texts, this.tasks, this.pages);
+  final Map<String, Map<String, dynamic>> activeCursors;
+  const _Scene(this.strokes, this.texts, this.tasks, this.pages, [this.activeCursors = const {}]);
 }
 
 class _ColumnData {
@@ -928,7 +1145,7 @@ class _TrelloBoard extends StatelessWidget {
     if (column.status == 'todo') {
       dotColor = const Color(0xFF8B7CFF);
     } else if (column.status == 'doing') {
-      dotColor = const Color(0xFFF59E0B);
+      dotColor = const Color(0xFF3B82F6);
     } else {
       dotColor = const Color(0xFF10B981);
     }
@@ -942,10 +1159,10 @@ class _TrelloBoard extends StatelessWidget {
         builder: (context, candidate, rejected) {
           return Container(
             decoration: BoxDecoration(
-              color: candidate.isEmpty ? AppColors.surfaceVariant : AppColors.primarySubtle,
-              borderRadius: BorderRadius.circular(14),
+              color: candidate.isEmpty ? const Color(0xFFF8F7FD) : const Color(0xFFF3E8FF),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: candidate.isEmpty ? AppColors.borderLight : AppColors.primaryLight,
+                color: candidate.isEmpty ? const Color(0xFFE9E5F5) : const Color(0xFF8B7CFF),
                 width: candidate.isEmpty ? 1 : 1.5,
               ),
             ),
@@ -973,9 +1190,9 @@ class _TrelloBoard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: AppColors.borderLight),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
                         ),
                         child: Text(
                           '${column.tasks.length}',
@@ -1006,7 +1223,7 @@ class _TrelloBoard extends StatelessWidget {
                         feedback: Material(
                           elevation: 10,
                           borderRadius: BorderRadius.circular(12),
-                          shadowColor: AppColors.primary.withValues(alpha: 0.25),
+                          shadowColor: const Color(0xFF8B7CFF).withValues(alpha: 0.25),
                           child: Transform.rotate(
                             angle: 0.03,
                             child: SizedBox(
@@ -1043,21 +1260,21 @@ class _TrelloBoard extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.primaryDark, width: 1.5),
+                        borderSide: const BorderSide(color: Color(0xFF8B7CFF), width: 1.5),
                       ),
                       suffixIcon: IconButton(
                         tooltip: l10n.addTask,
                         iconSize: 18,
                         onPressed: () => _submitQuickAdd(column.status),
-                        icon: const Icon(Icons.add_circle_rounded, color: AppColors.primaryDark),
+                        icon: const Icon(Icons.add_circle_rounded, color: Color(0xFF8B7CFF)),
                       ),
                     ),
                     onSubmitted: (_) => _submitQuickAdd(column.status),
@@ -1090,14 +1307,18 @@ class _TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final priority = task['priority'] as String? ?? 'medium';
-    final description = task['description'] as String?;
+    final rawDescription = task['description'] as String?;
+    final cardData = _parseCardDescription(rawDescription);
     final labels = _stringList(task['labels']);
     final assigneeIds = _stringList(task['assignees']);
-    final deadline = task['deadline'] == null ? null : DateTime.tryParse(task['deadline'].toString());
-    final overdue = deadline != null && deadline.isBefore(DateTime.now()) && task['status'] != 'done';
+    final deadline = task['deadline'] == null
+        ? null
+        : DateTime.tryParse(task['deadline'].toString());
+    final overdue = deadline != null &&
+        deadline.isBefore(DateTime.now()) &&
+        task['status'] != 'done';
     final names = [
-      for (final id in assigneeIds.take(3))
-        _memberName(id),
+      for (final id in assigneeIds.take(3)) _memberName(id),
     ];
 
     return Padding(
@@ -1111,12 +1332,12 @@ class _TaskCard extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
-              boxShadow: [
+              border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+              boxShadow: const [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: Color(0x0A000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
@@ -1126,21 +1347,11 @@ class _TaskCard extends StatelessWidget {
               children: [
                 if (labels.isNotEmpty) ...[
                   Wrap(
-                    spacing: 4,
+                    spacing: 5,
                     runSpacing: 4,
                     children: [
-                      for (final label in labels.take(3))
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySubtle,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            label,
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
-                          ),
-                        ),
+                      for (final label in labels.take(4))
+                        _buildLabelBadge(label),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1148,44 +1359,102 @@ class _TaskCard extends StatelessWidget {
                 Text(
                   task['title'] as String? ?? l10n.untitled,
                   style: const TextStyle(
-                    color: AppColors.textPrimary,
+                    color: Color(0xFF111827),
                     fontWeight: FontWeight.w700,
                     fontSize: 13.5,
                   ),
                 ),
-                if (description != null && description.isNotEmpty)
+                if (cardData.cleanDescription != null &&
+                    cardData.cleanDescription!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: 5),
                     child: Text(
-                      description,
+                      cardData.cleanDescription!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                      style: const TextStyle(
+                        color: Color(0xFF4B5563),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     _priorityBadge(priority),
-                    if (deadline != null) ...[
-                      const SizedBox(width: 8),
+                    if (cardData.checklistTotal > 0) ...[
+                      const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: overdue ? AppColors.error.withValues(alpha: 0.1) : AppColors.surfaceVariant,
+                          color: cardData.checklistDone ==
+                                  cardData.checklistTotal
+                              ? const Color(0xFFDEF7EC)
+                              : const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.schedule_rounded, size: 12, color: overdue ? AppColors.error : AppColors.textSecondary),
+                            Icon(
+                              cardData.checklistDone ==
+                                      cardData.checklistTotal
+                                  ? Icons.check_circle_rounded
+                                  : Icons.check_box_outlined,
+                              size: 11,
+                              color: cardData.checklistDone ==
+                                      cardData.checklistTotal
+                                  ? const Color(0xFF03543F)
+                                  : const Color(0xFF6B7280),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${cardData.checklistDone}/${cardData.checklistTotal}',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: cardData.checklistDone ==
+                                        cardData.checklistTotal
+                                    ? const Color(0xFF03543F)
+                                    : const Color(0xFF4B5563),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (deadline != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: overdue
+                              ? AppColors.error.withValues(alpha: 0.1)
+                              : const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 11,
+                              color: overdue
+                                  ? AppColors.error
+                                  : const Color(0xFF6B7280),
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               '${deadline.day}/${deadline.month}',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
-                                color: overdue ? AppColors.error : AppColors.textSecondary,
+                                color: overdue
+                                    ? AppColors.error
+                                    : const Color(0xFF4B5563),
                               ),
                             ),
                           ],
@@ -1197,10 +1466,14 @@ class _TaskCard extends StatelessWidget {
                       if (i > 0) const SizedBox(width: 3),
                       CircleAvatar(
                         radius: 11,
-                        backgroundColor: AppColors.primaryDark,
+                        backgroundColor: const Color(0xFF5B4AD4),
                         child: Text(
                           names[i].isEmpty ? '?' : names[i][0].toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -1209,6 +1482,50 @@ class _TaskCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabelBadge(String label) {
+    final lower = label.toLowerCase();
+    Color bg;
+    Color fg;
+    if (lower.contains('bug')) {
+      bg = const Color(0xFFFADBD8);
+      fg = const Color(0xFF991B1B);
+    } else if (lower.contains('approval')) {
+      bg = const Color(0xFFFDE8E8);
+      fg = const Color(0xFF9F1239);
+    } else if (lower.contains('yellow')) {
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFF854D0E);
+    } else if (lower.contains('green')) {
+      bg = const Color(0xFFDEF7EC);
+      fg = const Color(0xFF03543F);
+    } else if (lower.contains('review')) {
+      bg = const Color(0xFFE1EFFE);
+      fg = const Color(0xFF1E429F);
+    } else if (lower.contains('purple')) {
+      bg = const Color(0xFFEDEBFE);
+      fg = const Color(0xFF5521B5);
+    } else {
+      bg = const Color(0xFFEDE9FE);
+      fg = const Color(0xFF5B4AD4);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: fg,
         ),
       ),
     );
@@ -1232,8 +1549,8 @@ class _TaskCard extends StatelessWidget {
         fg = const Color(0xFF16A34A);
         break;
       default:
-        bg = AppColors.primarySubtle;
-        fg = AppColors.primaryDark;
+        bg = const Color(0xFFEDE9FE);
+        fg = const Color(0xFF5B4AD4);
     }
 
     return Container(
@@ -1245,21 +1562,19 @@ class _TaskCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: fg),
+          Icon(icon, size: 10.5, color: fg),
           const SizedBox(width: 3),
           Text(
             priority.toUpperCase(),
-            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: fg),
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              color: fg,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  List<String> _stringList(dynamic value) {
-    if (value is List) return value.map((item) => item.toString()).where((item) => item.isNotEmpty).toList();
-    if (value is String && value.isNotEmpty) return [value];
-    return const [];
   }
 
   String _memberName(String id) {
@@ -1274,7 +1589,7 @@ class _TaskCard extends StatelessWidget {
   }
 }
 
-class _CanvaPage extends StatelessWidget {
+class _CanvaPage extends StatefulWidget {
   final AppLocalizations l10n;
   final _DrawTool tool;
   final Color color;
@@ -1294,6 +1609,11 @@ class _CanvaPage extends StatelessWidget {
   final ValueChanged<Offset> onPanUpdate;
   final VoidCallback onPanEnd;
   final ValueChanged<Offset> onTap;
+  final String currentUserId;
+  final String currentUserName;
+  final Map<String, Map<String, dynamic>> activeCursors;
+  final bool localDrawing;
+  final Offset? localPoint;
 
   const _CanvaPage({
     required this.l10n,
@@ -1315,6 +1635,11 @@ class _CanvaPage extends StatelessWidget {
     required this.onPanUpdate,
     required this.onPanEnd,
     required this.onTap,
+    required this.currentUserId,
+    required this.currentUserName,
+    required this.activeCursors,
+    required this.localDrawing,
+    required this.localPoint,
   });
 
   static const _colors = [
@@ -1326,6 +1651,291 @@ class _CanvaPage extends StatelessWidget {
     Color(0xFFEF4444),
     Color(0xFF1E293B),
   ];
+
+  @override
+  State<_CanvaPage> createState() => _CanvaPageState();
+}
+
+class _CanvaPageState extends State<_CanvaPage> {
+  bool _showAuthorTags = true;
+  bool _isLegendExpanded = true;
+
+  Color _getAuthorColor(String? id, String? name) {
+    const palette = [
+      Color(0xFF5B4AD4), // Indigo
+      Color(0xFF0D9488), // Teal
+      Color(0xFFE11D48), // Rose
+      Color(0xFFD97706), // Amber
+      Color(0xFF2563EB), // Blue
+      Color(0xFF7C3AED), // Violet
+      Color(0xFF059669), // Emerald
+      Color(0xFFEA580C), // Orange
+    ];
+    final key = (id != null && id.isNotEmpty && id != 'unknown')
+        ? id
+        : ((name != null && name.isNotEmpty) ? name : 'guest');
+    final hash = key.codeUnits.fold<int>(0, (prev, elem) => prev + elem);
+    return palette[hash % palette.length];
+  }
+
+  Map<String, String> _getContributors() {
+    final map = <String, String>{};
+    if (widget.currentUserId.isNotEmpty && widget.currentUserId != 'unknown') {
+      map[widget.currentUserId] = widget.currentUserName;
+    }
+    for (final s in widget.strokes) {
+      final id = (s['userId'] ?? s['actor'])?.toString() ?? '';
+      final name = (s['userName'] ?? s['actorName'])?.toString() ?? '';
+      if (name.isNotEmpty && name != 'unknown') {
+        map[id.isNotEmpty ? id : name] = name;
+      }
+    }
+    for (final t in widget.texts) {
+      final name = (t['actorName'] ?? t['userName'])?.toString() ?? '';
+      if (name.isNotEmpty && name != 'unknown') {
+        map[name] = name;
+      }
+    }
+    for (final c in widget.activeCursors.values) {
+      final id = (c['userId'])?.toString() ?? '';
+      final name = (c['userName'] ?? c['name'])?.toString() ?? '';
+      if (name.isNotEmpty && name != 'unknown') {
+        map[id.isNotEmpty ? id : name] = name;
+      }
+    }
+    return map;
+  }
+
+  List<Widget> _buildLiveAuthorTags() {
+    if (!_showAuthorTags) return [];
+    final tags = <Widget>[];
+
+    // 1. Local user live drawing tag
+    if (widget.localDrawing && widget.localPoint != null) {
+      final localColor = _getAuthorColor(widget.currentUserId, widget.currentUserName);
+      tags.add(
+        Positioned(
+          left: widget.localPoint!.dx + 12,
+          top: (widget.localPoint!.dy - 28) < 0 ? widget.localPoint!.dy + 10 : widget.localPoint!.dy - 28,
+          child: IgnorePointer(
+            child: _authorTagPill(
+              name: widget.currentUserName.isNotEmpty ? widget.currentUserName : 'You',
+              color: localColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. Remote peers currently drawing (active cursors)
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final entry in widget.activeCursors.entries) {
+      final c = entry.value;
+      final peerId = (c['userId'] ?? entry.key).toString();
+      if (peerId == widget.currentUserId) continue;
+      if (c['drawing'] != true) continue;
+      if (c['x'] == null || c['y'] == null) continue;
+      final ts = (c['timestamp'] as num?)?.toInt();
+      if (ts != null && (now - ts) > 1500) continue;
+
+      final peerName = (c['userName'] ?? c['name'] ?? 'Peer').toString();
+      final peerColor = _getAuthorColor(peerId, peerName);
+      final px = (c['x'] as num).toDouble();
+      final py = (c['y'] as num).toDouble();
+
+      tags.add(
+        Positioned(
+          left: px + 12,
+          top: (py - 28) < 0 ? py + 10 : py - 28,
+          child: IgnorePointer(
+            child: _authorTagPill(
+              name: peerName,
+              color: peerColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return tags;
+  }
+
+  Widget _authorTagPill({required String name, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 4,
+            offset: const Offset(0, 1.5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.edit_rounded,
+            size: 10,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendCard() {
+    final contributors = _getContributors();
+    return Material(
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(10),
+      color: Colors.white,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => setState(() => _isLegendExpanded = !_isLegendExpanded),
+              borderRadius: BorderRadius.vertical(
+                top: const Radius.circular(10),
+                bottom: Radius.circular(_isLegendExpanded ? 0 : 10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.people_alt_outlined, size: 14, color: AppColors.textPrimary),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Người vẽ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySubtle,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${contributors.length}',
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      _isLegendExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_isLegendExpanded) ...[
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Hiện nhãn khi vẽ',
+                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                    ),
+                    SizedBox(
+                      height: 20,
+                      width: 32,
+                      child: Transform.scale(
+                        scale: 0.65,
+                        child: Switch(
+                          value: _showAuthorTags,
+                          activeThumbColor: AppColors.primary,
+                          onChanged: (val) => setState(() => _showAuthorTags = val),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 160),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (contributors.isEmpty)
+                        const Text(
+                          'Chưa có nét vẽ',
+                          style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textTertiary),
+                        ),
+                      for (final entry in contributors.entries) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.5),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _getAuthorColor(entry.key, entry.value),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Flexible(
+                                child: Text(
+                                  entry.value + (entry.key == widget.currentUserId ? ' (Bạn)' : ''),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1341,23 +1951,38 @@ class _CanvaPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             children: [
-              _toolButton(Icons.edit_rounded, l10n.pen, _DrawTool.pen),
+              _toolButton(Icons.edit_rounded, widget.l10n.pen, _DrawTool.pen),
               const SizedBox(height: 6),
-              _toolButton(Icons.auto_fix_high_rounded, l10n.eraser, _DrawTool.eraser),
+              _toolButton(Icons.auto_fix_high_rounded, widget.l10n.eraser, _DrawTool.eraser),
               const SizedBox(height: 6),
-              _toolButton(Icons.title_rounded, l10n.addText, _DrawTool.text),
+              _toolButton(Icons.title_rounded, widget.l10n.addText, _DrawTool.text),
               const SizedBox(height: 6),
-              _toolButton(Icons.pan_tool_rounded, l10n.pan, _DrawTool.hand),
+              _toolButton(Icons.pan_tool_rounded, widget.l10n.pan, _DrawTool.hand),
+              const SizedBox(height: 6),
+              // Author tag toggle button on toolbar
+              IconButton(
+                tooltip: _showAuthorTags ? 'Ẩn nhãn khi vẽ' : 'Hiện nhãn khi vẽ',
+                onPressed: () => setState(() => _showAuthorTags = !_showAuthorTags),
+                icon: Icon(
+                  _showAuthorTags ? Icons.label_rounded : Icons.label_off_rounded,
+                  size: 20,
+                  color: _showAuthorTags ? AppColors.primaryDark : AppColors.textSecondary,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: _showAuthorTags ? AppColors.primarySubtle : Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: Divider(height: 1, color: AppColors.borderLight),
               ),
               // Color swatches
-              for (final swatch in _colors)
+              for (final swatch in _CanvaPage._colors)
                 Center(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => onColor(swatch),
+                    onTap: () => widget.onColor(swatch),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       width: 28,
@@ -1366,10 +1991,10 @@ class _CanvaPage extends StatelessWidget {
                         color: swatch,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: color == swatch ? AppColors.surface : Colors.transparent,
+                          color: widget.color == swatch ? AppColors.surface : Colors.transparent,
                           width: 2.5,
                         ),
-                        boxShadow: color == swatch
+                        boxShadow: widget.color == swatch
                             ? [
                                 BoxShadow(
                                   color: swatch.withValues(alpha: 0.5),
@@ -1398,46 +2023,57 @@ class _CanvaPage extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: Container(
-                  color: const Color(0xFFF9F8FD),
-                  child: InteractiveViewer(
-                    minScale: 0.4,
-                    maxScale: 3,
-                    panEnabled: tool == _DrawTool.hand,
-                    boundaryMargin: const EdgeInsets.all(800),
-                    child: GestureDetector(
-                      onTapUp: (details) => onTap(details.localPosition),
-                      onPanStart: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                          ? (details) => onPanStart(details.localPosition)
-                          : null,
-                      onPanUpdate: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                          ? (details) => onPanUpdate(details.localPosition)
-                          : null,
-                      onPanEnd: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                          ? (_) => onPanEnd()
-                          : null,
-                      child: Container(
-                        width: 2400,
-                        height: 1600,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: AppColors.borderLight),
-                        ),
-                        child: Stack(
-                          children: [
-                            const Positioned.fill(
-                              child: CustomPaint(painter: _CanvasGridPainter()),
+                child: Stack(
+                  children: [
+                    Container(
+                      color: const Color(0xFFF9F8FD),
+                      child: InteractiveViewer(
+                        minScale: 0.4,
+                        maxScale: 3,
+                        panEnabled: widget.tool == _DrawTool.hand,
+                        boundaryMargin: const EdgeInsets.all(800),
+                        child: GestureDetector(
+                          onTapUp: (details) => widget.onTap(details.localPosition),
+                          onPanStart: widget.tool == _DrawTool.pen || widget.tool == _DrawTool.eraser
+                              ? (details) => widget.onPanStart(details.localPosition)
+                              : null,
+                          onPanUpdate: widget.tool == _DrawTool.pen || widget.tool == _DrawTool.eraser
+                              ? (details) => widget.onPanUpdate(details.localPosition)
+                              : null,
+                          onPanEnd: widget.tool == _DrawTool.pen || widget.tool == _DrawTool.eraser
+                              ? (_) => widget.onPanEnd()
+                              : null,
+                          child: Container(
+                            width: 2400,
+                            height: 1600,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: AppColors.borderLight),
                             ),
-                            CustomPaint(
-                              size: const Size(2400, 1600),
-                              painter: _StrokePainter(strokes),
+                            child: Stack(
+                              children: [
+                                const Positioned.fill(
+                                  child: CustomPaint(painter: _CanvasGridPainter()),
+                                ),
+                                CustomPaint(
+                                  size: const Size(2400, 1600),
+                                  painter: _StrokePainter(widget.strokes),
+                                ),
+                                for (final text in widget.texts) _textWidget(text),
+                                ..._buildLiveAuthorTags(),
+                              ],
                             ),
-                            for (final text in texts) _textWidget(text),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    // Floating Legend Card in top-right of canvas viewport
+                    Positioned(
+                      top: 14,
+                      right: 14,
+                      child: _buildLegendCard(),
+                    ),
+                  ],
                 ),
               ),
               _pageBar(),
@@ -1449,9 +2085,9 @@ class _CanvaPage extends StatelessWidget {
   }
 
   Widget _strokeWidthButton(double val) {
-    final selected = width == val;
+    final selected = widget.width == val;
     return GestureDetector(
-      onTap: () => onWidth(val),
+      onTap: () => widget.onWidth(val),
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),
         height: 28,
@@ -1482,28 +2118,28 @@ class _CanvaPage extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            tooltip: pageLabel,
+            tooltip: widget.pageLabel,
             visualDensity: VisualDensity.compact,
-            onPressed: canPrevious ? onPrevious : null,
+            onPressed: widget.canPrevious ? widget.onPrevious : null,
             icon: const Icon(Icons.chevron_left_rounded, size: 22),
           ),
           Expanded(
             child: Text(
-              pageLabel,
+              widget.pageLabel,
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
             ),
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            onPressed: canNext ? onNext : null,
+            onPressed: widget.canNext ? widget.onNext : null,
             icon: const Icon(Icons.chevron_right_rounded, size: 22),
           ),
           const SizedBox(width: 8),
           TextButton.icon(
-            onPressed: onAddPage,
+            onPressed: widget.onAddPage,
             icon: const Icon(Icons.add_rounded, size: 16),
-            label: Text(l10n.addPage, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            label: Text(widget.l10n.addPage, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
             style: TextButton.styleFrom(
               backgroundColor: AppColors.primarySubtle,
               foregroundColor: AppColors.primaryDark,
@@ -1517,10 +2153,10 @@ class _CanvaPage extends StatelessWidget {
   }
 
   Widget _toolButton(IconData icon, String tooltip, _DrawTool value) {
-    final selected = tool == value;
+    final selected = widget.tool == value;
     return IconButton(
       tooltip: tooltip,
-      onPressed: () => onTool(value),
+      onPressed: () => widget.onTool(value),
       icon: Icon(
         icon,
         size: 20,
@@ -1600,59 +2236,6 @@ class _StrokePainter extends CustomPainter {
   bool shouldRepaint(covariant _StrokePainter oldDelegate) => true;
 }
 
-class _PresenceBar extends StatelessWidget {
-  final String selfName;
-  final bool selfMuted;
-  final bool selfSpeaking;
-  final List<Peer> peers;
-  final String youLabel;
-  final ValueChanged<String> onName;
-
-  const _PresenceBar({
-    required this.selfName,
-    required this.selfMuted,
-    required this.selfSpeaking,
-    required this.peers,
-    required this.youLabel,
-    required this.onName,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 58,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
-      ),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        children: [
-          _PresenceAvatar(
-            name: selfName,
-            label: youLabel,
-            muted: selfMuted,
-            speaking: selfSpeaking,
-            online: true,
-            onTap: () => onName(selfName),
-          ),
-          for (final peer in peers)
-            _PresenceAvatar(
-              name: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
-              muted: peer.isMuted,
-              speaking: peer.isSpeaking && !peer.isMuted,
-              online: peer.connected,
-              onTap: () => onName(
-                peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PresenceAvatar extends StatelessWidget {
   final String name;
   final String? label;
@@ -1672,77 +2255,91 @@ class _PresenceAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayName = label ?? name;
     final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
     return Padding(
-      padding: const EdgeInsets.only(right: 14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 50,
-          child: Column(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: speaking ? AppColors.primary : Colors.transparent,
-                        width: 2,
-                      ),
-                      boxShadow: speaking
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 6,
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: AppColors.primarySubtle,
-                      child: Text(
-                        initial,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: -1,
-                    bottom: -1,
-                    child: Container(
-                      width: 9,
-                      height: 9,
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: speaking
+            ? AppColors.primarySubtle.withValues(alpha: 0.5)
+            : const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: speaking ? AppColors.primary : const Color(0xFFE5E7EB),
+                width: speaking ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(1.5),
                       decoration: BoxDecoration(
-                        color: online ? AppColors.success : Colors.grey,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(
+                          color: speaking ? AppColors.primary : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 11,
+                        backgroundColor: AppColors.primarySubtle,
+                        child: Text(
+                          initial,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: -2,
-                    bottom: -2,
-                    child: Icon(
-                      muted ? Icons.mic_off_rounded : Icons.mic_rounded,
-                      size: 11,
-                      color: muted ? AppColors.error : AppColors.success,
+                    Positioned(
+                      right: -1,
+                      bottom: -1,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: online ? AppColors.success : Colors.grey,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.2),
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  displayName,
+                  softWrap: false,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
-                ],
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label ?? name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
-            ],
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  muted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                  size: 13,
+                  color: muted ? const Color(0xFF9CA3AF) : AppColors.success,
+                ),
+              ],
+            ),
           ),
         ),
       ),

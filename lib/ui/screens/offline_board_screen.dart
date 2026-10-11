@@ -15,6 +15,8 @@ import '../../services/storage_service.dart';
 import '../../services/p2p/p2p_manager.dart';
 import '../../utils/platform_utils.dart';
 import '../theme/app_colors.dart';
+import '../widgets/task_dialog.dart';
+import '../../models/task_model.dart';
 
 enum DrawingTool { pen, eraser, text }
 
@@ -525,159 +527,113 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
   }
 
   void _addTask() async {
-    _showTaskDetailDialog();
+    _openTask(null);
   }
 
-  /// Show detailed task creation dialog
-  void _showTaskDetailDialog() {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    final assigneeController = TextEditingController();
-    String selectedPriority = 'medium';
+  /// Show detailed task creation and editing dialog
+  void _openTask(Map<String, dynamic>? existing, {String status = 'todo'}) {
+    TaskModel? model;
+    if (existing != null) {
+      final assigneesList = (existing['assignees'] as List?)?.map((e) => e.toString()).toList() ??
+          (existing['assignee'] != null ? [existing['assignee'].toString()] : <String>[]);
+      model = TaskModel(
+        id: existing['id'] as String? ?? '',
+        boardId: widget.boardId,
+        title: existing['title'] as String? ?? '',
+        description: existing['description'] as String?,
+        status: existing['status'] as String? ?? status,
+        priority: existing['priority'] as String? ?? 'medium',
+        assignees: assigneesList,
+        assigneeList: const [],
+        labels: (existing['labels'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        deadline: existing['deadline'] != null
+            ? DateTime.tryParse(existing['deadline'].toString())
+            : null,
+        position: (existing['position'] as num?)?.toInt() ?? 0,
+        createdBy: existing['created_by'] as String? ?? 'local-user',
+        creatorName: existing['creatorName'] as String? ?? 'You',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
 
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Task'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: 'Task Title *',
-                  hintText: 'What needs to be done?',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.assignment),
-                ),
-                maxLength: 100,
-              ),
-              const SizedBox(height: 12),
-              // Description
-              TextField(
-                controller: descController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Add details...',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.description),
-                ),
-                maxLines: 3,
-                maxLength: 500,
-              ),
-              const SizedBox(height: 12),
-              // Assignee
-              TextField(
-                controller: assigneeController,
-                decoration: InputDecoration(
-                  labelText: 'Assign To',
-                  hintText: 'Person name (optional)',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person),
-                ),
-                maxLength: 50,
-              ),
-              const SizedBox(height: 12),
-              // Priority
-              DropdownButtonFormField<String>(
-                value: selectedPriority,
-                decoration: InputDecoration(
-                  labelText: 'Priority',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.flag),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'low', child: Text('🟢 Low')),
-                  DropdownMenuItem(value: 'medium', child: Text('🟡 Medium')),
-                  DropdownMenuItem(value: 'high', child: Text('🔴 High')),
-                  DropdownMenuItem(value: 'urgent', child: Text('🔥 Urgent')),
-                ],
-                onChanged: (value) {
-                  if (value != null) selectedPriority = value;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final title = titleController.text.trim();
-              if (title.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Task title is required')),
-                );
-                return;
-              }
+      barrierDismissible: false,
+      builder: (context) => TaskDialog(
+        existingTask: model,
+        initialStatus: status,
+        boardMembers: const [],
+        onDelete: existing == null ? null : () => _deleteTask(existing['id'] as String),
+        onSave: ({
+          required String title,
+          String? description,
+          required String priority,
+          required String status,
+          DateTime? deadline,
+          List<String>? assignees,
+          List<String>? labels,
+          double? estimatedHours,
+        }) async {
+          final now = DateTime.now();
+          final assignee = (assignees != null && assignees.isNotEmpty) ? assignees.first : null;
 
-              final now = DateTime.now();
-              final taskId = 'task-${now.millisecondsSinceEpoch}';
-              final description = descController.text.trim().isEmpty
-                  ? null
-                  : descController.text.trim();
-              final assignee = assigneeController.text.trim().isEmpty
-                  ? null
-                  : assigneeController.text.trim();
-
-              // Create task data structure
-              final taskData = {
+          if (existing == null) {
+            final taskId = 'task-${now.millisecondsSinceEpoch}';
+            final taskData = {
+              'id': taskId,
+              'type': 'task',
+              'data': {
                 'id': taskId,
-                'type': 'task',
-                'data': {
-                  'id': taskId,
-                  'boardId': widget.boardId,
-                  'title': title,
-                  'description': description,
-                  'status': 'todo',
-                  'priority': selectedPriority,
-                  'assignee': assignee,
-                  'assignees': assignee != null ? [assignee] : [],
-                  'assigneeList': assignee != null
-                      ? [
-                          {
-                            'id': 'local-$assignee',
-                            'name': assignee,
-                            'email': null,
-                            'avatar': null,
-                          }
-                        ]
-                      : [],
-                  'labels': [],
-                  'position': 0,
-                  'createdBy': 'local-user',
-                  'creatorName': 'You',
-                  'createdAt': now.toIso8601String(),
-                  'updatedAt': now.toIso8601String(),
-                },
-              };
+                'boardId': widget.boardId,
+                'title': title,
+                'description': description,
+                'status': status,
+                'priority': priority,
+                'assignee': assignee,
+                'assignees': assignees ?? (assignee != null ? [assignee] : []),
+                'assigneeList': [],
+                'labels': labels ?? [],
+                'position': 0,
+                'createdBy': 'local-user',
+                'creatorName': 'You',
+                'createdAt': now.toIso8601String(),
+                'updatedAt': now.toIso8601String(),
+                if (deadline != null) 'deadline': deadline.toIso8601String(),
+              },
+            };
 
-              ref.read(offlineBoardProvider(widget.boardId).notifier).createTask(
-                    title: title,
-                    description: description,
-                    status: 'todo',
-                    priority: selectedPriority,
-                    assignee: assignee,
-                  );
+            ref.read(offlineBoardProvider(widget.boardId).notifier).createTask(
+                  title: title,
+                  description: description,
+                  status: status,
+                  priority: priority,
+                  assignee: assignee,
+                );
 
-              // Broadcast to P2P peers for real-time sync
-              _broadcastOperation(OperationType.createObject, taskData);
+            // Broadcast to P2P peers for real-time sync
+            _broadcastOperation(OperationType.createObject, taskData);
 
-              await ref
-                  .read(offlineBoardProvider(widget.boardId).notifier)
-                  .persistAll();
-
-              if (mounted) Navigator.pop(context);
-            },
-            child: const Text('Create Task'),
-          ),
-        ],
+            await ref
+                .read(offlineBoardProvider(widget.boardId).notifier)
+                .persistAll();
+          } else {
+            final taskId = existing['id'] as String;
+            await ref.read(offlineBoardProvider(widget.boardId).notifier).updateTask(
+                  taskId: taskId,
+                  title: title,
+                  description: description,
+                  status: status,
+                  priority: priority,
+                  assignee: assignee,
+                  deadline: deadline,
+                  labels: labels,
+                );
+            await ref
+                .read(offlineBoardProvider(widget.boardId).notifier)
+                .persistAll();
+          }
+        },
       ),
     );
   }
@@ -1548,6 +1504,7 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
                 tasks: todoTasks,
                 onMove: (id, _) => _updateTaskStatus(id, 'doing'),
                 onDelete: _deleteTask,
+                onEdit: (task) => _openTask(task, status: 'todo'),
                 color: Colors.orange,
               ),
               _TaskColumn(
@@ -1555,6 +1512,7 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
                 tasks: doingTasks,
                 onMove: (id, _) => _updateTaskStatus(id, 'done'),
                 onDelete: _deleteTask,
+                onEdit: (task) => _openTask(task, status: 'doing'),
                 color: Colors.blue,
               ),
               _TaskColumn(
@@ -1562,6 +1520,7 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
                 tasks: doneTasks,
                 onMove: null,
                 onDelete: _deleteTask,
+                onEdit: (task) => _openTask(task, status: 'done'),
                 color: Colors.green,
               ),
             ],
@@ -1718,6 +1677,7 @@ class _TaskColumn extends StatelessWidget {
   final List<Map<String, dynamic>> tasks;
   final Function(String, Map<String, dynamic>)? onMove;
   final Function(String) onDelete;
+  final Function(Map<String, dynamic>)? onEdit;
   final Color color;
 
   const _TaskColumn({
@@ -1725,6 +1685,7 @@ class _TaskColumn extends StatelessWidget {
     required this.tasks,
     required this.onMove,
     required this.onDelete,
+    this.onEdit,
     required this.color,
   });
 
@@ -1779,48 +1740,9 @@ class _TaskColumn extends StatelessWidget {
 
                   return GestureDetector(
                     onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(task['title'] as String? ?? 'Untitled'),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (description != null && description.isNotEmpty) ...[
-                                  const Text(
-                                    'Description:',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(description),
-                                  const SizedBox(height: 12),
-                                ],
-                                if (assignee != null && assignee.isNotEmpty) ...[
-                                  const Text(
-                                    'Assigned to:',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(assignee),
-                                  const SizedBox(height: 12),
-                                ],
-                                Text(
-                                  'Priority: ${_getPriorityEmoji(priority)} $priority',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Close'),
-                            ),
-                          ],
-                        ),
-                      );
+                      if (onEdit != null) {
+                        onEdit!(task);
+                      }
                     },
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),

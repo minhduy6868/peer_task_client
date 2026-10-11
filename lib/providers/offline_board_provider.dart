@@ -358,6 +358,51 @@ class OfflineBoardNotifier extends StateNotifier<OfflineBoardState> {
     }
   }
 
+  /// Update task
+  Future<void> updateTask({
+    required String taskId,
+    String? title,
+    String? description,
+    String? status,
+    String? priority,
+    String? assignee,
+    DateTime? deadline,
+    List<String>? labels,
+  }) async {
+    try {
+      final updatedTasks = state.tasks.map((task) {
+        if (task['id'] == taskId) {
+          final updated = Map<String, dynamic>.from(task);
+          if (title != null) updated['title'] = title;
+          if (description != null) updated['description'] = description;
+          if (status != null) updated['status'] = status;
+          if (priority != null) updated['priority'] = priority;
+          if (assignee != null) updated['assignee'] = assignee;
+          if (deadline != null) {
+            updated['deadline'] = deadline.toIso8601String();
+          } else {
+            updated.remove('deadline');
+          }
+          if (labels != null) updated['labels'] = labels;
+          updated['updated_at'] = DateTime.now().toIso8601String();
+          return updated;
+        }
+        return task;
+      }).toList();
+
+      final storage = ref.read(storageServiceProvider);
+      final boardState = storage.getBoardState(boardId) ?? {};
+      boardState['tasks'] = updatedTasks;
+      await storage.saveBoardState(boardId, boardState);
+
+      state = state.copyWith(tasks: updatedTasks);
+
+      debugPrint('✅ Task updated offline: $taskId');
+    } catch (e) {
+      debugPrint('❌ Error updating task offline: $e');
+    }
+  }
+
   /// Update task status
   Future<void> updateTaskStatus(String taskId, String newStatus) async {
     try {
