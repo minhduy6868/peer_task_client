@@ -2401,6 +2401,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select date'**
   String get selectDate;
+
+  /// No description provided for @workspaceOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace Overview'**
+  String get workspaceOverview;
+
+  /// No description provided for @openBoardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to open board'**
+  String get openBoardHint;
+
+  /// No description provided for @allCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up!'**
+  String get allCaughtUp;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get filterOwner;
+
+  /// No description provided for @filterEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor'**
+  String get filterEditor;
+
+  /// No description provided for @filterViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewer'**
+  String get filterViewer;
+
+  /// No description provided for @boardMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get boardMembers;
+
+  /// No description provided for @addCollaborator.
+  ///
+  /// In en, this message translates to:
+  /// **'Add collaborator'**
+  String get addCollaborator;
+
+  /// No description provided for @manageMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage members'**
+  String get manageMembers;
+
+  /// No description provided for @noBoardsMatchingFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No boards match the current filter'**
+  String get noBoardsMatchingFilter;
+
+  /// No description provided for @clearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get clearFilter;
+
+  /// No description provided for @membersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String membersCount(int count);
+
+  /// No description provided for @oneMember.
+  ///
+  /// In en, this message translates to:
+  /// **'1 member'**
+  String get oneMember;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// No description provided for @sort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sort;
+
+  /// No description provided for @boardView.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get boardView;
+
+  /// No description provided for @canvasView.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas'**
+  String get canvasView;
+
+  /// No description provided for @filterAllTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAllTasks;
+
+  /// No description provided for @sortByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get sortByDate;
+
+  /// No description provided for @sortByPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get sortByPriority;
+
+  /// No description provided for @sortByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get sortByTitle;
+
+  /// No description provided for @defaultSort.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultSort;
+
+  /// No description provided for @urgentPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get urgentPriority;
+
+  /// No description provided for @noTasksInColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get noTasksInColumn;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @openBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Open board'**
+  String get openBoard;
+
+  /// No description provided for @createBoardCardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new project or workflow'**
+  String get createBoardCardDesc;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'No description provided'**
+  String get noDescription;
+
+  /// No description provided for @activeBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'Active boards'**
+  String get activeBoards;
+
+  /// No description provided for @pendingTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending tasks'**
+  String get pendingTasks;
+
+  /// No description provided for @completedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedTasks;
+
+  /// No description provided for @quickTipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick tip'**
+  String get quickTipsTitle;
+
+  /// No description provided for @quickTipsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Click any task card to navigate directly to its board.'**
+  String get quickTipsBody;
 }
 
 class _AppLocalizationsDelegate

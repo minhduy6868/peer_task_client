@@ -10,12 +10,16 @@ class BoardSettingsDialog extends ConsumerStatefulWidget {
   final String boardId;
   final String boardName;
   final String? boardDescription;
+  final String? workspaceId;
+  final int initialTabIndex;
 
   const BoardSettingsDialog({
     super.key,
     required this.boardId,
     required this.boardName,
     this.boardDescription,
+    this.workspaceId,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -23,7 +27,13 @@ class BoardSettingsDialog extends ConsumerStatefulWidget {
 }
 
 class _BoardSettingsDialogState extends ConsumerState<BoardSettingsDialog> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialTabIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +143,10 @@ class _BoardSettingsDialogState extends ConsumerState<BoardSettingsDialog> {
           boardDescription: widget.boardDescription,
         );
       case 1:
-        return _MembersTab(boardId: widget.boardId);
+        return _MembersTab(
+          boardId: widget.boardId,
+          workspaceId: widget.workspaceId,
+        );
       default:
         return const Center(child: Text('Unknown tab'));
     }
@@ -290,8 +303,9 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
 
 class _MembersTab extends ConsumerStatefulWidget {
   final String boardId;
+  final String? workspaceId;
 
-  const _MembersTab({required this.boardId});
+  const _MembersTab({required this.boardId, this.workspaceId});
 
   @override
   ConsumerState<_MembersTab> createState() => _MembersTabState();
@@ -305,7 +319,12 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
   @override
   void initState() {
     super.initState();
-    _loadBoardInfo();
+    _workspaceId = widget.workspaceId;
+    if (_workspaceId != null) {
+      _loadMembers();
+    } else {
+      _loadBoardInfo();
+    }
   }
 
   Future<void> _loadBoardInfo() async {
@@ -336,6 +355,7 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
           _members = members;
           _loading = false;
         });
+        ref.invalidate(boardMembersProvider(widget.boardId));
       }
     } catch (e) {
       if (mounted) {
@@ -618,10 +638,13 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final dialogWidth = screenWidth > 460 ? 400.0 : screenWidth - 48;
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: const Text('Add Collaborator'),
       content: SizedBox(
-        width: 400,
+        width: dialogWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -64,6 +64,13 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
     );
   }
 
+  void _navigateToHome() {
+    ref.read(_currentTabProvider.notifier).state = 0;
+    try {
+      context.go('/workspaces');
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentTab = ref.watch(_currentTabProvider);
@@ -108,7 +115,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
         body: Row(
           children: [
             Container(
-              width: 104,
+              width: 84,
               decoration: const BoxDecoration(
                 color: AppColors.surface,
                 border: Border(right: BorderSide(color: AppColors.border)),
@@ -116,12 +123,27 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               child: SafeArea(
                 child: Column(
                   children: [
+                    const SizedBox(height: 16),
+                    _BrandMark(onTap: _navigateToHome),
+                    const SizedBox(height: 14),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 1,
+                      color: AppColors.divider,
+                    ),
+                    const SizedBox(height: 12),
+                    workspaceItem,
+                    const SizedBox(height: 10),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 1,
+                      color: AppColors.divider,
+                    ),
                     const SizedBox(height: 12),
                     boardsItem,
-                    workspaceItem,
                     const Spacer(),
                     profileItem,
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -140,25 +162,79 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
+          border: const Border(top: BorderSide(color: AppColors.border)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
               offset: const Offset(0, -2),
             ),
           ],
         ),
         child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(child: boardsItem),
-              Expanded(child: workspaceItem),
-              Expanded(child: profileItem),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                boardsItem,
+                workspaceItem,
+                profileItem,
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BrandMark extends StatefulWidget {
+  final VoidCallback? onTap;
+
+  const _BrandMark({super.key, this.onTap});
+
+  @override
+  State<_BrandMark> createState() => _BrandMarkState();
+}
+
+class _BrandMarkState extends State<_BrandMark> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'PeerTask',
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            transform: Matrix4.translationValues(0, _isHovered ? -2 : 0, 0),
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: _isHovered ? 0.45 : 0.28),
+                  blurRadius: _isHovered ? 12 : 10,
+                  offset: Offset(0, _isHovered ? 4 : 3),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.diversity_3_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -196,131 +272,202 @@ class _NavItem extends StatelessWidget {
       final firstLetter = workspaceName?.isNotEmpty == true 
           ? workspaceName![0].toUpperCase() 
           : 'W';
+      final name = workspaceName?.isNotEmpty == true ? workspaceName! : (workspaceLabel ?? 'Workspace');
       
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: AppColors.gradientPrimary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    firstLetter,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+      return Tooltip(
+        message: name,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 68,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.22),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          firstLetter,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
+                    Positioned(
+                      right: -3,
+                      bottom: -3,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.unfold_more_rounded,
+                          size: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                workspaceLabel ?? 'Workspace',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textTertiary,
-                  fontSize: 10,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
     }
 
     if (isAvatar) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppColors.gradientPrimary : null,
-                  color: isSelected ? null : AppColors.surfaceVariant,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    label ?? 'U',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+      return Tooltip(
+        message: avatarLabel ?? 'Profile',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 68,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primarySubtle : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected
+                  ? Border.all(color: AppColors.primary.withValues(alpha: 0.35))
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: isSelected ? AppColors.gradientPrimary : null,
+                        color: isSelected ? null : AppColors.surfaceVariant,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? AppColors.primaryLight : AppColors.border,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          label ?? 'U',
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: AppColors.online,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  avatarLabel ?? 'Profile',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: isSelected ? AppColors.primaryDark : AppColors.textTertiary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                    fontSize: 10,
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                avatarLabel ?? 'Profile',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  fontSize: 10,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
     }
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? selectedIcon : icon,
-              color: isSelected ? AppColors.primary : AppColors.textTertiary,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+    return Tooltip(
+      message: label ?? '',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 68,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primarySubtle : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(color: AppColors.primary.withValues(alpha: 0.35))
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? selectedIcon : icon,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

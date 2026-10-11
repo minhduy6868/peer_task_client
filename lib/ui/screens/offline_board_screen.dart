@@ -1500,74 +1500,132 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
     List<Map<String, dynamic>> doingTasks,
     List<Map<String, dynamic>> doneTasks,
   ) {
-    return Column(
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '📋 Tasks',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+    return Container(
+      color: AppColors.background,
+      child: Column(
+        children: [
+          // Sub-Header (Organix Tasks Header)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySubtle,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  Tooltip(
-                    message: 'Fullscreen',
-                    child: IconButton(
-                      icon: const Icon(Icons.fullscreen, size: 18),
-                      onPressed: () => setState(() => _kanbanFullscreen = true),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  child: const Icon(Icons.dashboard_rounded, size: 16, color: AppColors.primaryDark),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Tasks',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary),
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: _addTask,
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('Add Task', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    minimumSize: const Size(0, 34),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: _kanbanFullscreen ? 'Exit Fullscreen' : 'Fullscreen',
+                  icon: Icon(
+                    _kanbanFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () => setState(() => _kanbanFullscreen = !_kanbanFullscreen),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+              ],
+            ),
+          ),
+          // Kanban columns
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = [
+                  _TaskColumn(
+                    title: 'To - Do',
+                    tasks: todoTasks,
+                    status: 'todo',
+                    onMove: (id, _) => _updateTaskStatus(id, 'doing'),
+                    onDelete: _deleteTask,
+                    onAdd: _addTask,
+                    bannerBg: const Color(0xFFF3E8FF),
+                    titleColor: const Color(0xFF581C87),
+                    dotColor: const Color(0xFF8B5CF6),
+                  ),
+                  _TaskColumn(
+                    title: 'In Progress',
+                    tasks: doingTasks,
+                    status: 'doing',
+                    onMove: (id, _) => _updateTaskStatus(id, 'done'),
+                    onDelete: _deleteTask,
+                    onAdd: _addTask,
+                    bannerBg: const Color(0xFFE0F2FE),
+                    titleColor: const Color(0xFF0369A1),
+                    dotColor: const Color(0xFF0284C7),
+                  ),
+                  _TaskColumn(
+                    title: 'Done',
+                    tasks: doneTasks,
+                    status: 'done',
+                    onMove: null,
+                    onDelete: _deleteTask,
+                    onAdd: _addTask,
+                    bannerBg: const Color(0xFFDCFCE7),
+                    titleColor: const Color(0xFF15803D),
+                    dotColor: const Color(0xFF16A34A),
+                  ),
+                ];
+
+                if (constraints.maxWidth >= 900) {
+                  return Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (int i = 0; i < columns.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 14),
+                          Expanded(child: columns[i]),
+                        ],
+                      ],
                     ),
+                  );
+                }
+
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(14),
+                  itemCount: columns.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) => SizedBox(
+                    width: 300,
+                    height: constraints.maxHeight - 28,
+                    child: columns[index],
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Task'),
-                onPressed: _addTask,
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        ),
-        // Kanban columns
-        Expanded(
-          child: Row(
-            children: [
-              _TaskColumn(
-                title: 'TODO',
-                tasks: todoTasks,
-                onMove: (id, _) => _updateTaskStatus(id, 'doing'),
-                onDelete: _deleteTask,
-                color: Colors.orange,
-              ),
-              _TaskColumn(
-                title: 'DOING',
-                tasks: doingTasks,
-                onMove: (id, _) => _updateTaskStatus(id, 'done'),
-                onDelete: _deleteTask,
-                color: Colors.blue,
-              ),
-              _TaskColumn(
-                title: 'DONE',
-                tasks: doneTasks,
-                onMove: null,
-                onDelete: _deleteTask,
-                color: Colors.green,
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1578,25 +1636,24 @@ class _OfflineBoardScreenState extends ConsumerState<OfflineBoardScreen> {
     List<Map<String, dynamic>> doneTasks,
   ) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('📋 Tasks - Fullscreen'),
+        title: const Text('Tasks', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         elevation: 0,
+        backgroundColor: AppColors.surface,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => setState(() => _kanbanFullscreen = false),
+        ),
         actions: [
-          Tooltip(
-            message: 'Exit Fullscreen',
-            child: IconButton(
-              icon: const Icon(Icons.fullscreen_exit),
-              onPressed: () => setState(() => _kanbanFullscreen = false),
-            ),
+          IconButton(
+            tooltip: 'Exit Fullscreen',
+            icon: const Icon(Icons.fullscreen_exit_rounded),
+            onPressed: () => setState(() => _kanbanFullscreen = false),
           ),
         ],
       ),
       body: _buildKanbanContent(boardState, todoTasks, doingTasks, doneTasks),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
-        onPressed: _addTask,
-      ),
     );
   }
 }
@@ -1716,220 +1773,336 @@ class _StrokePainter extends CustomPainter {
 class _TaskColumn extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> tasks;
+  final String status;
   final Function(String, Map<String, dynamic>)? onMove;
   final Function(String) onDelete;
-  final Color color;
+  final VoidCallback onAdd;
+  final Color bannerBg;
+  final Color titleColor;
+  final Color dotColor;
 
   const _TaskColumn({
     required this.title,
     required this.tasks,
+    required this.status,
     required this.onMove,
     required this.onDelete,
-    required this.color,
+    required this.onAdd,
+    required this.bannerBg,
+    required this.titleColor,
+    required this.dotColor,
   });
 
-  String _getPriorityEmoji(String? priority) {
-    switch (priority) {
-      case 'low':
-        return '🟢';
-      case 'medium':
-        return '🟡';
-      case 'high':
-        return '🔴';
-      case 'urgent':
-        return '🔥';
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        children: [
+          // Pill Header (Organix column pill)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: bannerBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: titleColor,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    '${tasks.length}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: onAdd,
+                  borderRadius: BorderRadius.circular(99),
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add_rounded, size: 16, color: titleColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Task Cards List
+          Expanded(
+            child: tasks.isEmpty
+                ? Center(
+                    child: Text(
+                      'No tasks',
+                      style: TextStyle(fontSize: 12.5, color: Colors.grey[400], fontStyle: FontStyle.italic),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    itemCount: tasks.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return _OfflineTaskCard(
+                        task: task,
+                        onMove: onMove,
+                        onDelete: onDelete,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OfflineTaskCard extends StatelessWidget {
+  final Map<String, dynamic> task;
+  final Function(String, Map<String, dynamic>)? onMove;
+  final Function(String) onDelete;
+
+  const _OfflineTaskCard({
+    required this.task,
+    required this.onMove,
+    required this.onDelete,
+  });
+
+  Color _categoryColor(String cat) {
+    switch (cat.toUpperCase()) {
+      case 'DESIGN':
+        return const Color(0xFFF97316);
+      case 'DEVELOPMENT':
+      case 'DEV':
+        return const Color(0xFF8B5CF6);
+      case 'MARKETING':
+        return const Color(0xFF06B6D4);
+      case '3D MODELING':
+      case '3D':
+        return const Color(0xFFEC4899);
       default:
-        return '⚪';
+        return const Color(0xFF6366F1);
+    }
+  }
+
+  Color _priorityColor(String? priority) {
+    switch (priority?.toLowerCase()) {
+      case 'urgent':
+        return const Color(0xFFBE123C);
+      case 'high':
+        return const Color(0xFFDC2626);
+      case 'medium':
+        return const Color(0xFFD97706);
+      case 'low':
+      default:
+        return const Color(0xFF16A34A);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(right: BorderSide(color: Colors.grey[300]!)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                border: Border(bottom: BorderSide(color: color)),
-              ),
-              child: Text(
-                '$title (${tasks.length})',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  final priority = task['priority'] as String? ?? 'medium';
-                  final assignee = task['assignee'] as String?;
-                  final description = task['description'] as String?;
+    final title = task['title'] as String? ?? 'Untitled';
+    final description = task['description'] as String?;
+    final assignee = task['assignee'] as String?;
+    final priority = task['priority'] as String? ?? 'medium';
+    final id = task['id'] as String? ?? '';
+    final category = (task['category'] as String?) ?? 'TASK';
+    final catColor = _categoryColor(category);
+    final prioColor = _priorityColor(priority);
 
-                  return GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(task['title'] as String? ?? 'Untitled'),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (description != null && description.isNotEmpty) ...[
-                                  const Text(
-                                    'Description:',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(description),
-                                  const SizedBox(height: 12),
-                                ],
-                                if (assignee != null && assignee.isNotEmpty) ...[
-                                  const Text(
-                                    'Assigned to:',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(assignee),
-                                  const SizedBox(height: 12),
-                                ],
-                                Text(
-                                  'Priority: ${_getPriorityEmoji(priority)} $priority',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Close'),
-                            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top: Category tag + Menu
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: catColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    category.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: catColor,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
+                  onSelected: (val) {
+                    if (val == 'delete') {
+                      onDelete(id);
+                    } else if (val == 'move' && onMove != null) {
+                      onMove!(id, task);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (onMove != null)
+                      const PopupMenuItem(
+                        value: 'move',
+                        child: Row(
+                          children: [
+                            Icon(Icons.arrow_forward_rounded, size: 16),
+                            SizedBox(width: 8),
+                            Text('Move next', style: TextStyle(fontSize: 13)),
                           ],
                         ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 2,
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
                         children: [
-                          // Title + Priority
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  task['title'] as String? ?? 'Untitled',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                _getPriorityEmoji(priority),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ],
-                          ),
-                          // Description preview
-                          if (description != null && description.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              description,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                          // Assignee
-                          if (assignee != null && assignee.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.person, size: 12, color: Colors.grey[600]),
-                                const SizedBox(width: 3),
-                                Expanded(
-                                  child: Text(
-                                    assignee,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          // Actions
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              if (onMove != null)
-                                Tooltip(
-                                  message: 'Move',
-                                  child: GestureDetector(
-                                    onTap: () => onMove!(task['id'], task),
-                                    child: Icon(
-                                      Icons.arrow_forward,
-                                      size: 14,
-                                      color: Colors.blue[400],
-                                    ),
-                                  ),
-                                ),
-                              Tooltip(
-                                message: 'Delete',
-                                child: GestureDetector(
-                                  onTap: () => onDelete(task['id']),
-                                  child: Icon(
-                                    Icons.delete_outline,
-                                    size: 14,
-                                    color: Colors.red[400],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(fontSize: 13, color: Colors.red)),
                         ],
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Title
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13.5,
+                color: AppColors.textPrimary,
+                height: 1.3,
               ),
+            ),
+            if (description != null && description.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            // Bottom badges: Priority + Assignee Stack / Move button
+            Row(
+              children: [
+                // Priority pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: prioColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.flag_rounded, size: 11, color: prioColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        priority[0].toUpperCase() + priority.substring(1),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: prioColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Assignee initial avatar
+                if (assignee != null && assignee.isNotEmpty)
+                  Tooltip(
+                    message: assignee,
+                    child: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: AppColors.primarySubtle,
+                      child: Text(
+                        assignee[0].toUpperCase(),
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                      ),
+                    ),
+                  ),
+                if (onMove != null) ...[
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () => onMove!(id, task),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySubtle,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primaryDark),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

@@ -34,47 +34,53 @@ class WorkspaceSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Logo Header
-          Container(
-            height: 72,
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20),
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: primaryPurple,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryPurple.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onSelectItem('workspaces'),
+              child: Container(
+                height: 72,
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: primaryPurple,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryPurple.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.diversity_3_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    if (!isCompact) ...[
+                      const SizedBox(width: 12),
+                      const Text(
+                        'PeerTask',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.diversity_3_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
+                  ],
                 ),
-                if (!isCompact) ...[
-                  const SizedBox(width: 12),
-                  const Text(
-                    'PeerTask',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: textDark,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
 

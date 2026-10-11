@@ -1288,3 +1288,13 @@ class BoardTasksNotifier extends StateNotifier<List<TaskModel>> {
     _loadTasks();
   }
 }
+
+final boardMembersProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, boardId) async {
+  final api = ref.watch(apiServiceProvider);
+  try {
+    return await api.getBoardMembers(boardId);
+  } catch (e) {
+    debugPrint('Error fetching members for board $boardId: $e');
+    return const [];
+  }
+});
