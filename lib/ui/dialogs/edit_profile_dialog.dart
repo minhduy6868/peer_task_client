@@ -2,12 +2,16 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../services/cloudinary_service.dart';
 import '../../utils/error_display.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/app_button.dart';
 
+/// Redesigned Edit Profile Dialog with modern avatar preview and responsive form.
 class EditProfileDialog extends ConsumerStatefulWidget {
   const EditProfileDialog({super.key});
 
@@ -18,7 +22,7 @@ class EditProfileDialog extends ConsumerStatefulWidget {
 class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _isUploadingImage = false;
   Uint8List? _selectedImageBytes;
@@ -52,10 +56,8 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
 
       setState(() => _isUploadingImage = true);
 
-      // Read image bytes
       final bytes = await image.readAsBytes();
-      
-      // Upload to Cloudinary
+
       final cloudinary = CloudinaryService();
       final url = await cloudinary.uploadImage(
         imageBytes: bytes,
@@ -63,20 +65,22 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
         folder: 'avatars',
       );
 
-      setState(() {
-        _selectedImageBytes = bytes;
-        _avatarUrl = url;
-        _isUploadingImage = false;
-      });
-    } catch (e) {
-      setState(() => _isUploadingImage = false);
       if (mounted) {
+        setState(() {
+          _selectedImageBytes = bytes;
+          _avatarUrl = url;
+          _isUploadingImage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
         context.showErrorSnackBar(e);
       }
     }
   }
 
-  Future<void> _saveProfile() async {
+  Future<void> _saveProfile(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -88,19 +92,15 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
         avatar: _avatarUrl,
       );
 
-      // Update auth state with new user data
       await ref.read(authStateProvider.notifier).refreshUser();
 
       if (mounted) {
         Navigator.pop(context, true);
-        ErrorHandler.showSuccess(
-          context,
-          'Profile updated successfully!',
-        );
+        context.showSuccessMessage(l10n.avatarUpdated);
       }
     } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() => _isLoading = false);
         context.showErrorSnackBar(e);
       }
     }
@@ -108,16 +108,19 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = ref.watch(authStateProvider).user;
-    
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final dialogWidth = (screenWidth - 32).clamp(280.0, 480.0);
+
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        padding: const EdgeInsets.all(28),
+      backgroundColor: AppColors.surface,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: dialogWidth),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Form(
             key: _formKey,
             child: Column(
@@ -128,98 +131,94 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: AppColors.gradientPrimary,
-                        borderRadius: BorderRadius.circular(14),
+                        color: AppColors.primarySubtle,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.edit_rounded,
-                        color: Colors.white,
-                        size: 24,
+                        Icons.person_rounded,
+                        color: AppColors.primaryDark,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Edit Profile',
-                            style: AppTextStyles.titleLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            '${l10n.edit} ${l10n.profile}',
+                            style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Text(
-                            'Update your avatar and name',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            l10n.namePlaceholder,
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(context),
-                      color: AppColors.textSecondary,
+                      color: AppColors.textTertiary,
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // Avatar Section
+                // Avatar Picker
                 Center(
                   child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      // Avatar
                       Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
+                        width: 96,
+                        height: 96,
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
-                            width: 3,
-                          ),
-                          boxShadow: AppColors.elegantCardShadow,
+                          gradient: AppColors.gradientPrimary,
                         ),
-                        child: ClipOval(
-                          child: _selectedImageBytes != null
-                              ? Image.memory(
-                                  _selectedImageBytes!,
-                                  fit: BoxFit.cover,
-                                )
-                              : _avatarUrl != null
-                                  ? Image.network(
-                                      _avatarUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return _buildDefaultAvatar();
-                                      },
-                                    )
-                                  : _buildDefaultAvatar(),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: AppColors.surface,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: _selectedImageBytes != null
+                                ? Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
+                                : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        _avatarUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                      )
+                                    : _buildDefaultAvatar(),
+                          ),
                         ),
                       ),
-                      
-                      // Upload button
                       Positioned(
                         bottom: 0,
                         right: 0,
                         child: Material(
-                          color: AppColors.primary,
+                          color: AppColors.primaryDark,
                           shape: const CircleBorder(),
-                          elevation: 4,
+                          elevation: 3,
                           child: InkWell(
                             onTap: _isUploadingImage ? null : _pickImage,
                             customBorder: const CircleBorder(),
                             child: Container(
-                              padding: const EdgeInsets.all(10),
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
                               child: _isUploadingImage
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(7),
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         color: Colors.white,
@@ -228,7 +227,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                                   : const Icon(
                                       Icons.camera_alt_rounded,
                                       color: Colors.white,
-                                      size: 20,
+                                      size: 16,
                                     ),
                             ),
                           ),
@@ -237,116 +236,101 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
 
-                const SizedBox(height: 8),
-                
+                // Display Name Field
                 Text(
-                  'Click the camera icon to change avatar',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textTertiary,
+                  l10n.name,
+                  style: AppTextStyles.labelMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-
-                const SizedBox(height: 28),
-
-                // Name Field
+                const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Display Name',
-                    hintText: 'Enter your name',
-                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                    hintText: l10n.namePlaceholder,
+                    prefixIcon: const Icon(Icons.badge_outlined, size: 20),
                     filled: true,
-                    fillColor: AppColors.surfaceLight,
+                    fillColor: AppColors.surfaceVariant,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.primaryDark, width: 1.5),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Name is required';
+                      return l10n.nameRequired;
                     }
                     if (value.trim().length < 2) {
-                      return 'Name must be at least 2 characters';
+                      return l10n.nameMinLength;
                     }
-                    if (value.trim().length > 100) {
-                      return 'Name is too long';
+                    if (value.trim().length > 50) {
+                      return l10n.nameMaxLength;
                     }
                     return null;
                   },
-                  textCapitalization: TextCapitalization.words,
                 ),
-
                 const SizedBox(height: 16),
 
-                // Email (read-only)
+                // Email Field (Read-only)
+                Text(
+                  l10n.email,
+                  style: AppTextStyles.labelMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 TextFormField(
                   initialValue: user?.email ?? '',
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_rounded),
-                    filled: true,
-                    fillColor: AppColors.surfaceVariant,
-                    enabled: false,
-                  ),
                   readOnly: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.borderLight),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.borderLight),
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 28),
 
-                const SizedBox(height: 32),
-
-                // Action Buttons
+                // Actions
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
+                      child: AppButton(
+                        label: l10n.cancel,
+                        variant: ButtonVariant.outlined,
+                        size: ButtonSize.medium,
                         onPressed: _isLoading ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('Cancel'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      flex: 2,
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.gradientPrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
+                      child: AppButton(
+                        label: l10n.save,
+                        size: ButtonSize.medium,
+                        color: AppColors.primaryDark,
+                        isLoading: _isLoading,
+                        onPressed: () => _saveProfile(l10n),
                       ),
                     ),
                   ],
@@ -361,22 +345,22 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
 
   Widget _buildDefaultAvatar() {
     final user = ref.read(authStateProvider).user;
-    final initial = user?.name?.substring(0, 1).toUpperCase() ?? 
-                   user?.email.substring(0, 1).toUpperCase() ?? 'U';
-    
+    final initial = user?.name?.isNotEmpty == true
+        ? user!.name!.substring(0, 1).toUpperCase()
+        : (user?.email.isNotEmpty == true ? user!.email.substring(0, 1).toUpperCase() : 'U');
+
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: AppColors.gradientPrimary,
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: Text(
-          initial,
-          style: const TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
         ),
       ),
     );

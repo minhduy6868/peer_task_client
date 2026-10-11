@@ -12,8 +12,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_button.dart';
 
-/// Public homepage. Light product page: a slow color field, frosted bar,
-/// and a floating board — the same kind of quiet motion large product sites use.
+/// Public homepage: stunning light product page with ambient color field,
+/// frosted navigation bar, and an interactive studio board mockup.
 class LandingScreen extends ConsumerStatefulWidget {
   const LandingScreen({super.key});
 
@@ -22,7 +22,7 @@ class LandingScreen extends ConsumerStatefulWidget {
 }
 
 class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProviderStateMixin {
-  static const _contentWidth = 1120.0;
+  static const _contentWidth = 1140.0;
 
   late final AnimationController _enter;
   late final AnimationController _ambient;
@@ -81,9 +81,9 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     final wide = width >= 960;
     final pad = wide ? 48.0 : 20.0;
     final features = [
-      (Icons.view_column_rounded, l10n.landingTasksTitle, l10n.landingTasksBody, _taskKey),
-      (Icons.gesture_rounded, l10n.landingCanvasTitle, l10n.landingCanvasBody, _canvasKey),
-      (Icons.record_voice_over_rounded, l10n.landingPresenceTitle, l10n.landingPresenceBody, _presenceKey),
+      (Icons.view_column_rounded, l10n.landingTasksTitle, l10n.landingTasksBody, _taskKey, '01'),
+      (Icons.draw_rounded, l10n.landingCanvasTitle, l10n.landingCanvasBody, _canvasKey, '02'),
+      (Icons.record_voice_over_rounded, l10n.landingPresenceTitle, l10n.landingPresenceBody, _presenceKey, '03'),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -120,7 +120,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     AppLocalizations l10n,
     bool wide,
     double pad,
-    List<(IconData, String, String, GlobalKey)> features,
+    List<(IconData, String, String, GlobalKey, String)> features,
   ) {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -131,18 +131,18 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
       },
       child: SingleChildScrollView(
         key: const Key('landing-scroll'),
-        padding: EdgeInsets.only(top: wide ? 36 : 16, bottom: 36),
+        padding: EdgeInsets.only(top: wide ? 36 : 16, bottom: 48),
         child: _band(
           pad,
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _hero(context, l10n, wide, features),
-              SizedBox(height: wide ? 88 : 56),
+              SizedBox(height: wide ? 96 : 64),
               _rise(0.42, 1, _featureBlock(l10n, features)),
-              SizedBox(height: wide ? 72 : 48),
+              SizedBox(height: wide ? 80 : 56),
               _rise(0.55, 1, _close(context, l10n)),
-              const SizedBox(height: 28),
+              const SizedBox(height: 36),
               _footer(l10n),
             ],
           ),
@@ -189,7 +189,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
             filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: lifted ? 0.92 : 0.72),
+                color: AppColors.surface.withValues(alpha: lifted ? 0.94 : 0.78),
                 border: Border(bottom: BorderSide(color: lifted ? AppColors.border : AppColors.borderLight)),
                 boxShadow: lifted
                     ? [BoxShadow(color: AppColors.shadowLight, blurRadius: 18, offset: const Offset(0, 6))]
@@ -208,7 +208,11 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                           l10n.appTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+                          style: AppTextStyles.titleMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -255,29 +259,34 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     BuildContext context,
     AppLocalizations l10n,
     bool wide,
-    List<(IconData, String, String, GlobalKey)> features,
+    List<(IconData, String, String, GlobalKey, String)> features,
   ) {
     final copy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _rise(0, 0.45, _eyebrow(l10n)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _rise(0.08, 0.62, _headline(l10n, wide)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _rise(
           0.16,
           0.7,
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: 480),
             child: Text(
               l10n.landingSubhead,
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary, height: 1.55, letterSpacing: 0),
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.6,
+                letterSpacing: 0,
+                fontSize: wide ? 17 : 15,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         _rise(0.24, 0.78, _actions(context, l10n)),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
         _rise(0.32, 0.86, _anchors(features)),
       ],
     );
@@ -286,7 +295,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     if (!wide) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [copy, const SizedBox(height: 32), preview],
+        children: [copy, const SizedBox(height: 36), preview],
       );
     }
     return Row(
@@ -300,25 +309,36 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
   }
 
   Widget _eyebrow(AppLocalizations l10n) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _LiveDot(motion: _ambient),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 l10n.realTimeCollaboration,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.w600),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
               ),
             ),
           ],
@@ -331,10 +351,10 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     return Text(
       l10n.landingHeadline,
       style: AppTextStyles.displayMedium.copyWith(
-        fontSize: wide ? 56 : 34,
-        height: 1.12,
-        letterSpacing: wide ? -1.2 : -0.6,
-        fontWeight: FontWeight.w700,
+        fontSize: wide ? 52 : 32,
+        height: 1.15,
+        letterSpacing: wide ? -1.4 : -0.6,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
       ),
     );
@@ -363,10 +383,10 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
         if (stack) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [start, const SizedBox(height: 8), offline],
+            children: [start, const SizedBox(height: 10), offline],
           );
         }
-        return Wrap(spacing: 8, runSpacing: 8, children: [start, offline]);
+        return Wrap(spacing: 12, runSpacing: 10, children: [start, offline]);
       },
     );
   }
@@ -374,14 +394,14 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
   Widget _glow(Widget child) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: AppColors.createPrimaryShadow(opacity: 0.28, blurRadius: 18, offset: const Offset(0, 8)),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: AppColors.createPrimaryShadow(opacity: 0.32, blurRadius: 20, offset: const Offset(0, 6)),
       ),
       child: child,
     );
   }
 
-  Widget _anchors(List<(IconData, String, String, GlobalKey)> features) {
+  Widget _anchors(List<(IconData, String, String, GlobalKey, String)> features) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -396,21 +416,46 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     );
   }
 
-  Widget _featureBlock(AppLocalizations l10n, List<(IconData, String, String, GlobalKey)> features) {
+  Widget _featureBlock(AppLocalizations l10n, List<(IconData, String, String, GlobalKey, String)> features) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primarySubtle,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'FEATURES',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Text(
           l10n.landingFeaturesHeading,
-          style: AppTextStyles.headlineSmall.copyWith(letterSpacing: -0.4, color: AppColors.textPrimary),
+          style: AppTextStyles.headlineSmall.copyWith(
+            letterSpacing: -0.5,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 22),
         LayoutBuilder(
           builder: (context, constraints) {
             final cards = [
               for (final feature in features)
                 _FeatureCard(
                   key: feature.$4,
+                  index: feature.$5,
                   icon: feature.$1,
                   title: feature.$2,
                   body: feature.$3,
@@ -420,7 +465,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
               return Column(
                 children: [
                   for (var i = 0; i < cards.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 12),
+                    if (i > 0) const SizedBox(height: 14),
                     cards[i],
                   ],
                 ],
@@ -431,7 +476,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (var i = 0; i < cards.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 12),
+                    if (i > 0) const SizedBox(width: 16),
                     Expanded(child: cards[i]),
                   ],
                 ],
@@ -444,49 +489,81 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
   }
 
   Widget _close(BuildContext context, AppLocalizations l10n) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.gradientSubtle,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        gradient: AppColors.gradientPrimary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
             Positioned(
-              right: -30,
-              top: -48,
+              right: -40,
+              top: -40,
               child: IgnorePointer(
                 child: Container(
-                  width: 180,
-                  height: 180,
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [AppColors.primaryLight.withValues(alpha: 0.7), AppColors.primaryLight.withValues(alpha: 0)],
+                      colors: [
+                        Colors.white.withValues(alpha: 0.25),
+                        Colors.white.withValues(alpha: 0),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
               child: Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 16,
-                runSpacing: 12,
+                spacing: 20,
+                runSpacing: 16,
                 children: [
-                  Text(
-                    l10n.landingCta,
-                    style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.4),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.landingCta,
+                        style: AppTextStyles.titleLarge.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.collaborativeDescription.split('\n').first,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Colors.white.withValues(alpha: 0.88),
+                        ),
+                      ),
+                    ],
                   ),
-                  _glow(
-                    AppButton(
-                      label: l10n.getStarted,
-                      color: AppColors.primaryDark,
-                      onPressed: () => context.go('/login'),
+                  ElevatedButton(
+                    onPressed: () => context.go('/login'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryDark,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(
+                      l10n.getStarted,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
                   ),
                 ],
@@ -502,7 +579,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     return Column(
       children: [
         const Divider(height: 1, color: AppColors.divider),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
           child: Wrap(
@@ -510,7 +587,13 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
             spacing: 12,
             runSpacing: 8,
             children: [
-              Text(l10n.appTitle, style: AppTextStyles.titleSmall.copyWith(color: AppColors.textSecondary)),
+              Text(
+                l10n.appTitle,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               Text(
                 l10n.realTimeCollaboration,
                 style: AppTextStyles.labelMedium.copyWith(color: AppColors.textTertiary),
@@ -534,8 +617,15 @@ class _LogoMark extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppColors.gradientElegant,
         borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: const Icon(Icons.dashboard_customize_rounded, color: AppColors.textOnPrimary, size: 16),
+      child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 16),
     );
   }
 }
@@ -559,9 +649,9 @@ class _AmbientField extends StatelessWidget {
               final spot = pointer.value;
               return Stack(
                 children: [
-                  _orb(Alignment(-0.72 + 0.08 * math.sin(t), -0.78 + 0.05 * math.cos(t)), 560, AppColors.primaryLight, 0.62, t),
-                  _orb(Alignment(0.86 + 0.06 * math.cos(t * 0.8), -0.42 + 0.07 * math.sin(t * 0.7)), 480, AppColors.secondaryLight, 0.7, t + 2),
-                  _orb(Alignment(0.28 + 0.05 * math.sin(t * 0.6), -0.05), 340, AppColors.accent, 0.16, t + 4),
+                  _orb(Alignment(-0.72 + 0.08 * math.sin(t), -0.78 + 0.05 * math.cos(t)), 580, AppColors.primaryLight, 0.58, t),
+                  _orb(Alignment(0.86 + 0.06 * math.cos(t * 0.8), -0.42 + 0.07 * math.sin(t * 0.7)), 500, AppColors.secondaryLight, 0.65, t + 2),
+                  _orb(Alignment(0.28 + 0.05 * math.sin(t * 0.6), -0.05), 360, AppColors.accent, 0.18, t + 4),
                   if (spot != null)
                     Positioned(
                       left: spot.dx - 190,
@@ -612,7 +702,7 @@ class _DotGridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = AppColors.textTertiary.withValues(alpha: 0.28);
+    final paint = Paint()..color = AppColors.textTertiary.withValues(alpha: 0.22);
     const gap = 24.0;
     for (var y = 0.0; y < size.height; y += gap) {
       for (var x = 0.0; x < size.width; x += gap) {
@@ -647,7 +737,7 @@ class _LiveDot extends StatelessWidget {
                 height: 7 + 7 * t,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.online.withValues(alpha: 0.38 * (1 - t)),
+                  color: AppColors.online.withValues(alpha: 0.45 * (1 - t)),
                 ),
               ),
               Container(
@@ -672,7 +762,7 @@ class _AnchorChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface.withValues(alpha: 0.9),
+      color: AppColors.surface.withValues(alpha: 0.95),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -696,11 +786,18 @@ class _AnchorChip extends StatelessWidget {
 }
 
 class _FeatureCard extends StatefulWidget {
-  const _FeatureCard({super.key, required this.icon, required this.title, required this.body});
+  const _FeatureCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.index,
+  });
 
   final IconData icon;
   final String title;
   final String body;
+  final String index;
 
   @override
   State<_FeatureCard> createState() => _FeatureCardState();
@@ -712,45 +809,78 @@ class _FeatureCardState extends State<_FeatureCard> {
   @override
   Widget build(BuildContext context) {
     final shadow = _hover
-        ? AppColors.elegantCardShadow
+        ? AppColors.hoverShadow
         : [
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0), blurRadius: 20, offset: const Offset(0, 4)),
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0), blurRadius: 10, offset: const Offset(0, 2)),
+            BoxShadow(color: AppColors.primary.withValues(alpha: 0.05), blurRadius: 18, offset: const Offset(0, 4)),
           ];
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         width: double.infinity,
-        transform: Matrix4.translationValues(0, _hover ? -3 : 0, 0),
-        transformAlignment: Alignment.center,
-        padding: const EdgeInsets.all(18),
+        transform: Matrix4.translationValues(0, _hover ? -4 : 0, 0),
+        padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _hover ? AppColors.primaryLight : AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _hover ? AppColors.primary : AppColors.borderLight,
+            width: _hover ? 1.5 : 1,
+          ),
           boxShadow: shadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primarySubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(widget.icon, size: 18, color: AppColors.primaryDark),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.gradientPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(widget.icon, size: 22, color: Colors.white),
+                ),
+                Text(
+                  widget.index,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryLight.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            Text(widget.title, style: AppTextStyles.titleMedium.copyWith(letterSpacing: -0.2)),
-            const SizedBox(height: 6),
+            const SizedBox(height: 18),
+            Text(
+              widget.title,
+              style: AppTextStyles.titleMedium.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               widget.body,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.5, letterSpacing: 0),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.55,
+                letterSpacing: 0,
+              ),
             ),
           ],
         ),
@@ -770,7 +900,7 @@ class _BoardPreview extends StatelessWidget {
     return AnimatedBuilder(
       animation: motion,
       builder: (context, child) {
-        final dy = math.sin(motion.value * math.pi * 2 * 5) * 7;
+        final dy = math.sin(motion.value * math.pi * 2 * 5) * 6;
         final sheen = _phase(motion.value, 5);
         return Transform.translate(
           offset: Offset(0, dy),
@@ -778,11 +908,11 @@ class _BoardPreview extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
               boxShadow: [
                 ...AppColors.elegantCardShadow,
-                BoxShadow(color: AppColors.primary.withValues(alpha: 0.14), blurRadius: 42, offset: const Offset(0, 22)),
+                BoxShadow(color: AppColors.primary.withValues(alpha: 0.16), blurRadius: 40, offset: const Offset(0, 20)),
               ],
             ),
             child: Stack(
@@ -797,7 +927,7 @@ class _BoardPreview extends StatelessWidget {
                           end: Alignment(-0.75 + sheen * 2.8, 0.8),
                           colors: [
                             AppColors.surface.withValues(alpha: 0),
-                            AppColors.textOnPrimary.withValues(alpha: 0.42),
+                            Colors.white.withValues(alpha: 0.38),
                             AppColors.surface.withValues(alpha: 0),
                           ],
                           stops: const [0.38, 0.5, 0.62],
@@ -812,10 +942,11 @@ class _BoardPreview extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Window Header Bar
             Row(
               children: [
                 const _WindowDots(),
@@ -825,25 +956,28 @@ class _BoardPreview extends StatelessWidget {
                     l10n.landingPreviewCaption,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            // Kanban columns
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _lane(l10n.todo, [l10n.landingPreviewKickoff, l10n.landingPreviewInvite]),
+                _lane(l10n.todo, [l10n.landingPreviewKickoff, l10n.landingPreviewInvite], const Color(0xFF8B7CFF)),
                 const SizedBox(width: 8),
-                _lane(l10n.doing, [l10n.landingPreviewLayout]),
+                _lane(l10n.doing, [l10n.landingPreviewLayout], const Color(0xFFF59E0B)),
                 const SizedBox(width: 8),
-                _lane(l10n.done, [l10n.landingPreviewVoice]),
+                _lane(l10n.done, [l10n.landingPreviewVoice], const Color(0xFF10B981)),
               ],
             ),
             const SizedBox(height: 10),
+            // Canvas Strip
             _canvasStrip(),
             const SizedBox(height: 10),
+            // Collaborator Bar
             _people(),
           ],
         ),
@@ -851,74 +985,93 @@ class _BoardPreview extends StatelessWidget {
     );
   }
 
-  Widget _lane(String title, List<String> cards) {
+  Widget _lane(String title, List<String> cards, Color accent) {
     return Expanded(
-      child: DecoratedBox(
+      child: Container(
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.borderLight),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              for (final card in cards)
+        padding: const EdgeInsets.all(7),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
                 Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
                   child: Text(
-                    card,
+                    title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary, letterSpacing: 0),
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
                   ),
                 ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            for (final card in cards)
+              Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  card,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
   Widget _canvasStrip() {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.borderLight),
       ),
-      child: SizedBox(
-        height: 72,
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 88,
-              child: Text(
-                l10n.landingCanvasTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-              ),
+      height: 72,
+      child: Row(
+        children: [
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 80,
+            child: Text(
+              l10n.landingCanvasTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
             ),
-            const Expanded(child: CustomPaint(painter: _SketchPainter())),
-            const SizedBox(width: 8),
-          ],
-        ),
+          ),
+          const Expanded(child: CustomPaint(painter: _SketchPainter())),
+          const SizedBox(width: 8),
+        ],
       ),
     );
   }
@@ -943,7 +1096,7 @@ class _BoardPreview extends StatelessWidget {
             l10n.speaking,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -958,11 +1111,11 @@ class _WindowDots extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        _Dot(AppColors.primaryLight),
-        SizedBox(width: 4),
-        _Dot(AppColors.secondary),
-        SizedBox(width: 4),
-        _Dot(AppColors.accent),
+        _Dot(Color(0xFFEF4444)),
+        SizedBox(width: 6),
+        _Dot(Color(0xFFF59E0B)),
+        SizedBox(width: 6),
+        _Dot(Color(0xFF10B981)),
       ],
     );
   }
@@ -975,7 +1128,7 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    return Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
   }
 }
 
@@ -994,6 +1147,13 @@ class _Person extends StatelessWidget {
         color: color,
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.surface, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Icon(icon, size: 14, color: AppColors.textOnPrimary),
     );
@@ -1007,7 +1167,7 @@ class _SketchPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final pen = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..color = AppColors.primaryDark;
@@ -1019,7 +1179,7 @@ class _SketchPainter extends CustomPainter {
 
     final note = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round
       ..color = AppColors.accent;
     canvas.drawLine(Offset(size.width * 0.1, size.height * 0.8), Offset(size.width * 0.36, size.height * 0.8), note);

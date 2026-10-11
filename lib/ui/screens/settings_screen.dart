@@ -1,18 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../l10n/app_localizations.dart';
-import '../../utils/error_display.dart';
-import '../../services/cloudinary_service.dart';
-import '../../providers/language_provider.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/language_provider.dart';
+import '../../services/cloudinary_service.dart';
+import '../../utils/error_display.dart';
+import '../dialogs/change_password_dialog.dart';
+import '../dialogs/edit_profile_dialog.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../dialogs/edit_profile_dialog.dart';
-import '../dialogs/change_password_dialog.dart';
+import '../widgets/app_dialog.dart';
 
+/// Redesigned modern Profile & Settings Screen.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -38,11 +42,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       setState(() => _isUploadingAvatar = true);
 
       try {
-        // Read image as bytes
         final bytes = await image.readAsBytes();
         final fileName = image.name;
 
-        // 1. Upload to Cloudinary first
+        // 1. Upload to Cloudinary
         final cloudinary = CloudinaryService();
         final avatarUrl = await cloudinary.uploadImage(
           imageBytes: bytes,
@@ -52,16 +55,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         debugPrint('✅ Avatar uploaded to Cloudinary: $avatarUrl');
 
-        // 2. Update profile with Cloudinary URL
+        // 2. Update profile
         final api = ref.read(apiServiceProvider);
         await api.updateProfile(
           name: ref.read(authStateProvider).user?.name,
           avatar: avatarUrl,
         );
 
-        // 3. Refresh user data
+        // 3. Refresh user state
         final response = await api.getCurrentUser();
-        debugPrint('🔄 User data after avatar upload: $response');
         ref.read(authStateProvider.notifier).updateUser(response);
 
         if (mounted) {
@@ -72,7 +74,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           context.showErrorSnackBar(e);
         }
       }
-
     } catch (e) {
       if (mounted) {
         context.showErrorSnackBar(e);
@@ -85,7 +86,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAvatarImage(String avatar) {
-    // Load directly from Cloudinary URL
     return Image.network(
       avatar,
       fit: BoxFit.cover,
@@ -95,23 +95,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildFallbackAvatar() {
     final user = ref.read(authStateProvider).user;
+    final initial = user?.name?.isNotEmpty == true
+        ? user!.name!.substring(0, 1).toUpperCase()
+        : (user?.email.isNotEmpty == true ? user!.email.substring(0, 1).toUpperCase() : 'U');
+
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.primarySubtle,
+      decoration: const BoxDecoration(
+        gradient: AppColors.gradientPrimary,
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: Text(
-          user?.name?.substring(0, 1).toUpperCase() ?? 
-          user?.email.substring(0, 1).toUpperCase() ?? 'U',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primaryDark,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
         ),
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, AppLocalizations l10n) async {
+    final confirmed = await AppDialog.showConfirm(
+      context,
+      title: l10n.logout,
+      message: l10n.leaveWorkspaceConfirm,
+      confirmText: l10n.logout,
+      cancelText: l10n.cancel,
+      isDanger: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(authStateProvider.notifier).logout();
+      if (context.mounted) {
+        context.go('/login');
+      }
+    }
   }
 
   @override
@@ -123,199 +143,378 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            title: Text(l10n.profile),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-              child: Row(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: user?.avatar != null && user!.avatar!.isNotEmpty
-                            ? ClipOval(child: _buildAvatarImage(user.avatar!))
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primarySubtle,
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  user?.name?.substring(0, 1).toUpperCase() ??
-                                      user?.email.substring(0, 1).toUpperCase() ??
-                                      'U',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                ),
-                              ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: _isUploadingAvatar
-                                ? const Padding(
-                                    padding: EdgeInsets.all(4),
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.camera_alt_rounded, size: 14, color: AppColors.primaryDark),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.name ?? user?.email ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          user?.email ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                      ],
+      appBar: AppBar(
+        title: Text(
+          l10n.profile,
+          style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: false,
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        shape: const Border(
+          bottom: BorderSide(color: AppColors.borderLight, width: 1),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Hero Profile Card
+                _buildHeroProfileCard(user, l10n),
+                const SizedBox(height: 24),
+
+                // 2. Language Selector
+                _ModernSettingsSection(
+                  title: l10n.language,
+                  icon: Icons.translate_rounded,
+                  children: [
+                    _LanguageChoiceTile(
+                      label: l10n.english,
+                      subtitle: 'English (US)',
+                      flagEmoji: '🇬🇧',
+                      isSelected: currentLocale.languageCode == 'en',
+                      onTap: () => ref.read(languageProvider.notifier).setLanguage('en'),
                     ),
+                    const Divider(height: 1, indent: 64, endIndent: 20, color: AppColors.borderLight),
+                    _LanguageChoiceTile(
+                      label: l10n.vietnamese,
+                      subtitle: 'Tiếng Việt',
+                      flagEmoji: '🇻🇳',
+                      isSelected: currentLocale.languageCode == 'vi',
+                      onTap: () => ref.read(languageProvider.notifier).setLanguage('vi'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 3. Account & Security Section
+                _ModernSettingsSection(
+                  title: l10n.profile,
+                  icon: Icons.shield_outlined,
+                  children: [
+                    _ModernActionTile(
+                      icon: Icons.badge_outlined,
+                      iconColor: AppColors.primaryDark,
+                      iconBg: AppColors.primarySubtle,
+                      title: '${l10n.edit} ${l10n.profile}',
+                      subtitle: l10n.namePlaceholder,
+                      onTap: () async {
+                        await showDialog<bool>(
+                          context: context,
+                          builder: (context) => const EditProfileDialog(),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1, indent: 64, endIndent: 20, color: AppColors.borderLight),
+                    _ModernActionTile(
+                      icon: Icons.lock_outline_rounded,
+                      iconColor: const Color(0xFFD97706),
+                      iconBg: const Color(0xFFFEF3C7),
+                      title: l10n.changePassword,
+                      subtitle: l10n.passwordPlaceholder,
+                      onTap: () async {
+                        await showDialog<bool>(
+                          context: context,
+                          builder: (context) => const ChangePasswordDialog(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 4. App Info Section
+                _ModernSettingsSection(
+                  title: l10n.about,
+                  icon: Icons.info_outline_rounded,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.gradientElegant,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.dashboard_customize_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.appTitle,
+                                  style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.collaborativeDescription.split('\n').first,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySubtle,
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
+                            ),
+                            child: Text(
+                              'v1.0.0',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 36),
+
+                // 5. Logout Button
+                OutlinedButton.icon(
+                  onPressed: () => _confirmLogout(context, l10n),
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text(
+                    l10n.logout,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                ],
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    backgroundColor: AppColors.error.withValues(alpha: 0.05),
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroProfileCard(dynamic user, AppLocalizations l10n) {
+    final displayName = user?.name?.isNotEmpty == true ? user!.name! : (user?.email ?? 'PeerTask User');
+    final email = user?.email ?? '';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Subtle top gradient backdrop banner
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 64,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.12),
+                    AppColors.secondary.withValues(alpha: 0.06),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
           ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Language Settings
-                  _ModernSettingsSection(
-                    title: l10n.language,
-                    icon: Icons.language_rounded,
-                    children: [
-                      _ModernLanguageTile(
-                        title: l10n.english,
-                        locale: const Locale('en'),
-                        currentLocale: currentLocale,
-                        icon: Icons.flag_circle_rounded,
-                        onTap: () => ref.read(languageProvider.notifier).setLanguage('en'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar with glowing gradient ring
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 76,
+                      height: 76,
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppColors.gradientPrimary,
                       ),
-                      const Divider(height: 1, indent: 60),
-                      _ModernLanguageTile(
-                        title: l10n.vietnamese,
-                        locale: const Locale('vi'),
-                        currentLocale: currentLocale,
-                        icon: Icons.flag_circle_rounded,
-                        onTap: () => ref.read(languageProvider.notifier).setLanguage('vi'),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Account Settings
-                  _ModernSettingsSection(
-                    title: l10n.profile,
-                    icon: Icons.account_circle_rounded,
-                    children: [
-                      _ModernListTile(
-                        leading: Icons.edit_rounded,
-                        title: '${l10n.edit} ${l10n.profile}',
-                        trailing: Icons.chevron_right_rounded,
-                        onTap: () async {
-                          await showDialog<bool>(
-                            context: context,
-                            builder: (context) => const EditProfileDialog(),
-                          );
-                        },
-                      ),
-                      const Divider(height: 1, indent: 60),
-                      _ModernListTile(
-                        leading: Icons.lock_rounded,
-                        title: l10n.changePassword,
-                        trailing: Icons.chevron_right_rounded,
-                        onTap: () async {
-                          await showDialog<bool>(
-                            context: context,
-                            builder: (context) => const ChangePasswordDialog(),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // App Info
-                  _ModernSettingsSection(
-                    title: l10n.about,
-                    icon: Icons.info_rounded,
-                    children: [
-                      _ModernListTile(
-                        leading: Icons.app_settings_alt_rounded,
-                        title: l10n.appTitle,
-                        subtitle: 'Version 1.0.0',
-                        onTap: null,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Logout Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await ref.read(authStateProvider.notifier).logout();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      },
-                      icon: const Icon(Icons.logout_rounded, size: 18),
-                      label: Text(l10n.logout),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: const BorderSide(color: AppColors.error),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppColors.surface,
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval(
+                          child: user?.avatar != null && user!.avatar!.isNotEmpty
+                              ? _buildAvatarImage(user.avatar!)
+                              : _buildFallbackAvatar(),
+                        ),
                       ),
                     ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Material(
+                        color: AppColors.primaryDark,
+                        shape: const CircleBorder(),
+                        elevation: 3,
+                        child: InkWell(
+                          onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                          customBorder: const CircleBorder(),
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: _isUploadingAvatar
+                                ? const Padding(
+                                    padding: EdgeInsets.all(5),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                // User info & chips
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      Text(
+                        displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.mail_outline_rounded, size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.online,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  l10n.online,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySubtle,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              l10n.member,
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -341,26 +540,15 @@ class _ModernSettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
+              Icon(icon, size: 16, color: AppColors.primaryDark),
+              const SizedBox(width: 8),
               Text(
                 title,
                 style: AppTextStyles.titleSmall.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -370,11 +558,15 @@ class _ModernSettingsSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppColors.border.withOpacity(0.5),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.borderLight),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(children: children),
         ),
@@ -383,131 +575,149 @@ class _ModernSettingsSection extends StatelessWidget {
   }
 }
 
-class _ModernListTile extends StatelessWidget {
-  final IconData leading;
-  final String title;
-  final String? subtitle;
-  final IconData? trailing;
-  final VoidCallback? onTap;
-
-  const _ModernListTile({
-    required this.leading,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            leading,
-            size: 22,
-            color: AppColors.primary,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            inherit: true,
-          ),
-        ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textTertiary,
-                  inherit: true,
-                ),
-              )
-            : null,
-        trailing: trailing != null
-            ? Icon(
-                trailing,
-                color: AppColors.textTertiary,
-                size: 20,
-              )
-            : null,
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-    );
-  }
-}
-
-class _ModernLanguageTile extends StatelessWidget {
-  final String title;
-  final Locale locale;
-  final Locale currentLocale;
-  final IconData icon;
+class _LanguageChoiceTile extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final String flagEmoji;
+  final bool isSelected;
   final VoidCallback onTap;
 
-  const _ModernLanguageTile({
-    required this.title,
-    required this.locale,
-    required this.currentLocale,
-    required this.icon,
+  const _LanguageChoiceTile({
+    required this.label,
+    required this.subtitle,
+    required this.flagEmoji,
+    required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = currentLocale.languageCode == locale.languageCode;
-
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? AppColors.primary.withOpacity(0.1)
-              : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          size: 22,
-          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-        ),
-      ),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          color: isSelected ? AppColors.primary : AppColors.textPrimary,
-        ),
-      ),
-      trailing: isSelected
-          ? Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
-            )
-          : Icon(
-              Icons.radio_button_unchecked_rounded,
-              color: AppColors.textTertiary,
-              size: 20,
-            ),
+    return InkWell(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primarySubtle : AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(flagEmoji, style: const TextStyle(fontSize: 18)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.titleSmall.copyWith(
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryDark,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+              )
+            else
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModernActionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ModernActionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

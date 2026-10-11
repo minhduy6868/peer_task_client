@@ -12,6 +12,7 @@ import '../../models/task_model.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/error_display.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/task_dialog.dart';
@@ -495,20 +496,107 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       backgroundColor: AppColors.background,
       bottomNavigationBar: const _RemoteAudioMount(),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _leave),
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        shape: const Border(
+          bottom: BorderSide(color: AppColors.borderLight, width: 1),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, size: 20),
+          onPressed: _leave,
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primarySubtle,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.dashboard_rounded, size: 16, color: AppColors.primaryDark),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          IconButton(
-            tooltip: l10n.members,
-            onPressed: () => _showMembers(l10n, selfName),
-            icon: const Icon(Icons.group_outlined),
-          ),
-          IconButton(
-            tooltip: _voice ? l10n.endVoiceCall : l10n.startVoiceCall,
-            onPressed: _toggleVoice,
-            icon: Icon(_voice ? Icons.mic_rounded : Icons.mic_off_rounded),
+          // Member count chip
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Material(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                onTap: () => _showMembers(l10n, selfName),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.group_outlined, size: 16, color: AppColors.textPrimary),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${_members.length}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
+          // Voice call status pill
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Material(
+              color: _voice ? const Color(0xFFDCFCE7) : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                onTap: _toggleVoice,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _voice ? const Color(0xFF86EFAC) : AppColors.borderLight),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_voice) ...[
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(color: Color(0xFF16A34A), shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Icon(
+                        _voice ? Icons.mic_rounded : Icons.mic_off_rounded,
+                        size: 16,
+                        color: _voice ? const Color(0xFF16A34A) : AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
         ],
       ),
       body: Column(
@@ -522,7 +610,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onName: (name) => AppToast.show(context, message: name),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: Align(
               alignment: Alignment.centerLeft,
               child: _PageSwitch(
@@ -717,40 +805,60 @@ class _PageSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 36,
+      height: 40,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _chip(tasksLabel, tasks, onTasks),
-          _chip(canvasLabel, !tasks, onCanvas),
+          _chip(tasksLabel, Icons.view_kanban_rounded, tasks, onTasks),
+          const SizedBox(width: 2),
+          _chip(canvasLabel, Icons.draw_rounded, !tasks, onCanvas),
         ],
       ),
     );
   }
 
-  Widget _chip(String label, bool selected, VoidCallback onTap) {
+  Widget _chip(String label, IconData icon, bool selected, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? AppColors.primarySubtle : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppColors.primaryDark : AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -765,7 +873,6 @@ class _TrelloBoard extends StatelessWidget {
   final void Function(Map<String, dynamic> task) onOpen;
   final void Function(String status) onAdd;
   final void Function(String taskId, String status) onMove;
-
   final List<Map<String, dynamic>> members;
 
   const _TrelloBoard({
@@ -794,7 +901,7 @@ class _TrelloBoard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = 0; i < views.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 12),
+                  if (i > 0) const SizedBox(width: 14),
                   Expanded(child: views[i]),
                 ],
               ],
@@ -802,127 +909,166 @@ class _TrelloBoard extends StatelessWidget {
           );
         }
         return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.all(16),
-      itemCount: views.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 12),
-      itemBuilder: (context, index) => SizedBox(width: 300, height: constraints.maxHeight - 32, child: views[index]),
-    );
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.all(16),
+          itemCount: views.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 14),
+          itemBuilder: (context, index) => SizedBox(
+            width: 310,
+            height: constraints.maxHeight - 32,
+            child: views[index],
+          ),
+        );
       },
     );
   }
 
   Widget _column(_ColumnData column, double? height) {
+    Color dotColor;
+    if (column.status == 'todo') {
+      dotColor = const Color(0xFF8B7CFF);
+    } else if (column.status == 'doing') {
+      dotColor = const Color(0xFFF59E0B);
+    } else {
+      dotColor = const Color(0xFF10B981);
+    }
+
     return SizedBox(
-          width: height == null ? null : 300,
-          height: height,
-          child: DragTarget<String>(
-            onWillAcceptWithDetails: (_) => true,
-            onAcceptWithDetails: (details) => onMove(details.data, column.status),
-            builder: (context, candidate, rejected) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: candidate.isEmpty
-                      ? AppColors.surfaceVariant
-                      : AppColors.primarySubtle,
-                  borderRadius: BorderRadius.circular(12),
+      width: height == null ? null : 310,
+      height: height,
+      child: DragTarget<String>(
+        onWillAcceptWithDetails: (_) => true,
+        onAcceptWithDetails: (details) => onMove(details.data, column.status),
+        builder: (context, candidate, rejected) {
+          return Container(
+            decoration: BoxDecoration(
+              color: candidate.isEmpty ? AppColors.surfaceVariant : AppColors.primarySubtle,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: candidate.isEmpty ? AppColors.borderLight : AppColors.primaryLight,
+                width: candidate.isEmpty ? 1 : 1.5,
+              ),
+            ),
+            child: Column(
+              children: [
+                // Column Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 8, 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          column.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Text(
+                          '${column.tasks.length}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: l10n.addTask,
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onAdd(column.status),
+                        icon: const Icon(Icons.add_rounded, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 8, 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              column.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                // Task Cards
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    itemCount: column.tasks.length,
+                    itemBuilder: (context, taskIndex) {
+                      final task = column.tasks[taskIndex];
+                      final id = task['id'] as String? ?? '';
+                      return Draggable<String>(
+                        data: id,
+                        feedback: Material(
+                          elevation: 10,
+                          borderRadius: BorderRadius.circular(12),
+                          shadowColor: AppColors.primary.withValues(alpha: 0.25),
+                          child: Transform.rotate(
+                            angle: 0.03,
+                            child: SizedBox(
+                              width: 280,
+                              child: _TaskCard(task: task, members: members),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              '${column.tasks.length}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: l10n.addTask,
-                            onPressed: () => onAdd(column.status),
-                            icon: const Icon(Icons.add),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: column.tasks.length,
-                        itemBuilder: (context, taskIndex) {
-                          final task = column.tasks[taskIndex];
-                          final id = task['id'] as String? ?? '';
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Draggable<String>(
-                                data: id,
-                                feedback: Material(
-                                  elevation: 6,
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: SizedBox(width: 260, child: _TaskCard(task: task, members: members)),
-                                ),
-                                childWhenDragging: const SizedBox(width: 28, height: 36),
-                                child: const Padding(
-                                  padding: EdgeInsets.only(top: 8),
-                                  child: Icon(Icons.drag_indicator, size: 20, color: AppColors.textTertiary),
-                                ),
-                              ),
-                              Expanded(
-                                child: _TaskCard(
-                                  task: task,
-                                  members: members,
-                                  onTap: () => onOpen(task),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: TextField(
-                        controller: controllers[column.status],
-                        decoration: InputDecoration(
-                          hintText: l10n.addTask,
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          suffixIcon: IconButton(
-                            tooltip: l10n.addTask,
-                            onPressed: () => _submitQuickAdd(column.status),
-                            icon: const Icon(Icons.add),
                           ),
                         ),
-                        onSubmitted: (_) => _submitQuickAdd(column.status),
+                        childWhenDragging: Opacity(
+                          opacity: 0.35,
+                          child: _TaskCard(task: task, members: members),
+                        ),
+                        child: _TaskCard(
+                          task: task,
+                          members: members,
+                          onTap: () => onOpen(task),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Quick Add Field
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: TextField(
+                    controller: controllers[column.status],
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: l10n.addTask,
+                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+                      filled: true,
+                      fillColor: Colors.white,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.primaryDark, width: 1.5),
+                      ),
+                      suffixIcon: IconButton(
+                        tooltip: l10n.addTask,
+                        iconSize: 18,
+                        onPressed: () => _submitQuickAdd(column.status),
+                        icon: const Icon(Icons.add_circle_rounded, color: AppColors.primaryDark),
                       ),
                     ),
-                  ],
+                    onSubmitted: (_) => _submitQuickAdd(column.status),
+                  ),
                 ),
-              );
-            },
-          ),
-        );
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _submitQuickAdd(String status) {
@@ -953,20 +1099,28 @@ class _TaskCard extends StatelessWidget {
       for (final id in assigneeIds.take(3))
         _memberName(id),
     ];
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderLight),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -977,23 +1131,27 @@ class _TaskCard extends StatelessWidget {
                     children: [
                       for (final label in labels.take(3))
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.primarySubtle,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             label,
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryDark),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                 ],
                 Text(
                   task['title'] as String? ?? l10n.untitled,
-                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                  ),
                 ),
                 if (description != null && description.isNotEmpty)
                   Padding(
@@ -1002,31 +1160,47 @@ class _TaskCard extends StatelessWidget {
                       description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
                     ),
                   ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    Icon(Icons.flag, size: 14, color: _priorityColor(priority)),
+                    _priorityBadge(priority),
                     if (deadline != null) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.schedule, size: 14, color: overdue ? AppColors.error : AppColors.textSecondary),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${deadline.day}/${deadline.month}',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: overdue ? AppColors.error : AppColors.textSecondary),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: overdue ? AppColors.error.withValues(alpha: 0.1) : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.schedule_rounded, size: 12, color: overdue ? AppColors.error : AppColors.textSecondary),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${deadline.day}/${deadline.month}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: overdue ? AppColors.error : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     const Spacer(),
                     for (var i = 0; i < names.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 4),
+                      if (i > 0) const SizedBox(width: 3),
                       CircleAvatar(
-                        radius: 10,
+                        radius: 11,
                         backgroundColor: AppColors.primaryDark,
                         child: Text(
                           names[i].isEmpty ? '?' : names[i][0].toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -1036,6 +1210,48 @@ class _TaskCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _priorityBadge(String priority) {
+    Color bg;
+    Color fg;
+    IconData icon = Icons.flag_rounded;
+    switch (priority) {
+      case 'urgent':
+        bg = AppColors.error.withValues(alpha: 0.12);
+        fg = AppColors.error;
+        break;
+      case 'high':
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFD97706);
+        break;
+      case 'low':
+        bg = const Color(0xFFDCFCE7);
+        fg = const Color(0xFF16A34A);
+        break;
+      default:
+        bg = AppColors.primarySubtle;
+        fg = AppColors.primaryDark;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: fg),
+          const SizedBox(width: 3),
+          Text(
+            priority.toUpperCase(),
+            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: fg),
+          ),
+        ],
       ),
     );
   }
@@ -1055,19 +1271,6 @@ class _TaskCard extends StatelessWidget {
       }
     }
     return '';
-  }
-
-  Color _priorityColor(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return AppColors.error;
-      case 'high':
-        return AppColors.warning;
-      case 'low':
-        return AppColors.success;
-      default:
-        return AppColors.info;
-    }
   }
 }
 
@@ -1116,100 +1319,126 @@ class _CanvaPage extends StatelessWidget {
 
   static const _colors = [
     AppColors.primaryDark,
-    Color(0xFFEF4444),
+    Color(0xFF2563EB),
     AppColors.primary,
-    Color(0xFF48BB78),
+    Color(0xFF10B981),
     Color(0xFFF59E0B),
-    Color(0xFF7C3AED),
+    Color(0xFFEF4444),
+    Color(0xFF1E293B),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
+        // Studio White Left Toolbar
         Container(
-          width: 72,
-          color: const Color(0xFF1E1E1E),
+          width: 68,
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(right: BorderSide(color: AppColors.borderLight)),
+          ),
           child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             children: [
-              _toolButton(Icons.edit, l10n.pen, _DrawTool.pen),
-              _toolButton(Icons.auto_fix_high, l10n.eraser, _DrawTool.eraser),
-              _toolButton(Icons.title, l10n.addText, _DrawTool.text),
-              _toolButton(Icons.back_hand, l10n.pan, _DrawTool.hand),
-              const SizedBox(height: 12),
+              _toolButton(Icons.edit_rounded, l10n.pen, _DrawTool.pen),
+              const SizedBox(height: 6),
+              _toolButton(Icons.auto_fix_high_rounded, l10n.eraser, _DrawTool.eraser),
+              const SizedBox(height: 6),
+              _toolButton(Icons.title_rounded, l10n.addText, _DrawTool.text),
+              const SizedBox(height: 6),
+              _toolButton(Icons.pan_tool_rounded, l10n.pan, _DrawTool.hand),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 1, color: AppColors.borderLight),
+              ),
+              // Color swatches
               for (final swatch in _colors)
                 Center(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onColor(swatch),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: swatch,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: color == swatch ? Colors.white : Colors.transparent,
-                        width: 2,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onColor(swatch),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: swatch,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: color == swatch ? AppColors.surface : Colors.transparent,
+                          width: 2.5,
+                        ),
+                        boxShadow: color == swatch
+                            ? [
+                                BoxShadow(
+                                  color: swatch.withValues(alpha: 0.5),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : [],
                       ),
                     ),
                   ),
                 ),
-                ),
-              SizedBox(
-                height: 120,
-                child: RotatedBox(
-                  quarterTurns: 3,
-                  child: Slider(
-                    value: width,
-                    min: 1,
-                    max: 16,
-                    onChanged: onWidth,
-                  ),
-                ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Divider(height: 1, color: AppColors.borderLight),
               ),
-              const SizedBox(height: 12),
+              // Stroke width quick buttons
+              _strokeWidthButton(2),
+              _strokeWidthButton(5),
+              _strokeWidthButton(10),
             ],
           ),
         ),
+        // Interactive Canvas Workspace
         Expanded(
           child: Column(
             children: [
               Expanded(
-                child: InteractiveViewer(
-            minScale: 0.4,
-            maxScale: 3,
-            panEnabled: tool == _DrawTool.hand,
-            boundaryMargin: const EdgeInsets.all(800),
-            child: GestureDetector(
-              onTapUp: (details) => onTap(details.localPosition),
-              onPanStart: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                  ? (details) => onPanStart(details.localPosition)
-                  : null,
-              onPanUpdate: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                  ? (details) => onPanUpdate(details.localPosition)
-                  : null,
-              onPanEnd: tool == _DrawTool.pen || tool == _DrawTool.eraser
-                  ? (_) => onPanEnd()
-                  : null,
-              child: Container(
-                width: 2400,
-                height: 1600,
-                color: Colors.white,
-                child: Stack(
-                  children: [
-                    CustomPaint(
-                      size: const Size(2400, 1600),
-                      painter: _StrokePainter(strokes),
+                child: Container(
+                  color: const Color(0xFFF9F8FD),
+                  child: InteractiveViewer(
+                    minScale: 0.4,
+                    maxScale: 3,
+                    panEnabled: tool == _DrawTool.hand,
+                    boundaryMargin: const EdgeInsets.all(800),
+                    child: GestureDetector(
+                      onTapUp: (details) => onTap(details.localPosition),
+                      onPanStart: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                          ? (details) => onPanStart(details.localPosition)
+                          : null,
+                      onPanUpdate: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                          ? (details) => onPanUpdate(details.localPosition)
+                          : null,
+                      onPanEnd: tool == _DrawTool.pen || tool == _DrawTool.eraser
+                          ? (_) => onPanEnd()
+                          : null,
+                      child: Container(
+                        width: 2400,
+                        height: 1600,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Stack(
+                          children: [
+                            const Positioned.fill(
+                              child: CustomPaint(painter: _CanvasGridPainter()),
+                            ),
+                            CustomPaint(
+                              size: const Size(2400, 1600),
+                              painter: _StrokePainter(strokes),
+                            ),
+                            for (final text in texts) _textWidget(text),
+                          ],
+                        ),
+                      ),
                     ),
-                    for (final text in texts) _textWidget(text),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
               ),
               _pageBar(),
             ],
@@ -1219,36 +1448,70 @@ class _CanvaPage extends StatelessWidget {
     );
   }
 
-  Widget _pageBar() {
-    return Material(
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: pageLabel,
-              onPressed: canPrevious ? onPrevious : null,
-              icon: const Icon(Icons.chevron_left),
-            ),
-            Expanded(
-              child: Text(
-                pageLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-            IconButton(
-              onPressed: canNext ? onNext : null,
-              icon: const Icon(Icons.chevron_right),
-            ),
-            TextButton.icon(
-              onPressed: onAddPage,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addPage),
-            ),
-          ],
+  Widget _strokeWidthButton(double val) {
+    final selected = width == val;
+    return GestureDetector(
+      onTap: () => onWidth(val),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        height: 28,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primarySubtle : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
         ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 24,
+          height: val,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryDark : AppColors.textTertiary,
+            borderRadius: BorderRadius.circular(99),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pageBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.borderLight)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: pageLabel,
+            visualDensity: VisualDensity.compact,
+            onPressed: canPrevious ? onPrevious : null,
+            icon: const Icon(Icons.chevron_left_rounded, size: 22),
+          ),
+          Expanded(
+            child: Text(
+              pageLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: canNext ? onNext : null,
+            icon: const Icon(Icons.chevron_right_rounded, size: 22),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: onAddPage,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: Text(l10n.addPage, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.primarySubtle,
+              foregroundColor: AppColors.primaryDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1258,9 +1521,14 @@ class _CanvaPage extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: () => onTool(value),
-      icon: Icon(icon, color: selected ? Colors.white : Colors.white70),
+      icon: Icon(
+        icon,
+        size: 20,
+        color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+      ),
       style: IconButton.styleFrom(
-        backgroundColor: selected ? AppColors.primary : Colors.transparent,
+        backgroundColor: selected ? AppColors.primarySubtle : Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -1282,6 +1550,24 @@ class _CanvaPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CanvasGridPainter extends CustomPainter {
+  const _CanvasGridPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFCBD5E1).withValues(alpha: 0.45);
+    const gap = 32.0;
+    for (var y = 0.0; y < size.height; y += gap) {
+      for (var x = 0.0; x < size.width; x += gap) {
+        canvas.drawCircle(Offset(x, y), 0.75, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CanvasGridPainter oldDelegate) => false;
 }
 
 class _StrokePainter extends CustomPainter {
@@ -1333,34 +1619,35 @@ class _PresenceBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      child: SizedBox(
-        height: 72,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          children: [
+    return Container(
+      height: 58,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+      ),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        children: [
+          _PresenceAvatar(
+            name: selfName,
+            label: youLabel,
+            muted: selfMuted,
+            speaking: selfSpeaking,
+            online: true,
+            onTap: () => onName(selfName),
+          ),
+          for (final peer in peers)
             _PresenceAvatar(
-              name: selfName,
-              label: youLabel,
-              muted: selfMuted,
-              speaking: selfSpeaking,
-              online: true,
-              onTap: () => onName(selfName),
-            ),
-            for (final peer in peers)
-              _PresenceAvatar(
-                name: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
-                muted: peer.isMuted,
-                speaking: peer.isSpeaking && !peer.isMuted,
-                online: peer.connected,
-                onTap: () => onName(
-                  peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
-                ),
+              name: peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
+              muted: peer.isMuted,
+              speaking: peer.isSpeaking && !peer.isMuted,
+              online: peer.connected,
+              onTap: () => onName(
+                peer.userName?.isNotEmpty == true ? peer.userName! : peer.userId,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -1387,12 +1674,12 @@ class _PresenceAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-          width: 56,
+          width: 50,
           child: Column(
             children: [
               Stack(
@@ -1406,19 +1693,30 @@ class _PresenceAvatar extends StatelessWidget {
                         color: speaking ? AppColors.primary : Colors.transparent,
                         width: 2,
                       ),
+                      boxShadow: speaking
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.35),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : [],
                     ),
                     child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: const Color(0xFFD6E4FF),
-                      child: Text(initial, style: const TextStyle(fontSize: 13)),
+                      radius: 14,
+                      backgroundColor: AppColors.primarySubtle,
+                      child: Text(
+                        initial,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                      ),
                     ),
                   ),
                   Positioned(
                     right: -1,
                     bottom: -1,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
                         color: online ? AppColors.success : Colors.grey,
                         shape: BoxShape.circle,
@@ -1430,19 +1728,19 @@ class _PresenceAvatar extends StatelessWidget {
                     left: -2,
                     bottom: -2,
                     child: Icon(
-                      muted ? Icons.mic_off : Icons.mic,
-                      size: 12,
+                      muted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                      size: 11,
                       color: muted ? AppColors.error : AppColors.success,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 label ?? name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11),
+                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1511,31 +1809,85 @@ class _MemberSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(l10n.members, style: Theme.of(context).textTheme.titleMedium),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
+            child: Row(
+              children: [
+                Text(
+                  l10n.members,
+                  style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySubtle,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    '${rows.length}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                  ),
+                ),
+              ],
             ),
           ),
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: rows.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.borderLight),
               itemBuilder: (context, index) {
                 final row = rows[index];
                 final status = row.speaking
                     ? l10n.speaking
                     : (row.online ? l10n.online : l10n.offline);
+                final initial = row.name.isEmpty ? '?' : row.name.characters.first.toUpperCase();
                 return ListTile(
-                  leading: Icon(
-                    row.online ? (row.muted ? Icons.mic_off : Icons.mic) : Icons.person_outline,
+                  leading: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primarySubtle,
+                        child: Text(
+                          initial,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: row.online ? AppColors.success : Colors.grey,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  title: Text(
+                    row.you ? '${row.name} (${l10n.you})' : row.name,
+                    style: TextStyle(fontWeight: row.you ? FontWeight.w700 : FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    status,
+                    style: TextStyle(
+                      color: row.speaking
+                          ? AppColors.primaryDark
+                          : (row.online ? AppColors.success : AppColors.textTertiary),
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: Icon(
+                    row.online ? (row.muted ? Icons.mic_off_rounded : Icons.mic_rounded) : Icons.cloud_off_rounded,
+                    size: 18,
                     color: row.speaking
                         ? AppColors.primary
-                        : (row.online ? AppColors.success : Colors.grey),
+                        : (row.online ? (row.muted ? AppColors.error : AppColors.success) : AppColors.textTertiary),
                   ),
-                  title: Text(row.you ? '${row.name} (${l10n.you})' : row.name),
-                  subtitle: Text(status),
                 );
               },
             ),
@@ -1568,22 +1920,22 @@ class _RemoteAudioMount extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final output = ref.read(whiteboardProvider.notifier).remoteAudio;
-        return IgnorePointer(
-          child: ListenableBuilder(
-      listenable: output,
-      builder: (context, _) {
-        if (output.renderers.isEmpty) return const SizedBox.shrink();
-        return SizedBox(
-          height: 1,
-          child: Row(
-            children: [
-              for (final renderer in output.renderers)
-                SizedBox(width: 1, height: 1, child: RTCVideoView(renderer)),
-            ],
-          ),
-        );
-      },
-    ),
+    return IgnorePointer(
+      child: ListenableBuilder(
+        listenable: output,
+        builder: (context, _) {
+          if (output.renderers.isEmpty) return const SizedBox.shrink();
+          return SizedBox(
+            height: 1,
+            child: Row(
+              children: [
+                for (final renderer in output.renderers)
+                  SizedBox(width: 1, height: 1, child: RTCVideoView(renderer)),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
