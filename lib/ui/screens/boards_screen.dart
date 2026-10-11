@@ -486,7 +486,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                           );
                     if (!wide) {
                       return ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                         children: [
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -495,12 +495,22 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 ButtonSegment<int>(
                                   value: 0,
                                   icon: const Icon(Icons.dashboard_rounded, size: 16),
-                                  label: Text('${l10n.myBoards} (${visible.length})'),
+                                  label: Text(
+                                    '${l10n.myBoards} (${visible.length})',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
                                 ButtonSegment<int>(
                                   value: 1,
                                   icon: const Icon(Icons.assignment_turned_in_rounded, size: 16),
-                                  label: Text('${l10n.yourWork} (${work.length})'),
+                                  label: Text(
+                                    '${l10n.yourWork} (${work.length})',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
                               ],
                               selected: {_mobileTab},
@@ -523,7 +533,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                               for (var i = 0; i < visible.length; i++) ...[
                                 if (i > 0) const SizedBox(height: 14),
                                 SizedBox(
-                                  height: 205,
+                                  height: 232,
                                   child: _BoardCard(
                                     board: visible[i],
                                     accent: _boardAccents[i % _boardAccents.length],
@@ -733,18 +743,18 @@ class _HomeHeader extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: _buildWelcomeInfo(l10n),
+                              child: _buildWelcomeInfo(context, l10n, isWide: true),
                             ),
                             const SizedBox(width: 20),
-                            _buildStatsAndAction(l10n),
+                            _buildStatsAndAction(l10n, isWide: true),
                           ],
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildWelcomeInfo(l10n),
-                            const SizedBox(height: 16),
-                            _buildStatsAndAction(l10n),
+                            _buildWelcomeInfo(context, l10n, isWide: false),
+                            const SizedBox(height: 14),
+                            _buildStatsAndAction(l10n, isWide: false),
                           ],
                         ),
                 ),
@@ -859,7 +869,7 @@ class _HomeHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeInfo(AppLocalizations l10n) {
+  Widget _buildWelcomeInfo(BuildContext context, AppLocalizations l10n, {required bool isWide}) {
     final cleanGreeting = greeting.endsWith('!') ? greeting : '$greeting!';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,6 +879,47 @@ class _HomeHeader extends StatelessWidget {
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            if (!isWide)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    try {
+                      context.go('/workspaces');
+                    } catch (_) {}
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.gradientPrimary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.diversity_3_rounded, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'PeerTask',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
               decoration: BoxDecoration(
@@ -893,39 +944,50 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
             if (workspaceName.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    try {
+                      context.go('/workspaces');
+                    } catch (_) {}
+                  },
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.business_center_outlined, size: 13, color: AppColors.primary),
-                    const SizedBox(width: 5),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 160),
-                      child: Text(
-                        workspaceName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.business_center_outlined, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 5),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: Text(
+                            workspaceName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -956,13 +1018,13 @@ class _HomeHeader extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
           name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 26,
+          style: TextStyle(
+            fontSize: isWide ? 26 : 21,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
             color: AppColors.textPrimary,
@@ -992,7 +1054,43 @@ class _HomeHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsAndAction(AppLocalizations l10n) {
+  Widget _buildStatsAndAction(AppLocalizations l10n, {required bool isWide}) {
+    if (!isWide) {
+      return Row(
+        children: [
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.dashboard_rounded,
+              iconColor: AppColors.primary,
+              value: '$totalBoards',
+              label: l10n.boards,
+              isCompact: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.assignment_turned_in_rounded,
+              iconColor: AppColors.warning,
+              value: '$totalWork',
+              label: l10n.yourWork,
+              isCompact: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.check_circle_rounded,
+              iconColor: AppColors.success,
+              value: '$totalDone',
+              label: l10n.done,
+              isCompact: true,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: 10,
       runSpacing: 8,
@@ -1063,18 +1161,23 @@ class _MetricPill extends StatelessWidget {
   final Color iconColor;
   final String value;
   final String label;
+  final bool isCompact;
 
   const _MetricPill({
     required this.icon,
     required this.iconColor,
     required this.value,
     required this.label,
+    this.isCompact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 8 : 12,
+        vertical: isCompact ? 7 : 8,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1088,41 +1191,72 @@ class _MetricPill extends StatelessWidget {
         ],
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isCompact ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(5),
+            padding: EdgeInsets.all(isCompact ? 4.5 : 5),
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 14, color: iconColor),
+            child: Icon(icon, size: isCompact ? 13 : 14, color: iconColor),
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  height: 1.1,
-                ),
+          SizedBox(width: isCompact ? 6 : 8),
+          if (isCompact)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                  height: 1.1,
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    height: 1.1,
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -1417,7 +1551,7 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1945,7 +2079,7 @@ class _CountChip extends StatelessWidget {
       _ChipTone.plain => AppColors.surfaceVariant,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(99),
@@ -1955,12 +2089,12 @@ class _CountChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 10, color: color),
-            const SizedBox(width: 4),
+            Icon(icon, size: 9.5, color: color),
+            const SizedBox(width: 3.5),
           ],
           Text(
             '$label $count',
-            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
           ),
         ],
       ),
