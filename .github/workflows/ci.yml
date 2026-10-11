@@ -27,6 +27,10 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -34,23 +38,28 @@ jobs:
       - run: flutter pub get
       - name: Build the site
         run: flutter build web --release --base-href /
-      - uses: actions/setup-java@v4
-        continue-on-error: true
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
-        id: android-sdk
-        continue-on-error: true
-      - name: Attach the release APK
-        if: steps.android-sdk.outcome == 'success'
-        continue-on-error: true
+      - name: Install Android SDK
+        run: |
+          set -euo pipefail
+          SDK="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          curl -fsSL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+          rm -rf /tmp/cmdline-extract
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-extract
+          rm -rf "$SDK/cmdline-tools/latest"
+          mv /tmp/cmdline-extract/cmdline-tools "$SDK/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          set +o pipefail
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses >/dev/null || true
+      - name: Build the release APK
         run: |
           set -euo pipefail
           flutter config --android-sdk "$ANDROID_HOME"
-          yes | flutter doctor --android-licenses || true
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk build/web/peertask.apk
+          test -s build/web/peertask.apk
       - name: Require Cloudflare token
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

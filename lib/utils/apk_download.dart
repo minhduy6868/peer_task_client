@@ -4,8 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 const androidApkPath = 'peertask.apk';
 
 Future<bool> launchAndroidApkDownload() {
+  final uri = Uri.parse('${Uri.base.origin}/$androidApkPath');
   return launchUrl(
-    Uri.base.resolve(androidApkPath),
+    uri,
     mode: LaunchMode.externalApplication,
+    webOnlyWindowName: '_blank',
   );
 }
