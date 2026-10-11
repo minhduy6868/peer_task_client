@@ -1875,7 +1875,12 @@ class _CanvaPageState extends State<_CanvaPage> {
                         scale: 0.65,
                         child: Switch(
                           value: _showAuthorTags,
-                          activeThumbColor: AppColors.primary,
+                          thumbColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return AppColors.primary;
+                            }
+                            return null;
+                          }),
                           onChanged: (val) => setState(() => _showAuthorTags = val),
                         ),
                       ),
