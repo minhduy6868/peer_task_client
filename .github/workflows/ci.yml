@@ -42,22 +42,42 @@ jobs:
         run: |
           set -euo pipefail
           SDK="$RUNNER_TEMP/android-sdk"
-          mkdir -p "$SDK/cmdline-tools"
+          mkdir -p "$SDK/cmdline-tools" "$SDK/licenses"
           curl -fsSL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
           rm -rf /tmp/cmdline-extract
           unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-extract
           rm -rf "$SDK/cmdline-tools/latest"
           mv /tmp/cmdline-extract/cmdline-tools "$SDK/cmdline-tools/latest"
+          printf '%s\n' \
+            '8933bad161af4178b1185d1a37fbf41ea5269c55' \
+            'd56f5187479451eabf01fb78af6dfcb131a6481e' \
+            '24333f8a63b6825ea9c5514f83c2829b004d1fee' \
+            > "$SDK/licenses/android-sdk-license"
+          printf '%s\n' '84831b9409646161da1b331b1c2b8d2d' > "$SDK/licenses/android-sdk-preview-license"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          "$SM" --sdk_root="$SDK" \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;28.2.13676358" \
+            "cmake;3.22.1"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          set +o pipefail
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses >/dev/null || true
       - name: Build the release APK
         run: |
           set -euo pipefail
           flutter config --android-sdk "$ANDROID_HOME"
-          flutter build apk --release
+          set +e
+          flutter build apk --release > /tmp/apk-build.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            tail -n 40 /tmp/apk-build.log | while IFS= read -r line; do
+              safe=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r/%0D/g')
+              echo "::error title=apk::$safe"
+            done
+            exit "$code"
+          fi
           cp build/app/outputs/flutter-apk/app-release.apk build/web/peertask.apk
           test -s build/web/peertask.apk
       - name: Require Cloudflare token
