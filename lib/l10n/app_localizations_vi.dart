@@ -1151,6 +1151,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get continueOffline => 'Làm việc ngoại tuyến';
 
   @override
+  String get downloadAndroidApp => 'Tải app Android';
+
+  @override
+  String get downloadAndroidAppFailed => 'Không tải được app Android';
+
+  @override
   String get sendResetLink => 'Gửi liên kết đặt lại';
 
   @override

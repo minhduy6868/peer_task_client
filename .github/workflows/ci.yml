@@ -32,7 +32,10 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - run: flutter build apk --release
       - run: flutter build web --release --base-href /
+      - name: Publish the APK next to the site
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/web/peertask.apk
       - name: Require Cloudflare token
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

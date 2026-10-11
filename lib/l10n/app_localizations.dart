@@ -2300,6 +2300,18 @@ abstract class AppLocalizations {
   /// **'Continue offline'**
   String get continueOffline;
 
+  /// No description provided for @downloadAndroidApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Android app'**
+  String get downloadAndroidApp;
+
+  /// No description provided for @downloadAndroidAppFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the Android app download'**
+  String get downloadAndroidAppFailed;
+
   /// No description provided for @sendResetLink.
   ///
   /// In en, this message translates to:

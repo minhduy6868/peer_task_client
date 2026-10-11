@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/ui/theme/app_colors.dart';
 import 'package:peertask/l10n/app_localizations.dart';
+import 'package:peertask/utils/apk_download.dart';
 import 'package:peertask/utils/error_display.dart';
 import 'package:peertask/utils/validators_l10n.dart';
 
@@ -28,6 +30,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _passwordController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _downloadApk() async {
+    final opened = await launchAndroidApkDownload();
+    if (!opened && mounted) {
+      context.showErrorSnackBar(AppLocalizations.of(context)!.downloadAndroidAppFailed);
+    }
   }
 
   Future<void> _submit() async {
@@ -552,6 +561,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             
+                            if (kIsWeb) ...[
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: OutlinedButton.icon(
+                                  onPressed: authState.isLoading ? null : _downloadApk,
+                                  icon: const Icon(Icons.android_rounded),
+                                  label: Text(
+                                    l10n.downloadAndroidApp,
+                                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primaryDark,
+                                    side: const BorderSide(color: AppColors.primaryDark, width: 2),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    textStyle: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
+
                             const SizedBox(height: 24),
                             
                             // Toggle Mode

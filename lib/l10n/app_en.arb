@@ -455,6 +455,8 @@
   "landingPreviewLayout": "Layout",
   "landingPreviewVoice": "Voice",
   "continueOffline": "Continue offline",
+  "downloadAndroidApp": "Download Android app",
+  "downloadAndroidAppFailed": "Could not start the Android app download",
   "sendResetLink": "Send reset link",
   "backToLogin": "Back to login",
   "emailSent": "Email sent",

@@ -1156,6 +1156,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueOffline => 'Continue offline';
 
   @override
+  String get downloadAndroidApp => 'Download Android app';
+
+  @override
+  String get downloadAndroidAppFailed =>
+      'Could not start the Android app download';
+
+  @override
   String get sendResetLink => 'Send reset link';
 
   @override

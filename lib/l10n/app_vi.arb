@@ -455,6 +455,8 @@
   "landingPreviewLayout": "Bố cục",
   "landingPreviewVoice": "Thoại",
   "continueOffline": "Làm việc ngoại tuyến",
+  "downloadAndroidApp": "Tải app Android",
+  "downloadAndroidAppFailed": "Không tải được app Android",
   "sendResetLink": "Gửi liên kết đặt lại",
   "backToLogin": "Về đăng nhập",
   "emailSent": "Đã gửi email",

@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../utils/apk_download.dart';
+import '../../utils/error_display.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_button.dart';
@@ -60,6 +62,13 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     _pointer.dispose();
     _scrolled.dispose();
     super.dispose();
+  }
+
+  Future<void> _downloadApk() async {
+    final opened = await launchAndroidApkDownload();
+    if (!opened && mounted) {
+      context.showErrorSnackBar(AppLocalizations.of(context)!.downloadAndroidAppFailed);
+    }
   }
 
   void _reveal(GlobalKey key) {
@@ -380,13 +389,33 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
           isFullWidth: stack,
           onPressed: () => context.go('/offline-username'),
         );
+        final download = kIsWeb
+            ? AppButton(
+                label: l10n.downloadAndroidApp,
+                icon: Icons.android_rounded,
+                variant: ButtonVariant.outlined,
+                size: ButtonSize.medium,
+                color: AppColors.primaryDark,
+                isFullWidth: stack,
+                onPressed: _downloadApk,
+              )
+            : null;
         if (stack) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [start, const SizedBox(height: 10), offline],
+            children: [
+              start,
+              const SizedBox(height: 10),
+              offline,
+              if (download != null) ...[const SizedBox(height: 10), download],
+            ],
           );
         }
-        return Wrap(spacing: 12, runSpacing: 10, children: [start, offline]);
+        return Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: [start, offline, if (download != null) download],
+        );
       },
     );
   }
@@ -552,19 +581,41 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                       ),
                     ],
                   ),
-                  ElevatedButton(
-                    onPressed: () => context.go('/login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primaryDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(
-                      l10n.getStarted,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                    ),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => context.go('/login'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.primaryDark,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(
+                          l10n.getStarted,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
+                      ),
+                      if (kIsWeb)
+                        OutlinedButton.icon(
+                          onPressed: _downloadApk,
+                          icon: const Icon(Icons.android_rounded, size: 18),
+                          label: Text(
+                            l10n.downloadAndroidApp,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
