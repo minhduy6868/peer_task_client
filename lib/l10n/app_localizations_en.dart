@@ -1208,4 +1208,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectDate => 'Select date';
+
+  @override
+  String get workspaceOverview => 'Workspace Overview';
+
+  @override
+  String get openBoardHint => 'Click to open board';
+
+  @override
+  String get allCaughtUp => 'All caught up!';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterOwner => 'Owner';
+
+  @override
+  String get filterEditor => 'Editor';
+
+  @override
+  String get filterViewer => 'Viewer';
+
+  @override
+  String get boardMembers => 'Members';
+
+  @override
+  String get addCollaborator => 'Add collaborator';
+
+  @override
+  String get manageMembers => 'Manage members';
+
+  @override
+  String get noBoardsMatchingFilter => 'No boards match the current filter';
+
+  @override
+  String get clearFilter => 'Clear filter';
+
+  @override
+  String membersCount(int count) {
+    return '$count members';
+  }
+
+  @override
+  String get oneMember => '1 member';
+
+  @override
+  String get filter => 'Filter';
+
+  @override
+  String get sort => 'Sort';
+
+  @override
+  String get boardView => 'Board';
+
+  @override
+  String get canvasView => 'Canvas';
+
+  @override
+  String get filterAllTasks => 'All';
+
+  @override
+  String get sortByDate => 'Due date';
+
+  @override
+  String get sortByPriority => 'Priority';
+
+  @override
+  String get sortByTitle => 'Title';
+
+  @override
+  String get defaultSort => 'Default';
+
+  @override
+  String get urgentPriority => 'Urgent';
+
+  @override
+  String get noTasksInColumn => 'No tasks yet';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get openBoard => 'Open board';
+
+  @override
+  String get createBoardCardDesc => 'Start a new project or workflow';
+
+  @override
+  String get noDescription => 'No description provided';
+
+  @override
+  String get activeBoards => 'Active boards';
+
+  @override
+  String get pendingTasks => 'Pending tasks';
+
+  @override
+  String get completedTasks => 'Completed';
+
+  @override
+  String get quickTipsTitle => 'Quick tip';
+
+  @override
+  String get quickTipsBody =>
+      'Click any task card to navigate directly to its board.';
 }

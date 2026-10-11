@@ -1202,4 +1202,115 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get selectDate => 'Chọn ngày';
+
+  @override
+  String get workspaceOverview => 'Tổng quan không gian làm việc';
+
+  @override
+  String get openBoardHint => 'Nhấn để mở bảng';
+
+  @override
+  String get allCaughtUp => 'Không có việc tồn đọng!';
+
+  @override
+  String get clearSearch => 'Xóa tìm kiếm';
+
+  @override
+  String get all => 'Tất cả';
+
+  @override
+  String get filterAll => 'Tất cả';
+
+  @override
+  String get filterOwner => 'Chủ sở hữu';
+
+  @override
+  String get filterEditor => 'Chỉnh sửa';
+
+  @override
+  String get filterViewer => 'Chỉ xem';
+
+  @override
+  String get boardMembers => 'Thành viên';
+
+  @override
+  String get addCollaborator => 'Thêm cộng tác viên';
+
+  @override
+  String get manageMembers => 'Quản lý thành viên';
+
+  @override
+  String get noBoardsMatchingFilter => 'Không có bảng nào khớp với bộ lọc';
+
+  @override
+  String get clearFilter => 'Xóa bộ lọc';
+
+  @override
+  String membersCount(int count) {
+    return '$count thành viên';
+  }
+
+  @override
+  String get oneMember => '1 thành viên';
+
+  @override
+  String get filter => 'Bộ lọc';
+
+  @override
+  String get sort => 'Sắp xếp';
+
+  @override
+  String get boardView => 'Bảng việc';
+
+  @override
+  String get canvasView => 'Bản vẽ';
+
+  @override
+  String get filterAllTasks => 'Tất cả';
+
+  @override
+  String get sortByDate => 'Hạn chót';
+
+  @override
+  String get sortByPriority => 'Mức ưu tiên';
+
+  @override
+  String get sortByTitle => 'Tiêu đề';
+
+  @override
+  String get defaultSort => 'Mặc định';
+
+  @override
+  String get urgentPriority => 'Khẩn cấp';
+
+  @override
+  String get noTasksInColumn => 'Chưa có công việc nào';
+
+  @override
+  String get search => 'Tìm kiếm';
+
+  @override
+  String get openBoard => 'Vào bảng';
+
+  @override
+  String get createBoardCardDesc => 'Bắt đầu dự án hoặc quy trình làm việc mới';
+
+  @override
+  String get noDescription => 'Chưa có mô tả chi tiết';
+
+  @override
+  String get activeBoards => 'Bảng hoạt động';
+
+  @override
+  String get pendingTasks => 'Việc cần xử lý';
+
+  @override
+  String get completedTasks => 'Đã hoàn thành';
+
+  @override
+  String get quickTipsTitle => 'Mẹo nhanh';
+
+  @override
+  String get quickTipsBody =>
+      'Nhấn vào bất kỳ thẻ công việc nào để mở ngay bảng tương ứng.';
 }
