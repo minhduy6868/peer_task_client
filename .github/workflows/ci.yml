@@ -27,28 +27,30 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Accept Android SDK licenses
-        run: yes | flutter doctor --android-licenses || true
-      - name: Build the site and attach the APK
+      - name: Build the site
+        run: flutter build web --release --base-href /
+      - uses: actions/setup-java@v4
+        continue-on-error: true
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        id: android-sdk
+        continue-on-error: true
+      - name: Attach the release APK
+        if: steps.android-sdk.outcome == 'success'
+        continue-on-error: true
         run: |
           set -euo pipefail
           flutter config --android-sdk "$ANDROID_HOME"
-          flutter build web --release --base-href /
-          if flutter build apk --release; then
-            cp build/app/outputs/flutter-apk/app-release.apk build/web/peertask.apk
-          else
-            echo "APK build failed. Publishing the site without peertask.apk."
-          fi
+          yes | flutter doctor --android-licenses || true
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/peertask.apk
       - name: Require Cloudflare token
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

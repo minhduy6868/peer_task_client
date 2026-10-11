@@ -152,7 +152,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
               SizedBox(height: wide ? 80 : 56),
               _rise(0.55, 1, _close(context, l10n)),
               const SizedBox(height: 36),
-              _footer(l10n),
+              _footer(context, l10n),
             ],
           ),
         ),
@@ -626,31 +626,84 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
     );
   }
 
-  Widget _footer(AppLocalizations l10n) {
-    return Column(
+  Widget _footer(BuildContext context, AppLocalizations l10n) {
+    final brand = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Divider(height: 1, color: AppColors.divider),
-        const SizedBox(height: 18),
-        SizedBox(
-          width: double.infinity,
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 12,
-            runSpacing: 8,
+        const _LogoMark(),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.appTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.titleSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               Text(
                 l10n.realTimeCollaboration,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.labelMedium.copyWith(color: AppColors.textTertiary),
               ),
             ],
           ),
+        ),
+      ],
+    );
+    final actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (kIsWeb)
+          AppButton(
+            label: l10n.downloadAndroidApp,
+            icon: Icons.android_rounded,
+            variant: ButtonVariant.outlined,
+            size: ButtonSize.small,
+            color: AppColors.primaryDark,
+            onPressed: _downloadApk,
+          ),
+        AppButton(
+          label: l10n.signIn,
+          variant: ButtonVariant.text,
+          size: ButtonSize.small,
+          onPressed: () => context.go('/login'),
+        ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(height: 1, color: AppColors.divider),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 560) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  brand,
+                  const SizedBox(height: 14),
+                  actions,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: brand),
+                const SizedBox(width: 16),
+                actions,
+              ],
+            );
+          },
         ),
       ],
     );
