@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/language_provider.dart';
 import '../../services/cloudinary_service.dart';
+import '../../utils/apk_download.dart';
 import '../../utils/error_display.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
@@ -114,6 +115,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _downloadApk() async {
+    final opened = await launchAndroidApkDownload();
+    if (!opened && mounted) {
+      context.showErrorSnackBar(AppLocalizations.of(context)!.downloadAndroidAppFailed);
+    }
   }
 
   Future<void> _confirmLogout(BuildContext context, AppLocalizations l10n) async {
@@ -296,6 +304,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 36),
+
+                if (kIsWeb) ...[
+                  OutlinedButton.icon(
+                    onPressed: _downloadApk,
+                    icon: const Icon(Icons.android_rounded, size: 18),
+                    label: Text(
+                      l10n.downloadAndroidApp,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryDark,
+                      side: const BorderSide(color: AppColors.primaryDark),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // 5. Logout Button
                 OutlinedButton.icon(
