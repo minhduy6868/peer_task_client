@@ -681,37 +681,58 @@ class _HomeHeader extends StatelessWidget {
 
           return Padding(
             padding: EdgeInsets.fromLTRB(paddingH, 16, paddingH, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        workspaceName.isEmpty ? l10n.boards : workspaceName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.screenTitle.copyWith(color: AppColors.textPrimary),
+            child: Container(
+              padding: EdgeInsets.all(isWide ? 20 : 16),
+              decoration: BoxDecoration(
+                gradient: AppColors.gradientSubtle,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.7)),
+                boxShadow: AppColors.elegantCardShadow,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              workspaceName.isEmpty ? l10n.boards : workspaceName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.screenTitle.copyWith(color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n.boards,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    if (canCreate) ...[
-                      const SizedBox(width: 12),
-                      FilledButton(
-                        onPressed: onCreateBoard,
-                        child: Text(l10n.newBoard),
-                      ),
+                      if (canCreate) ...[
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: onCreateBoard,
+                          child: Text(l10n.newBoard),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: isWide ? 340 : double.infinity),
-                    child: _buildSearchBox(l10n),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: isWide ? 360 : double.infinity),
+                      child: _buildSearchBox(l10n),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -1439,8 +1460,11 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isHovered ? widget.accent.withValues(alpha: 0.45) : AppColors.border,
+          ),
+          boxShadow: _isHovered ? AppColors.hoverShadow : AppColors.elegantCardShadow,
         ),
         child: Material(
           color: Colors.transparent,
@@ -1451,8 +1475,18 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Accent gradient stripe on top
-                const SizedBox(height: 8),
+                Container(
+                  height: 5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.accent,
+                        widget.accent.withValues(alpha: 0.65),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),

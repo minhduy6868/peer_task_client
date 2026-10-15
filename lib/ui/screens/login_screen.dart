@@ -110,9 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Mobile Logo (only show on small screens)
-                            if (!isWideScreen) ...[
-                              Center(
+                            Center(
                                 child: Container(
                                   height: isTablet ? 100 : 80,
                                   width: isTablet ? 100 : 80,
@@ -135,9 +133,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: isTablet ? 32 : 24),
-                            ],
-                            
+                              const SizedBox(height: 24),
+
                             // Title
                             Text(
                               _isRegisterMode ? l10n.signUp : l10n.signIn,

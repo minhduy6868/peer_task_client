@@ -8,16 +8,15 @@ alwaysApply: false
 
 Change tokens in `AppColors`, `AppTextStyles`, and `AppTheme` first. Screens use those tokens. No new hex in a widget.
 
-Neutral canvas, white surface, one accent. The accent is for the primary button, the selected nav row, links, and focus. It is not a page background and not a full-bleed app bar.
+Keep the soft violet look: background `#F7F4FF`, accent `#8B7CFF`, white cards, a 5px accent stripe, and `elegantCardShadow`. The accent is for buttons, selection, stripes, and the rail mark. It is not a full-bleed app bar.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| background | `#F6F7F9` | Scaffold |
+| background | `#F7F4FF` | Scaffold |
 | surface | `#FFFFFF` | Rail, cards, dialogs |
-| border | `#E6E8EB` | Hairline, 1px |
-| textPrimary | `#1F2328` | Titles, task names |
-| textSecondary | `#656D76` | Meta, hints |
-| accent | `#5E6AD2` | Primary button, selection |
+| primarySubtle | `#F3F0FF` | Selected row, To do column |
+| textPrimary | `#2C2440` | Titles, task names |
+| accent | `#8B7CFF` | Primary button, stripe |
 
 - Radius 8 on buttons and fields, 10 on cards and dialogs. No pills on large panels.
 - Type: 20/600 screen title, 15/500 section, 14/400 body, 12/400 meta. One family, the platform UI font.

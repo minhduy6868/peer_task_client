@@ -174,14 +174,39 @@ class _RailRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.section.copyWith(
-              color: selected ? AppColors.primaryDark : AppColors.textPrimary,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: selected ? AppColors.gradientPrimary : null,
+                  color: selected ? null : AppColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  label.isEmpty ? '?' : label.substring(0, 1).toUpperCase(),
+                  style: TextStyle(
+                    color: selected ? Colors.white : AppColors.primaryDark,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.section.copyWith(
+                    color: selected ? AppColors.primaryDark : AppColors.textPrimary,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1369,14 +1369,16 @@ class _TrelloBoard extends StatelessWidget {
     Color titleColor;
     Color dotColor;
 
-    bannerBg = AppColors.surface;
     titleColor = AppColors.textPrimary;
     if (column.status == 'doing') {
+      bannerBg = AppColors.warningLight;
       dotColor = AppColors.warning;
     } else if (column.status == 'done') {
+      bannerBg = AppColors.successLight;
       dotColor = AppColors.success;
     } else {
-      dotColor = AppColors.textSecondary;
+      bannerBg = AppColors.primarySubtle;
+      dotColor = AppColors.primary;
     }
 
     return SizedBox(
