@@ -684,9 +684,13 @@ class _HomeHeader extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(isWide ? 20 : 16),
               decoration: BoxDecoration(
-                gradient: AppColors.gradientSubtle,
+                gradient: const LinearGradient(
+                  colors: [Colors.white, Color(0xFFFAF7FF), Color(0xFFF3EDFF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.7)),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.55)),
                 boxShadow: AppColors.elegantCardShadow,
               ),
               child: Column(
@@ -694,6 +698,23 @@ class _HomeHeader extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.gradientPrimary,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.28),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

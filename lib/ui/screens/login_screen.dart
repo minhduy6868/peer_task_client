@@ -104,7 +104,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       constraints: BoxConstraints(
                         maxWidth: isWideScreen ? 450 : (isTablet ? 400 : double.infinity),
                       ),
-                      child: Form(
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(28, 32, 28, 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.45)),
+                          boxShadow: AppColors.elegantCardShadow,
+                        ),
+                        child: Form(
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         child: Column(
@@ -488,6 +496,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                           ],
                         ),
+                      ),
                       ),
                     ),
                   ),
