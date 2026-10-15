@@ -9,6 +9,7 @@ import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
 const _boardAccents = [
   AppColors.primary,
@@ -118,8 +119,6 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   BoardFilter _filter = BoardFilter.all;
-  int _mobileTab = 0; // 0: Boards, 1: Your work
-
   Future<void> _openBoardSettings(Board board, {int initialTabIndex = 0}) async {
     final result = await showDialog(
       context: context,
@@ -488,48 +487,9 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                       return ListView(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
                         children: [
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: SegmentedButton<int>(
-                              segments: [
-                                ButtonSegment<int>(
-                                  value: 0,
-                                  icon: const Icon(Icons.dashboard_rounded, size: 16),
-                                  label: Text(
-                                    '${l10n.myBoards} (${visible.length})',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                                ButtonSegment<int>(
-                                  value: 1,
-                                  icon: const Icon(Icons.assignment_turned_in_rounded, size: 16),
-                                  label: Text(
-                                    '${l10n.yourWork} (${work.length})',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ],
-                              selected: {_mobileTab},
-                              onSelectionChanged: (selected) {
-                                setState(() => _mobileTab = selected.first);
-                              },
-                              style: SegmentedButton.styleFrom(
-                                selectedBackgroundColor: AppColors.primarySubtle,
-                                selectedForegroundColor: AppColors.primaryDark,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                          if (_mobileTab == 1) ...[
-                            workPanel,
-                          ] else ...[
-                            if (visible.isEmpty && !showAddCard)
-                              SizedBox(height: 240, child: boardPanel)
-                            else ...[
+                          if (visible.isEmpty && !showAddCard)
+                            SizedBox(height: 240, child: boardPanel)
+                          else ...[
                               for (var i = 0; i < visible.length; i++) ...[
                                 if (i > 0) const SizedBox(height: 14),
                                 SizedBox(
@@ -553,7 +513,6 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                                 ),
                               ],
                             ],
-                          ],
                         ],
                       );
                     }
@@ -725,70 +684,33 @@ class _HomeHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Hero Welcome Banner
-                Container(
-                  padding: EdgeInsets.all(isWide ? 22 : 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.white, Color(0xFFFAF7FF), Color(0xFFF3EDFF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        workspaceName.isEmpty ? l10n.boards : workspaceName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.screenTitle.copyWith(color: AppColors.textPrimary),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
-                    boxShadow: AppColors.elegantCardShadow,
-                  ),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: _buildWelcomeInfo(context, l10n, isWide: true),
-                            ),
-                            const SizedBox(width: 20),
-                            _buildStatsAndAction(l10n, isWide: true),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildWelcomeInfo(context, l10n, isWide: false),
-                            const SizedBox(height: 14),
-                            _buildStatsAndAction(l10n, isWide: false),
-                          ],
-                        ),
+                    if (canCreate) ...[
+                      const SizedBox(width: 12),
+                      FilledButton(
+                        onPressed: onCreateBoard,
+                        child: Text(l10n.newBoard),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 14),
-
-                // Search & Filter Toolbar
-                if (isWide)
-                  Row(
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 340),
-                        child: _buildSearchBox(l10n),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _buildFilterChipsRow(l10n),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildSearchBox(l10n),
-                      const SizedBox(height: 10),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: _buildFilterChipsRow(l10n),
-                      ),
-                    ],
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isWide ? 340 : double.infinity),
+                    child: _buildSearchBox(l10n),
                   ),
+                ),
               ],
             ),
           );
