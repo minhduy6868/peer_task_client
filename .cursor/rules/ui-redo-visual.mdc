@@ -1,0 +1,31 @@
+---
+description: Neutral PeerTask visual system closer to Linear and Notion
+globs: lib/ui/**/*.dart,lib/ui/theme/**,client/lib/ui/**/*.dart
+alwaysApply: false
+---
+
+# Visual system
+
+Change tokens in `AppColors`, `AppTextStyles`, and `AppTheme` first. Screens use those tokens. No new hex in a widget.
+
+Neutral canvas, white surface, one accent. The accent is for the primary button, the selected nav row, links, and focus. It is not a page background and not a full-bleed app bar.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| background | `#F6F7F9` | Scaffold |
+| surface | `#FFFFFF` | Rail, cards, dialogs |
+| border | `#E6E8EB` | Hairline, 1px |
+| textPrimary | `#1F2328` | Titles, task names |
+| textSecondary | `#656D76` | Meta, hints |
+| accent | `#5E6AD2` | Primary button, selection |
+
+- Radius 8 on buttons and fields, 10 on cards and dialogs. No pills on large panels.
+- Type: 20/600 screen title, 15/500 section, 14/400 body, 12/400 meta. One family, the platform UI font.
+- Space on an 8px grid. Screen padding 24 wide, 16 on phone. Task rows are 44–48px tall, separated by a hairline, not a card per row.
+- Shadow only on dialogs and menus (`0 8 24` at 8% black). Lists and the rail stay flat.
+- Status color is a small dot or chip, not a painted row. Success, warning, and error stay semantic.
+
+```dart
+// ❌ Container(color: Color(0xFF8B7CFF), child: Text('Boards'))
+// ✅ ColoredBox(color: AppColors.surface, child: Text(l10n.boards, style: AppTextStyles.section))
+```

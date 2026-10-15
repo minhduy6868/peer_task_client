@@ -5,11 +5,11 @@ description: Builds and fixes PeerTask Flutter UI and UX. Use when editing lib/u
 
 # PeerTask Flutter UI
 
-Light utility app. Tasks are the product. Drawing is a second page on the board.
+Tasks are the product. Drawing is a second page on the board. Redo the UI to read like Linear or Notion: one job per screen, worded navigation, neutral canvas. Follow `.cursor/rules/ui-redo-shell.mdc`, `ui-redo-clarity.mdc`, and `ui-redo-visual.mdc`.
 
 ## UX
 
-- One palette: `AppColors` and `AppTextStyles`. Soft violet `#8B7CFF`, background `#F7F4FF`, surface white. Radius 8–12, hairline borders, compact controls. App bars stay light with a bottom border. No full-bleed colored bars, no one-off hex, no `Colors.blue` / `Colors.green` / `Colors.red` for chrome.
+- One palette: `AppColors` and `AppTextStyles`, retuned to the neutral tokens in `ui-redo-visual`. Accent only on the primary button, selected nav, links, and focus. No full-bleed colored bars, no one-off hex, no `Colors.blue` / `Colors.green` / `Colors.red` for chrome.
 - Every user-visible string uses `AppLocalizations.of(context)!`. Add the key to both `lib/l10n/app_en.arb` and `app_vi.arb`, then run `flutter gen-l10n`.
 - Dialogs use `insetPadding` and a width of at most `screenWidth - 40`. Never set `width: 500` (or any fixed width) on a phone. `TabBarView`, camera, and lists need a parent with a real height (`SizedBox` or `Expanded` inside a bounded box).
 - Below 480px, put paired fields and action buttons in a `Column` or `Wrap`. Names and nav labels use `maxLines: 1` and `TextOverflow.ellipsis`.

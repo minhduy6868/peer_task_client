@@ -542,8 +542,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         : scene.pages;
     final pageIndex = canvasPages.indexWhere((page) => page['id'] == pageId);
 
-    final isCompact = MediaQuery.of(context).size.width < 640;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       bottomNavigationBar: const _RemoteAudioMount(),
@@ -582,40 +580,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         actions: [
           // + Add Task button (compact on mobile, full on desktop)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            child: isCompact
-                ? Material(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      onTap: () => _openTask(null),
-                      borderRadius: BorderRadius.circular(10),
-                      child: const Tooltip(
-                        message: 'Add Task',
-                        child: SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: Icon(Icons.add_rounded, size: 20, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  )
-                : FilledButton.icon(
-                    onPressed: () => _openTask(null),
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text(
-                      l10n.addTask,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      minimumSize: const Size(0, 36),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
-                  ),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            child: FilledButton(
+              onPressed: () => _openTask(null),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: const Size(0, 36),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(l10n.addTask),
+            ),
           ),
           const SizedBox(width: 8),
           // Member count chip
@@ -732,8 +709,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ),
           _BoardSubHeader(
             tasks: _page == _BoardPage.tasks,
-            boardLabel: l10n.boardView,
-            canvasLabel: l10n.canvasView,
+            boardLabel: l10n.tasks,
+            canvasLabel: l10n.canvas,
             onTasks: () => setState(() => _page = _BoardPage.tasks),
             onCanvas: () => setState(() => _page = _BoardPage.canvas),
             filterLabel: l10n.filter,
@@ -1392,18 +1369,14 @@ class _TrelloBoard extends StatelessWidget {
     Color titleColor;
     Color dotColor;
 
-    if (column.status == 'todo') {
-      bannerBg = const Color(0xFFF3E8FF); // Soft Lavender
-      titleColor = const Color(0xFF581C87); // Deep violet
-      dotColor = const Color(0xFF8B5CF6);
-    } else if (column.status == 'doing') {
-      bannerBg = const Color(0xFFE0F2FE); // Soft Cyan / Sky blue
-      titleColor = const Color(0xFF0369A1); // Deep sky blue
-      dotColor = const Color(0xFF0284C7);
+    bannerBg = AppColors.surface;
+    titleColor = AppColors.textPrimary;
+    if (column.status == 'doing') {
+      dotColor = AppColors.warning;
+    } else if (column.status == 'done') {
+      dotColor = AppColors.success;
     } else {
-      bannerBg = const Color(0xFFDCFCE7); // Soft Mint / Green
-      titleColor = const Color(0xFF15803D); // Deep green
-      dotColor = const Color(0xFF16A34A);
+      dotColor = AppColors.textSecondary;
     }
 
     return SizedBox(

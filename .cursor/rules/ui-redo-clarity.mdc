@@ -1,0 +1,25 @@
+---
+description: Make every PeerTask screen readable like Todoist or Linear
+globs: lib/ui/**/*.dart,client/lib/ui/**/*.dart
+alwaysApply: false
+---
+
+# Clarity
+
+A person should know where they are, what they can do, and what happens next without hovering.
+
+- Navigation shows words. Icon-only is reserved for a row action that also has a tooltip on wide layouts (delete, close).
+- One filled button per screen. Everything else is text or outline. The label is a verb plus a noun: `New task`, not `+` or `Create`.
+- Page title is the object (`Board name`, `Workspaces`). At most one short subtitle. No slogans in the product shell.
+- A task row shows the title, then status (`To do` / `Doing` / `Done`). Priority only when it is not medium. Assignee only when set. Tap the row to edit.
+- Empty state is one sentence plus the same primary button. Do not add a second call to action.
+- Hide controls that do nothing. Do not show a disabled social login or an empty `onTap`.
+- Group board tools (members, AI, board settings) behind one labeled menu. They are not peers of New task.
+- Confirm destructive actions by naming the object: `Delete "Sprint board"?`. Use `AppColors.error` for the confirm button only.
+- Errors are a sentence from `ApiError.userMessage` or l10n, plus Retry when the call can be repeated. Never `error.toString()`.
+- Strings go in both `app_en.arb` and `app_vi.arb`.
+
+```dart
+// ❌ IconButton(icon: Icon(Icons.add))
+// ✅ AppButton(label: l10n.newTask, onPressed: onCreate)
+```

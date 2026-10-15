@@ -6,7 +6,8 @@ alwaysApply: false
 
 # Flutter UI
 
-- Material 3 + `AppTheme.lightTheme`. Colors from `AppColors` (soft violet `#8B7CFF`). No one-off hex.
+- Redo look and structure with `ui-redo-shell`, `ui-redo-clarity`, and `ui-redo-visual`. Do not extend the old lavender chrome.
+- Material 3 + `AppTheme.lightTheme`. Colors from `AppColors` only. No one-off hex.
 - Reuse `AppButton`, `AppDialog`, `AppToast`, `AppCard`.
 - Screens: `ConsumerWidget` / `ConsumerStatefulWidget`. Do not construct `ApiService` in `build`.
 - Routes live in `lib/main.dart`. Update `redirect` when adding paths.

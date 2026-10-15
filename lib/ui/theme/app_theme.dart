@@ -40,9 +40,9 @@ class AppTheme {
         titleTextStyle: TextStyle(
           inherit: true,
           color: AppColors.textPrimary,
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          letterSpacing: 0,
           height: 1.3,
         ),
         shape: Border(bottom: BorderSide(color: AppColors.border)),

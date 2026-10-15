@@ -52,8 +52,24 @@ class AppTextStyles {
   );
   
   // Title styles
+  static const screenTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+    height: 1.3,
+    inherit: true,
+  );
+
+  static const section = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0,
+    height: 1.4,
+    inherit: true,
+  );
+
   static const titleLarge = TextStyle(
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: 0,
     height: 1.4,
@@ -61,8 +77,8 @@ class AppTextStyles {
   );
   
   static const titleMedium = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.15,
     height: 1.5,
     inherit: true,

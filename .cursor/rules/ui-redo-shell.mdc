@@ -1,0 +1,36 @@
+---
+description: PeerTask shell and screen jobs, modeled on Linear and Notion
+globs: lib/ui/**/*.dart,client/lib/ui/**/*.dart
+alwaysApply: false
+---
+
+# Shell
+
+Tasks are the product. A board opens on the task list. Canvas is the second page, with a text label.
+
+Redo in this order: tokens, shell, board list, task list, task dialog, canvas, then auth. Do not restyle one dialog ahead of the shell.
+
+## Wide (>= 900px)
+
+Left rail, 240–260px, white, hairline on the right. Top: current workspace name, tap to switch. Middle: boards in this workspace. Bottom: Settings. The open board is a filled row, not a new color system.
+
+Main pane has the screen title and one primary button. Do not put a second app bar inside the pane.
+
+## Phone (< 600px)
+
+One column. Back returns to the parent (board → boards → workspaces). Title is the object name. No bottom bar with more than 4 items, and no icon-only tabs. Canvas is not a tab on the workspace home.
+
+## What each screen is for
+
+| Screen | Job | Primary button |
+| --- | --- | --- |
+| `/workspaces` | Pick a workspace | New workspace |
+| Workspace home | Pick a board | New board |
+| `/board/:id` | Work the task list | New task |
+| Canvas page | Draw on this board | none |
+| Settings | Account and this workspace | none |
+
+```dart
+// ❌ Board opens on the drawing surface, or Tasks and Canvas are unlabeled icons
+// ✅ Segmented control with words: Tasks | Canvas. Tasks is selected on open.
+```

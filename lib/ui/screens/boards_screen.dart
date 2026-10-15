@@ -1515,17 +1515,10 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isHovered
-                ? widget.accent.withValues(alpha: 0.55)
-                : AppColors.border,
-            width: _isHovered ? 1.5 : 1,
-          ),
-          boxShadow: _isHovered ? AppColors.hoverShadow : AppColors.elegantCardShadow,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
         ),
         child: Material(
           color: Colors.transparent,
@@ -1537,18 +1530,7 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Accent gradient stripe on top
-                Container(
-                  height: 5,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.accent,
-                        widget.accent.withValues(alpha: 0.65),
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                ),
+                const SizedBox(height: 8),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),

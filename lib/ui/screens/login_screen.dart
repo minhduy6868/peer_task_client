@@ -81,7 +81,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isWideScreen = screenWidth > 900;
     final isTablet = screenWidth > 600 && screenWidth <= 900;
     final l10n = AppLocalizations.of(context)!;
@@ -89,156 +88,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: Row(
         children: [
-          // Left Side - Decorative Panel (only on wide screens)
-          if (isWideScreen)
-            Expanded(
-              flex: 5,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: const [
-                      Color(0xFF2A2158),
-                      AppColors.primaryDark,
-                      AppColors.primary,
-                      AppColors.secondary,
-                    ],
-                    stops: const [0.0, 0.3, 0.7, 1.0],
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Animated circles background
-                    Positioned(
-                      top: -100,
-                      left: -100,
-                      child: Container(
-                        width: 400,
-                        height: 400,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.primary.withOpacity(0.3),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -150,
-                      right: -100,
-                      child: Container(
-                        width: 500,
-                        height: 500,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.accent.withOpacity(0.2),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: screenHeight * 0.3,
-                      left: 100,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.accentPurple.withOpacity(0.25),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Content
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(60),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Logo
-                            Container(
-                              height: 80,
-                              width: 80,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
-                                  width: 2,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(16),
-                              child: Image.asset(
-                                'assets/images/logo_peer.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.dashboard_customize_rounded,
-                                    size: 40,
-                                    color: Colors.white,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            
-                            // Title
-                            Text(
-                              l10n.landingHeadline,
-                              style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                height: 1.05,
-                                letterSpacing: -0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              l10n.landingSubhead,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            
-                            // Features
-                            _buildFeature(Icons.people_outline, l10n.realTimeCollaboration),
-                            const SizedBox(height: 16),
-                            _buildFeature(Icons.security_outlined, l10n.secureP2P),
-                            const SizedBox(height: 16),
-                            _buildFeature(Icons.devices_outlined, l10n.crossPlatform),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
           // Right Side - Form Panel
           Expanded(
-            flex: isWideScreen ? 4 : 1,
+            flex: 1,
             child: Container(
-              color: Colors.white,
+              color: AppColors.background,
               child: SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
@@ -646,30 +500,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildFeature(IconData icon, String text) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.white.withOpacity(0.9),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }
