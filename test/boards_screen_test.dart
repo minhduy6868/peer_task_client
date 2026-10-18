@@ -11,6 +11,7 @@ import 'package:peertask/services/api_service.dart';
 import 'package:peertask/services/storage_service.dart';
 import 'package:peertask/ui/screens/boards_screen.dart';
 import 'package:peertask/ui/screens/workspace_home_screen.dart';
+import 'package:peertask/ui/widgets/dashboard/dashboard_center_view.dart';
 import 'package:peertask/ui/theme/app_theme.dart';
 
 class _FakeStorageService extends Fake implements StorageService {
@@ -130,6 +131,23 @@ class _FakeApiService extends Fake implements ApiService {
       },
     ];
   }
+
+  @override
+  Future<Board> updateBoard({
+    required String boardId,
+    String? name,
+    String? description,
+  }) async {
+    return Board(
+      id: boardId,
+      workspaceId: 'ws-1',
+      name: name ?? 'Updated Board',
+      description: description,
+    );
+  }
+
+  @override
+  Future<void> deleteBoard(String boardId) async {}
 }
 
 class _FakeLanguageNotifier extends StateNotifier<Locale> implements LanguageNotifier {
@@ -194,6 +212,15 @@ void main() {
     expect(find.text('Alex Developer'), findsOneWidget);
     expect(find.text('Sprint Planning'), findsWidgets);
     expect(find.text('Design System'), findsOneWidget);
+
+    // Switch to "Công việc của bạn" (Tasks) tab to verify task item
+    await tester.tap(find.descendant(
+      of: find.byType(SegmentedButton<int>),
+      matching: find.byIcon(Icons.assignment_turned_in_rounded),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
     expect(find.text('Redesign home dashboard'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -290,11 +317,108 @@ void main() {
 
     expect(find.text('Sprint Planning'), findsOneWidget);
     // Scroll to see subsequent boards in ListView
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.drag(find.text('Sprint Planning'), const Offset(0, -300));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Design System'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('BoardsScreen header renders Bảng làm việc, description, and standout create button', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildTestApp(home: const BoardsScreen(workspaceId: 'ws-1'), locale: const Locale('vi')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // ① Tiêu đề & Mô tả ngắn & Nút nổi bật
+    expect(find.text('Bảng làm việc'), findsOneWidget);
+    expect(find.text('Quản lý và theo dõi các dự án của bạn.'), findsOneWidget);
+    expect(find.text('Tạo bảng mới'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('BoardsScreen board card has quick action popup menu with options', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildTestApp(home: const BoardsScreen(workspaceId: 'ws-1'), locale: const Locale('vi')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // ④ Menu thao tác nhanh (...)
+    final moreButtons = find.byIcon(Icons.more_horiz_rounded);
+    expect(moreButtons, findsWidgets);
+
+    // Open first popup menu
+    await tester.tap(moreButtons.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đổi tên bảng'), findsOneWidget);
+    expect(find.text('Chỉnh sửa mô tả'), findsOneWidget);
+    expect(find.text('Quản lý thành viên'), findsOneWidget);
+    expect(find.text('Lưu trữ bảng'), findsOneWidget);
+    expect(find.text('Xóa bảng'), findsOneWidget);
+  });
+
+  testWidgets('DashboardCenterView displays task notification card instead of marketing cards', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      buildTestApp(
+        home: Scaffold(
+          body: DashboardCenterView(
+            workspace: const Workspace(id: 'ws-1', name: 'Điện Toán Đám Mây', role: 'owner', ownerId: 'user-1'),
+            boards: const [
+              Board(id: 'board-1', workspaceId: 'ws-1', name: 'Sprint Planning'),
+            ],
+            tasks: const [
+              DashboardTaskData(
+                id: 't-1',
+                title: 'Viết test giao diện',
+                projectName: 'Sprint Planning',
+                deadline: '20/10/2026',
+                status: 'doing',
+              ),
+              DashboardTaskData(
+                id: 't-2',
+                title: 'Review PR',
+                projectName: 'Sprint Planning',
+                deadline: '21/10/2026',
+                status: 'todo',
+              ),
+            ],
+            onCreateBoard: () {},
+            onViewAllBoards: () {},
+          ),
+        ),
+        locale: const Locale('vi'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Marketing cards must NOT exist
+    expect(find.text('Resource management'), findsNothing);
+    expect(find.text('Security'), findsNothing);
+    expect(find.text('High performance'), findsNothing);
+    expect(find.text('Easy to use'), findsNothing);
+
+    // Notification card exists with accurate stats
+    expect(find.text('Hôm nay bạn có'), findsOneWidget);
+    expect(find.text('công việc đang thực hiện'), findsOneWidget);
+    expect(find.text('bảng làm việc'), findsOneWidget);
+    expect(find.text('Viết test giao diện'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
 }
+

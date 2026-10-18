@@ -1313,4 +1313,288 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get quickTipsBody =>
       'Nhấn vào bất kỳ thẻ công việc nào để mở ngay bảng tương ứng.';
+
+  @override
+  String get homeNav => 'Trang chủ';
+
+  @override
+  String get taskBoardsNav => 'Bảng công việc';
+
+  @override
+  String get projectBoardsNav => 'Bảng dự án';
+
+  @override
+  String get teamWhiteboardNav => 'Bảng vẽ nhóm';
+
+  @override
+  String get voiceRoomNav => 'Phòng thoại';
+
+  @override
+  String get projectsAndTeams => 'DỰ ÁN & NHÓM';
+
+  @override
+  String greetingMorning(String name) {
+    return 'Chào buổi sáng, $name!';
+  }
+
+  @override
+  String get greetingSubtitle =>
+      'Chúc bạn một ngày làm việc hiệu quả! Hãy hoàn thành những nhiệm vụ đang chờ nhé!';
+
+  @override
+  String get totalTasksMetric => 'Tổng công việc';
+
+  @override
+  String get inProgressMetric => 'Đang thực hiện';
+
+  @override
+  String get completedMetric => 'Hoàn thành';
+
+  @override
+  String get overdueMetric => 'Quá hạn';
+
+  @override
+  String get todayLabel => 'hôm nay';
+
+  @override
+  String get viewAll => 'Xem tất cả';
+
+  @override
+  String get viewKanban => 'Xem dạng Kanban';
+
+  @override
+  String get filterAction => 'Lọc';
+
+  @override
+  String get todaySchedule => 'Lịch hôm nay';
+
+  @override
+  String get recentActivity => 'Hoạt động gần đây';
+
+  @override
+  String get projectMembers => 'Thành viên dự án';
+
+  @override
+  String get upcomingTasks => 'Công việc sắp tới';
+
+  @override
+  String get overdueBadge => 'Quá hạn';
+
+  @override
+  String get tagline => 'Làm việc cùng nhau hiệu quả';
+
+  @override
+  String get todayStatsPrefix => 'Hôm nay bạn có';
+
+  @override
+  String get tasksInProgressText => 'công việc đang thực hiện';
+
+  @override
+  String get boardsText => 'bảng làm việc';
+
+  @override
+  String get getStartedNow => 'Bắt đầu ngay';
+
+  @override
+  String get resourceManagement => 'Quản lý tài nguyên';
+
+  @override
+  String get resourceManagementDesc => 'Hiệu quả, linh hoạt';
+
+  @override
+  String get security => 'Bảo mật';
+
+  @override
+  String get securityDesc => 'An toàn, ổn định';
+
+  @override
+  String get highPerformance => 'Hiệu suất cao';
+
+  @override
+  String get highPerformanceDesc => 'Tối ưu chi phí';
+
+  @override
+  String get easyToUse => 'Dễ sử dụng';
+
+  @override
+  String get easyToUseDesc => 'Giao diện trực quan';
+
+  @override
+  String get activeStatus => 'Đang hoạt động';
+
+  @override
+  String get dashboardTaskTip =>
+      'Nhấn vào một công việc để xem chi tiết và cập nhật trạng thái nhanh chóng.';
+
+  @override
+  String get cloudWorkspaceDefaultDesc =>
+      'Quản lý tài nguyên, máy chủ và dịch vụ đám mây của bạn một cách dễ dàng và hiệu quả.';
+
+  @override
+  String get searchMembersPlaceholder => 'Tìm kiếm theo tên hoặc email...';
+
+  @override
+  String get statusActive => 'Đang hoạt động';
+
+  @override
+  String get statusOffline => 'Ngoại tuyến';
+
+  @override
+  String get statusPending => 'Chờ chấp nhận';
+
+  @override
+  String get columnMember => 'Thành viên';
+
+  @override
+  String get columnRole => 'Vai trò';
+
+  @override
+  String get columnTasks => 'Số task đang phụ trách';
+
+  @override
+  String get columnStatus => 'Trạng thái hoạt động';
+
+  @override
+  String get columnActions => 'Thao tác';
+
+  @override
+  String get removeMemberConfirm =>
+      'Bạn có chắc muốn xóa thành viên này khỏi không gian làm việc?';
+
+  @override
+  String get noMembersFound => 'Không tìm thấy thành viên nào phù hợp';
+
+  @override
+  String get inviteSentSuccess => 'Đã gửi lời mời thành công!';
+
+  @override
+  String get memberRoleUpdated => 'Đã cập nhật vai trò thành công!';
+
+  @override
+  String get memberRemovedSuccess =>
+      'Đã xóa thành viên khỏi không gian làm việc';
+
+  @override
+  String get send => 'Gửi';
+
+  @override
+  String get projectSettings => 'Cài đặt dự án';
+
+  @override
+  String get projectInfoTab => 'Thông tin dự án';
+
+  @override
+  String get membersPermissionsTab => 'Thành viên và quyền hạn';
+
+  @override
+  String get workflowTab => 'Quy trình công việc';
+
+  @override
+  String get timelineProgressTab => 'Thời gian và tiến độ';
+
+  @override
+  String get accessControlTab => 'Quyền truy cập';
+
+  @override
+  String get archiveDeleteTab => 'Lưu trữ và xóa dự án';
+
+  @override
+  String get ownerOnlyAccess => 'Chỉ dành cho chủ sở hữu';
+
+  @override
+  String get ownerOnlyDesc =>
+      'Chỉ người sở hữu dự án mới có quyền truy cập và chỉnh sửa các cài đặt của dự án này.';
+
+  @override
+  String get backToHome => 'Quay lại Trang chủ';
+
+  @override
+  String get projectName => 'Tên dự án';
+
+  @override
+  String get projectDescription => 'Mô tả dự án';
+
+  @override
+  String get projectOwner => 'Chủ sở hữu dự án';
+
+  @override
+  String get archiveProject => 'Lưu trữ dự án';
+
+  @override
+  String get archiveProjectDesc =>
+      'Lưu trữ dự án khi đã hoàn thành. Dự án sẽ chuyển sang chế độ chỉ đọc.';
+
+  @override
+  String get deleteProject => 'Xóa dự án';
+
+  @override
+  String get deleteProjectDesc =>
+      'Xóa vĩnh viễn dự án này và toàn bộ bảng, công việc, dữ liệu liên quan.';
+
+  @override
+  String get deleteConfirmPrompt => 'Nhập tên dự án để xác nhận';
+
+  @override
+  String get workBoards => 'Bảng làm việc';
+
+  @override
+  String get workBoardsDesc => 'Quản lý và theo dõi các dự án của bạn.';
+
+  @override
+  String get renameBoard => 'Đổi tên bảng';
+
+  @override
+  String get editDescription => 'Chỉnh sửa mô tả';
+
+  @override
+  String get archiveBoard => 'Lưu trữ bảng';
+
+  @override
+  String get archiveBoardConfirm => 'Bạn có chắc muốn lưu trữ bảng này?';
+
+  @override
+  String get sortByRecent => 'Mới cập nhật';
+
+  @override
+  String get sortByName => 'Tên (A-Z)';
+
+  @override
+  String get filterAllStatus => 'Tất cả trạng thái';
+
+  @override
+  String get filterActive => 'Đang thực hiện';
+
+  @override
+  String get filterCompleted => 'Hoàn thành';
+
+  @override
+  String get yourTasks => 'Công việc của bạn';
+
+  @override
+  String get yourTasksDesc =>
+      'Xem và quản lý tất cả nhiệm vụ được giao cho bạn.';
+
+  @override
+  String get noTasksMatchingFilter => 'Không có công việc nào khớp với bộ lọc';
+
+  @override
+  String get allBoards => 'Tất cả các bảng';
+
+  @override
+  String get filterDoing => 'Đang làm';
+
+  @override
+  String get filterTodo => 'Cần làm';
+
+  @override
+  String get filterDone => 'Đã xong';
+
+  @override
+  String get filterOverdue => 'Quá hạn';
+
+  @override
+  String get taskDeadline => 'Hạn chót';
+
+  @override
+  String get dueToday => 'Hôm nay';
 }

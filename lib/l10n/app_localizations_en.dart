@@ -523,7 +523,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addMember => 'Add Member';
 
   @override
-  String get removeMember => 'Remove Member';
+  String get removeMember => 'Remove member';
 
   @override
   String get changeRole => 'Change Role';
@@ -1319,4 +1319,287 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get quickTipsBody =>
       'Click any task card to navigate directly to its board.';
+
+  @override
+  String get homeNav => 'Home';
+
+  @override
+  String get taskBoardsNav => 'Task Boards';
+
+  @override
+  String get projectBoardsNav => 'Project Boards';
+
+  @override
+  String get teamWhiteboardNav => 'Team Whiteboard';
+
+  @override
+  String get voiceRoomNav => 'Voice Room';
+
+  @override
+  String get projectsAndTeams => 'PROJECTS & TEAMS';
+
+  @override
+  String greetingMorning(String name) {
+    return 'Good morning, $name!';
+  }
+
+  @override
+  String get greetingSubtitle =>
+      'Have a productive day! Complete your pending tasks!';
+
+  @override
+  String get totalTasksMetric => 'Total Tasks';
+
+  @override
+  String get inProgressMetric => 'In Progress';
+
+  @override
+  String get completedMetric => 'Completed';
+
+  @override
+  String get overdueMetric => 'Overdue';
+
+  @override
+  String get todayLabel => 'today';
+
+  @override
+  String get viewAll => 'View all';
+
+  @override
+  String get viewKanban => 'Kanban view';
+
+  @override
+  String get filterAction => 'Filter';
+
+  @override
+  String get todaySchedule => 'Today\'s Schedule';
+
+  @override
+  String get recentActivity => 'Recent Activity';
+
+  @override
+  String get projectMembers => 'Project Members';
+
+  @override
+  String get upcomingTasks => 'Upcoming Tasks';
+
+  @override
+  String get overdueBadge => 'Overdue';
+
+  @override
+  String get tagline => 'Work together effectively';
+
+  @override
+  String get todayStatsPrefix => 'Today you have';
+
+  @override
+  String get tasksInProgressText => 'tasks in progress';
+
+  @override
+  String get boardsText => 'boards';
+
+  @override
+  String get getStartedNow => 'Get started now';
+
+  @override
+  String get resourceManagement => 'Resource management';
+
+  @override
+  String get resourceManagementDesc => 'Efficient, flexible';
+
+  @override
+  String get security => 'Security';
+
+  @override
+  String get securityDesc => 'Safe, reliable';
+
+  @override
+  String get highPerformance => 'High performance';
+
+  @override
+  String get highPerformanceDesc => 'Cost optimized';
+
+  @override
+  String get easyToUse => 'Easy to use';
+
+  @override
+  String get easyToUseDesc => 'Intuitive UI';
+
+  @override
+  String get activeStatus => 'Active';
+
+  @override
+  String get dashboardTaskTip =>
+      'Click a task to view details and update status quickly.';
+
+  @override
+  String get cloudWorkspaceDefaultDesc =>
+      'Manage your cloud resources, servers, and services easily and effectively.';
+
+  @override
+  String get searchMembersPlaceholder => 'Search by name or email...';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusOffline => 'Offline';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get columnMember => 'Member';
+
+  @override
+  String get columnRole => 'Role';
+
+  @override
+  String get columnTasks => 'Assigned tasks';
+
+  @override
+  String get columnStatus => 'Activity status';
+
+  @override
+  String get columnActions => 'Actions';
+
+  @override
+  String get removeMemberConfirm =>
+      'Are you sure you want to remove this member from the workspace?';
+
+  @override
+  String get noMembersFound => 'No matching members found';
+
+  @override
+  String get inviteSentSuccess => 'Invitation sent successfully!';
+
+  @override
+  String get memberRoleUpdated => 'Member role updated successfully!';
+
+  @override
+  String get memberRemovedSuccess => 'Member removed from workspace';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get projectSettings => 'Project Settings';
+
+  @override
+  String get projectInfoTab => 'Project Information';
+
+  @override
+  String get membersPermissionsTab => 'Members & Permissions';
+
+  @override
+  String get workflowTab => 'Workflow';
+
+  @override
+  String get timelineProgressTab => 'Timeline & Progress';
+
+  @override
+  String get accessControlTab => 'Access Control';
+
+  @override
+  String get archiveDeleteTab => 'Archive & Delete';
+
+  @override
+  String get ownerOnlyAccess => 'Owner Access Only';
+
+  @override
+  String get ownerOnlyDesc =>
+      'Only the project owner has permission to view and modify these settings.';
+
+  @override
+  String get backToHome => 'Back to Home';
+
+  @override
+  String get projectName => 'Project Name';
+
+  @override
+  String get projectDescription => 'Project Description';
+
+  @override
+  String get projectOwner => 'Project Owner';
+
+  @override
+  String get archiveProject => 'Archive Project';
+
+  @override
+  String get archiveProjectDesc =>
+      'Archive this completed project. It will become read-only.';
+
+  @override
+  String get deleteProject => 'Delete Project';
+
+  @override
+  String get deleteProjectDesc =>
+      'Permanently delete this project and all associated boards, tasks, and data.';
+
+  @override
+  String get deleteConfirmPrompt => 'Type project name to confirm';
+
+  @override
+  String get workBoards => 'Work Boards';
+
+  @override
+  String get workBoardsDesc => 'Manage and track your projects.';
+
+  @override
+  String get renameBoard => 'Rename board';
+
+  @override
+  String get editDescription => 'Edit description';
+
+  @override
+  String get archiveBoard => 'Archive board';
+
+  @override
+  String get archiveBoardConfirm =>
+      'Are you sure you want to archive this board?';
+
+  @override
+  String get sortByRecent => 'Recently updated';
+
+  @override
+  String get sortByName => 'Name (A-Z)';
+
+  @override
+  String get filterAllStatus => 'All status';
+
+  @override
+  String get filterActive => 'In progress';
+
+  @override
+  String get filterCompleted => 'Completed';
+
+  @override
+  String get yourTasks => 'Your Tasks';
+
+  @override
+  String get yourTasksDesc => 'View and manage all tasks assigned to you.';
+
+  @override
+  String get noTasksMatchingFilter => 'No tasks match your filter';
+
+  @override
+  String get allBoards => 'All boards';
+
+  @override
+  String get filterDoing => 'In progress';
+
+  @override
+  String get filterTodo => 'To do';
+
+  @override
+  String get filterDone => 'Completed';
+
+  @override
+  String get filterOverdue => 'Overdue';
+
+  @override
+  String get taskDeadline => 'Deadline';
+
+  @override
+  String get dueToday => 'Due today';
 }

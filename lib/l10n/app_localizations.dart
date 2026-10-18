@@ -1079,7 +1079,7 @@ abstract class AppLocalizations {
   /// No description provided for @removeMember.
   ///
   /// In en, this message translates to:
-  /// **'Remove Member'**
+  /// **'Remove member'**
   String get removeMember;
 
   /// No description provided for @changeRole.
@@ -2617,6 +2617,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Click any task card to navigate directly to its board.'**
   String get quickTipsBody;
+
+  /// No description provided for @homeNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeNav;
+
+  /// No description provided for @taskBoardsNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Boards'**
+  String get taskBoardsNav;
+
+  /// No description provided for @projectBoardsNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Boards'**
+  String get projectBoardsNav;
+
+  /// No description provided for @teamWhiteboardNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Whiteboard'**
+  String get teamWhiteboardNav;
+
+  /// No description provided for @voiceRoomNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Room'**
+  String get voiceRoomNav;
+
+  /// No description provided for @projectsAndTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'PROJECTS & TEAMS'**
+  String get projectsAndTeams;
+
+  /// No description provided for @greetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning, {name}!'**
+  String greetingMorning(String name);
+
+  /// No description provided for @greetingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Have a productive day! Complete your pending tasks!'**
+  String get greetingSubtitle;
+
+  /// No description provided for @totalTasksMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Tasks'**
+  String get totalTasksMetric;
+
+  /// No description provided for @inProgressMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get inProgressMetric;
+
+  /// No description provided for @completedMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedMetric;
+
+  /// No description provided for @overdueMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdueMetric;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get todayLabel;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAll;
+
+  /// No description provided for @viewKanban.
+  ///
+  /// In en, this message translates to:
+  /// **'Kanban view'**
+  String get viewKanban;
+
+  /// No description provided for @filterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filterAction;
+
+  /// No description provided for @todaySchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Schedule'**
+  String get todaySchedule;
+
+  /// No description provided for @recentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Activity'**
+  String get recentActivity;
+
+  /// No description provided for @projectMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Members'**
+  String get projectMembers;
+
+  /// No description provided for @upcomingTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Tasks'**
+  String get upcomingTasks;
+
+  /// No description provided for @overdueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdueBadge;
+
+  /// No description provided for @tagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Work together effectively'**
+  String get tagline;
+
+  /// No description provided for @todayStatsPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Today you have'**
+  String get todayStatsPrefix;
+
+  /// No description provided for @tasksInProgressText.
+  ///
+  /// In en, this message translates to:
+  /// **'tasks in progress'**
+  String get tasksInProgressText;
+
+  /// No description provided for @boardsText.
+  ///
+  /// In en, this message translates to:
+  /// **'boards'**
+  String get boardsText;
+
+  /// No description provided for @getStartedNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started now'**
+  String get getStartedNow;
+
+  /// No description provided for @resourceManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource management'**
+  String get resourceManagement;
+
+  /// No description provided for @resourceManagementDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Efficient, flexible'**
+  String get resourceManagementDesc;
+
+  /// No description provided for @security.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get security;
+
+  /// No description provided for @securityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe, reliable'**
+  String get securityDesc;
+
+  /// No description provided for @highPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'High performance'**
+  String get highPerformance;
+
+  /// No description provided for @highPerformanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost optimized'**
+  String get highPerformanceDesc;
+
+  /// No description provided for @easyToUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy to use'**
+  String get easyToUse;
+
+  /// No description provided for @easyToUseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Intuitive UI'**
+  String get easyToUseDesc;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeStatus;
+
+  /// No description provided for @dashboardTaskTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Click a task to view details and update status quickly.'**
+  String get dashboardTaskTip;
+
+  /// No description provided for @cloudWorkspaceDefaultDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your cloud resources, servers, and services easily and effectively.'**
+  String get cloudWorkspaceDefaultDesc;
+
+  /// No description provided for @searchMembersPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or email...'**
+  String get searchMembersPlaceholder;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get statusOffline;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @columnMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get columnMember;
+
+  /// No description provided for @columnRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get columnRole;
+
+  /// No description provided for @columnTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned tasks'**
+  String get columnTasks;
+
+  /// No description provided for @columnStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity status'**
+  String get columnStatus;
+
+  /// No description provided for @columnActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get columnActions;
+
+  /// No description provided for @removeMemberConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this member from the workspace?'**
+  String get removeMemberConfirm;
+
+  /// No description provided for @noMembersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching members found'**
+  String get noMembersFound;
+
+  /// No description provided for @inviteSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent successfully!'**
+  String get inviteSentSuccess;
+
+  /// No description provided for @memberRoleUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Member role updated successfully!'**
+  String get memberRoleUpdated;
+
+  /// No description provided for @memberRemovedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Member removed from workspace'**
+  String get memberRemovedSuccess;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @projectSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Settings'**
+  String get projectSettings;
+
+  /// No description provided for @projectInfoTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Information'**
+  String get projectInfoTab;
+
+  /// No description provided for @membersPermissionsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Members & Permissions'**
+  String get membersPermissionsTab;
+
+  /// No description provided for @workflowTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow'**
+  String get workflowTab;
+
+  /// No description provided for @timelineProgressTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline & Progress'**
+  String get timelineProgressTab;
+
+  /// No description provided for @accessControlTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Control'**
+  String get accessControlTab;
+
+  /// No description provided for @archiveDeleteTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive & Delete'**
+  String get archiveDeleteTab;
+
+  /// No description provided for @ownerOnlyAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Access Only'**
+  String get ownerOnlyAccess;
+
+  /// No description provided for @ownerOnlyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the project owner has permission to view and modify these settings.'**
+  String get ownerOnlyDesc;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Home'**
+  String get backToHome;
+
+  /// No description provided for @projectName.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Name'**
+  String get projectName;
+
+  /// No description provided for @projectDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Description'**
+  String get projectDescription;
+
+  /// No description provided for @projectOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Owner'**
+  String get projectOwner;
+
+  /// No description provided for @archiveProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive Project'**
+  String get archiveProject;
+
+  /// No description provided for @archiveProjectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this completed project. It will become read-only.'**
+  String get archiveProjectDesc;
+
+  /// No description provided for @deleteProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Project'**
+  String get deleteProject;
+
+  /// No description provided for @deleteProjectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete this project and all associated boards, tasks, and data.'**
+  String get deleteProjectDesc;
+
+  /// No description provided for @deleteConfirmPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type project name to confirm'**
+  String get deleteConfirmPrompt;
+
+  /// No description provided for @workBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Boards'**
+  String get workBoards;
+
+  /// No description provided for @workBoardsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage and track your projects.'**
+  String get workBoardsDesc;
+
+  /// No description provided for @renameBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename board'**
+  String get renameBoard;
+
+  /// No description provided for @editDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit description'**
+  String get editDescription;
+
+  /// No description provided for @archiveBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive board'**
+  String get archiveBoard;
+
+  /// No description provided for @archiveBoardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to archive this board?'**
+  String get archiveBoardConfirm;
+
+  /// No description provided for @sortByRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently updated'**
+  String get sortByRecent;
+
+  /// No description provided for @sortByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (A-Z)'**
+  String get sortByName;
+
+  /// No description provided for @filterAllStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'All status'**
+  String get filterAllStatus;
+
+  /// No description provided for @filterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get filterActive;
+
+  /// No description provided for @filterCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterCompleted;
+
+  /// No description provided for @yourTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Tasks'**
+  String get yourTasks;
+
+  /// No description provided for @yourTasksDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage all tasks assigned to you.'**
+  String get yourTasksDesc;
+
+  /// No description provided for @noTasksMatchingFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks match your filter'**
+  String get noTasksMatchingFilter;
+
+  /// No description provided for @allBoards.
+  ///
+  /// In en, this message translates to:
+  /// **'All boards'**
+  String get allBoards;
+
+  /// No description provided for @filterDoing.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get filterDoing;
+
+  /// No description provided for @filterTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To do'**
+  String get filterTodo;
+
+  /// No description provided for @filterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterDone;
+
+  /// No description provided for @filterOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get filterOverdue;
+
+  /// No description provided for @taskDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get taskDeadline;
+
+  /// No description provided for @dueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dueToday;
 }
 
 class _AppLocalizationsDelegate
