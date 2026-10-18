@@ -749,5 +749,44 @@
   "themeSystem": "System default",
   "themeLight": "Light",
   "themeDark": "Dark",
-  "settingsTitle": "Settings"
+  "settingsTitle": "Settings",
+  "canvasRestored": "Canvas restored",
+  "taskCreatedToast": "Task created",
+  "taskUpdatedToast": "Task updated",
+  "taskDeletedToast": "Task deleted",
+  "addTextTitle": "Add text",
+  "enterTextHint": "Type your text...",
+  "addAction": "Add",
+  "addStickyNoteTitle": "Add sticky note",
+  "enterNoteHint": "Type a note...",
+  "pasteNote": "Paste note",
+  "micPermissionDenied": "Cannot access the microphone. Please allow microphone permission.",
+  "micError": "Microphone error: {error}",
+  "expandSidebar": "Expand sidebar",
+  "accountAndSettings": "Account & settings",
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "pageListRename": "Pages / rename",
+  "addKanbanCard": "Add Kanban card",
+  "closePanel": "Close panel",
+  "collapsePanel": "Collapse panel",
+  "hostBadge": "HOST",
+  "peerBadge": "PEER",
+  "micOn": "Mic on",
+  "micOff": "Mic off",
+  "muteMic": "Mute mic",
+  "unmuteMic": "Unmute mic",
+  "muteAudio": "Mute audio",
+  "unmuteAudio": "Unmute audio",
+  "listening": "Listening",
+  "newTaskTitle": "New task",
+  "deadlineBeforeStart": "The due date must be on or after the start date",
+  "sprintHint": "Attach the task directly to the sprint cycle.",
+  "@micError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

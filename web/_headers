@@ -6,6 +6,8 @@
   Cache-Control: no-cache
 /main.dart.js
   Cache-Control: no-cache
+/canvaskit/*
+  Cache-Control: public, max-age=86400
 /peertask.apk
   Content-Type: application/vnd.android.package-archive
   Content-Disposition: attachment; filename="PeerTask.apk"

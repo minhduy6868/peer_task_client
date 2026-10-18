@@ -838,7 +838,7 @@ class WhiteboardNotifier extends StateNotifier<WhiteboardState> {
   }
 
   void receiveOperation(Operation operation) {
-    _syncEngine?.receiveOperation(operation);
+    _applyLocally(operation);
   }
 
   void broadcastOperation(Operation operation) {

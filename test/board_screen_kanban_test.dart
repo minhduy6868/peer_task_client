@@ -219,8 +219,9 @@ void main() {
     expect(find.byIcon(Icons.view_kanban_outlined), findsWidgets);
     expect(find.byIcon(Icons.draw_outlined), findsOneWidget);
 
-    // Filter field above the columns
-    expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
+    // One search box and the light/dark switch in the top bar
+    expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
 
     // Four columns: To do, Doing, Review, Done
     expect(find.text('CẦN LÀM'), findsWidgets);
@@ -256,8 +257,8 @@ void main() {
     // Must not throw any RenderFlex overflow exception
     expect(tester.takeException(), isNull);
 
-    // Filter field is visible on mobile
-    expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
+    // Search box is visible on mobile
+    expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     expect(find.byType(TextField), findsWidgets);
 
     // Menu opens the sidebar drawer

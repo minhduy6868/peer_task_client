@@ -3883,6 +3883,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsTitle;
+
+  /// No description provided for @canvasRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas restored'**
+  String get canvasRestored;
+
+  /// No description provided for @taskCreatedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Task created'**
+  String get taskCreatedToast;
+
+  /// No description provided for @taskUpdatedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Task updated'**
+  String get taskUpdatedToast;
+
+  /// No description provided for @taskDeletedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Task deleted'**
+  String get taskDeletedToast;
+
+  /// No description provided for @addTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add text'**
+  String get addTextTitle;
+
+  /// No description provided for @enterTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your text...'**
+  String get enterTextHint;
+
+  /// No description provided for @addAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addAction;
+
+  /// No description provided for @addStickyNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sticky note'**
+  String get addStickyNoteTitle;
+
+  /// No description provided for @enterNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a note...'**
+  String get enterNoteHint;
+
+  /// No description provided for @pasteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste note'**
+  String get pasteNote;
+
+  /// No description provided for @micPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot access the microphone. Please allow microphone permission.'**
+  String get micPermissionDenied;
+
+  /// No description provided for @micError.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone error: {error}'**
+  String micError(String error);
+
+  /// No description provided for @expandSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get expandSidebar;
+
+  /// No description provided for @accountAndSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Account & settings'**
+  String get accountAndSettings;
+
+  /// No description provided for @previousPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get previousPage;
+
+  /// No description provided for @nextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get nextPage;
+
+  /// No description provided for @pageListRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages / rename'**
+  String get pageListRename;
+
+  /// No description provided for @addKanbanCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Kanban card'**
+  String get addKanbanCard;
+
+  /// No description provided for @closePanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close panel'**
+  String get closePanel;
+
+  /// No description provided for @collapsePanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse panel'**
+  String get collapsePanel;
+
+  /// No description provided for @hostBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'HOST'**
+  String get hostBadge;
+
+  /// No description provided for @peerBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'PEER'**
+  String get peerBadge;
+
+  /// No description provided for @micOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Mic on'**
+  String get micOn;
+
+  /// No description provided for @micOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Mic off'**
+  String get micOff;
+
+  /// No description provided for @muteMic.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute mic'**
+  String get muteMic;
+
+  /// No description provided for @unmuteMic.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute mic'**
+  String get unmuteMic;
+
+  /// No description provided for @muteAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute audio'**
+  String get muteAudio;
+
+  /// No description provided for @unmuteAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute audio'**
+  String get unmuteAudio;
+
+  /// No description provided for @listening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening'**
+  String get listening;
+
+  /// No description provided for @newTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get newTaskTitle;
+
+  /// No description provided for @deadlineBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'The due date must be on or after the start date'**
+  String get deadlineBeforeStart;
+
+  /// No description provided for @sprintHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach the task directly to the sprint cycle.'**
+  String get sprintHint;
 }
 
 class _AppLocalizationsDelegate

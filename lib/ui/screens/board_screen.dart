@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../utils/error_display.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
@@ -37,7 +39,8 @@ class BoardScreen extends ConsumerStatefulWidget {
   ConsumerState<BoardScreen> createState() => _BoardScreenState();
 }
 
-class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProviderStateMixin {
+class _BoardScreenState extends ConsumerState<BoardScreen>
+    with SingleTickerProviderStateMixin {
   // Navigation & Page State
   _BoardPage _page = _BoardPage.tasks;
   bool _isSidebarCollapsed = false;
@@ -63,12 +66,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   late final AnimationController _waveAnimController;
 
   // Discussion notes
-  final TextEditingController _discussionNoteController = TextEditingController();
+  final TextEditingController _discussionNoteController =
+      TextEditingController();
+  final ScrollController _notesScroll = ScrollController();
+  final FocusNode _noteFocus = FocusNode();
+  int _shownNoteCount = 0;
 
   // Kanban & Sprint State
   String _taskSearchQuery = '';
-  String _priorityFilter = 'all';
-  final Set<String> _selectedTagFilters = {};
+  bool _tasksLoading = true;
   final TextEditingController _searchController = TextEditingController();
 
   // Responsive & Scaffold Key
@@ -124,6 +130,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     _waveAnimController.dispose();
     _searchController.dispose();
     _discussionNoteController.dispose();
+    _notesScroll.dispose();
+    _noteFocus.dispose();
     super.dispose();
   }
 
@@ -132,25 +140,33 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     if (!mounted) return;
     ref.read(currentBoardIdProvider.notifier).state = widget.boardId;
 
+    // connectToBoard resets the board synchronously before its first await,
+    // so tasks and members can load in parallel without being wiped.
+    final connecting = ref
+        .read(whiteboardProvider.notifier)
+        .connectToBoard(widget.boardId);
+    final tasksAndMembers = Future.wait([_loadTasks(), _loadMembers()]);
+
     try {
-      final restored = await ref
-          .read(whiteboardProvider.notifier)
-          .connectToBoard(widget.boardId);
+      final restored = await connecting;
       if (mounted && restored > 0) {
-        AppToast.show(context, message: 'Đã khôi phục bản vẽ');
+        AppToast.show(
+          context,
+          message: AppLocalizations.of(context)!.canvasRestored,
+        );
       }
     } catch (e) {
       await ref.read(whiteboardProvider.notifier).restoreDraft(widget.boardId);
       if (mounted) context.showErrorSnackBar(e);
     }
-    if (!mounted) return;
-    await _loadMembers();
-    await _loadTasks();
+    await tasksAndMembers;
   }
 
   Future<void> _loadMembers() async {
     try {
-      final members = await ref.read(apiServiceProvider).getBoardMembers(widget.boardId);
+      final members = await ref
+          .read(apiServiceProvider)
+          .getBoardMembers(widget.boardId);
       if (!mounted) return;
       setState(() => _members = members);
     } catch (e) {
@@ -159,46 +175,58 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   Future<void> _loadTasks() async {
+    if (mounted) setState(() => _tasksLoading = true);
     try {
-      final tasks = await ref.read(apiServiceProvider).getBoardTasks(widget.boardId);
+      final tasks = await ref
+          .read(apiServiceProvider)
+          .getBoardTasks(widget.boardId);
       final notifier = ref.read(whiteboardProvider.notifier);
       for (final task in tasks) {
-        notifier.receiveOperation(Operation(
-          opId: task['id'] ?? 'task-${DateTime.now().millisecondsSinceEpoch}',
-          actor: task['created_by'] ?? 'backend',
-          timestamp: task['created_at'] != null
-              ? DateTime.parse(task['created_at'] as String).millisecondsSinceEpoch
-              : DateTime.now().millisecondsSinceEpoch,
-          type: OperationType.createObject,
-          payload: {
-            'id': task['id'],
-            'type': 'task',
-            'data': {
-              'title': task['title'] ?? 'Untitled',
-              'description': task['description'],
-              'status': task['status'] ?? 'todo',
-              'priority': task['priority'] ?? 'medium',
-              'assignees': task['assignees'] ?? [],
-              'assignee_list': task['assignee_list'] ?? [],
-              'deadline': task['deadline'],
-              'startDate': task['start_date'] ?? task['startDate'],
-              'labels': task['labels'] ?? [],
-              'position': task['position'],
-              'created_by': task['created_by'],
-              'creator_name': task['creator_name'],
-              'created_at': task['created_at'],
+        notifier.receiveOperation(
+          Operation(
+            opId: task['id'] ?? 'task-${DateTime.now().millisecondsSinceEpoch}',
+            actor: task['created_by'] ?? 'backend',
+            timestamp: task['created_at'] != null
+                ? DateTime.parse(
+                    task['created_at'] as String,
+                  ).millisecondsSinceEpoch
+                : DateTime.now().millisecondsSinceEpoch,
+            type: OperationType.createObject,
+            payload: {
+              'id': task['id'],
+              'type': 'task',
+              'data': {
+                'title': task['title'] ?? 'Untitled',
+                'description': task['description'],
+                'status': task['status'] ?? 'todo',
+                'priority': task['priority'] ?? 'medium',
+                'assignees': task['assignees'] ?? [],
+                'assignee_list': task['assignee_list'] ?? [],
+                'deadline': task['deadline'],
+                'startDate': task['start_date'] ?? task['startDate'],
+                'labels': task['labels'] ?? [],
+                'position': task['position'],
+                'created_by': task['created_by'],
+                'creator_name': task['creator_name'],
+                'created_at': task['created_at'],
+              },
             },
-          },
-        ));
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Load tasks failed: $e');
+      if (mounted) context.showErrorSnackBar(e);
+    } finally {
+      if (mounted) setState(() => _tasksLoading = false);
     }
   }
 
   void _openTask(Map<String, dynamic>? task, {String status = 'todo'}) {
     final existingStartDate = task != null ? _getTaskStartDate(task) : null;
-    final cleanDesc = task != null ? _getCleanDescription(task['description'] as String?) : null;
+    final cleanDesc = task != null
+        ? _getCleanDescription(task['description'] as String?)
+        : null;
 
     showDialog(
       context: context,
@@ -226,43 +254,44 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               )
             : null,
         boardMembers: _members,
-        onSave: ({
-          required String title,
-          String? description,
-          required String priority,
-          required String status,
-          DateTime? deadline,
-          DateTime? startDate,
-          List<String>? assignees,
-          List<String>? labels,
-          double? estimatedHours,
-        }) async {
-          if (task == null) {
-            await _createTask(
-              title: title,
-              description: description,
-              priority: priority,
-              status: status,
-              deadline: deadline,
-              startDate: startDate,
-              assignees: assignees,
-              labels: labels,
-              estimatedHours: estimatedHours,
-            );
-          } else {
-            await _updateTask(
-              taskId: task['id'],
-              title: title,
-              description: description,
-              priority: priority,
-              status: status,
-              deadline: deadline,
-              startDate: startDate,
-              assignees: assignees,
-              labels: labels,
-            );
-          }
-        },
+        onSave:
+            ({
+              required String title,
+              String? description,
+              required String priority,
+              required String status,
+              DateTime? deadline,
+              DateTime? startDate,
+              List<String>? assignees,
+              List<String>? labels,
+              double? estimatedHours,
+            }) async {
+              if (task == null) {
+                await _createTask(
+                  title: title,
+                  description: description,
+                  priority: priority,
+                  status: status,
+                  deadline: deadline,
+                  startDate: startDate,
+                  assignees: assignees,
+                  labels: labels,
+                  estimatedHours: estimatedHours,
+                );
+              } else {
+                await _updateTask(
+                  taskId: task['id'],
+                  title: title,
+                  description: description,
+                  priority: priority,
+                  status: status,
+                  deadline: deadline,
+                  startDate: startDate,
+                  assignees: assignees,
+                  labels: labels,
+                );
+              }
+            },
         onDelete: task != null ? () => _deleteTask(task['id']) : null,
       ),
     );
@@ -280,7 +309,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     double? estimatedHours,
   }) async {
     try {
-      final response = await ref.read(apiServiceProvider).createTask(
+      final response = await ref
+          .read(apiServiceProvider)
+          .createTask(
             boardId: widget.boardId,
             title: title,
             description: description,
@@ -310,7 +341,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         },
         shouldSaveBackend: false,
       );
-      if (mounted) AppToast.show(context, message: 'Đã tạo nhiệm vụ');
+      if (mounted)
+        AppToast.show(
+          context,
+          message: AppLocalizations.of(context)!.taskCreatedToast,
+        );
     } catch (e) {
       if (mounted) context.showErrorSnackBar(e);
     }
@@ -344,7 +379,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         {'id': taskId, 'type': 'task', 'data': updatedData},
         shouldSaveBackend: true,
       );
-      if (mounted) AppToast.show(context, message: 'Đã cập nhật nhiệm vụ');
+      if (mounted)
+        AppToast.show(
+          context,
+          message: AppLocalizations.of(context)!.taskUpdatedToast,
+        );
     } catch (e) {
       if (mounted) context.showErrorSnackBar(e);
     }
@@ -373,7 +412,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         {'id': taskId, 'type': 'task'},
         shouldSaveBackend: true,
       );
-      if (mounted) AppToast.show(context, message: 'Đã xóa nhiệm vụ');
+      if (mounted)
+        AppToast.show(
+          context,
+          message: AppLocalizations.of(context)!.taskDeletedToast,
+        );
     } catch (e) {
       if (mounted) context.showErrorSnackBar(e);
     }
@@ -388,7 +431,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   void _onPanStart(Offset point, _Scene scene) {
-    if (_tool == _WhiteboardTool.hand || _tool == _WhiteboardTool.select) return;
+    if (_tool == _WhiteboardTool.hand || _tool == _WhiteboardTool.select)
+      return;
     final pageId = _getActivePageId(scene);
 
     if (_tool == _WhiteboardTool.eraser) {
@@ -451,7 +495,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   void _onPanEnd(_Scene scene) {
     final pageId = _getActivePageId(scene);
 
-    if (_tool == _WhiteboardTool.pen && _strokeId != null && _points.isNotEmpty) {
+    if (_tool == _WhiteboardTool.pen &&
+        _strokeId != null &&
+        _points.isNotEmpty) {
       final flatPoints = <double>[];
       for (final p in _points) {
         flatPoints.add(p.dx);
@@ -573,14 +619,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           children: [
             const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
             const SizedBox(width: 8),
-            Text(l10n.clearAll, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              l10n.clearAll,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(l10n.clearCanvasConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.cancel, style: const TextStyle(color: Color(0xFF64748B))),
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(color: Color(0xFF64748B)),
+            ),
           ),
           FilledButton(
             onPressed: () {
@@ -623,7 +675,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 }
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
             child: Text(l10n.clearAll),
           ),
         ],
@@ -636,17 +690,23 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Thêm văn bản', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        title: Text(
+          AppLocalizations.of(context)!.addTextTitle,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: textCtrl,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Nhập nội dung văn bản...',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.enterTextHint,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
           FilledButton(
             onPressed: () {
               final val = textCtrl.text.trim();
@@ -671,7 +731,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('Thêm'),
+            child: Text(AppLocalizations.of(context)!.addAction),
           ),
         ],
       ),
@@ -683,18 +743,24 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Thêm ghi chú sticky', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        title: Text(
+          AppLocalizations.of(context)!.addStickyNoteTitle,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: textCtrl,
           autofocus: true,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Nhập ghi chú thảo luận...',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.enterNoteHint,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
           FilledButton(
             onPressed: () {
               final val = textCtrl.text.trim();
@@ -718,7 +784,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('Dán ghi chú'),
+            child: Text(AppLocalizations.of(context)!.pasteNote),
           ),
         ],
       ),
@@ -736,13 +802,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
       try {
         final success = await webrtc?.startAudioStream() ?? true;
         if (!success) {
-          if (mounted) context.showErrorSnackBar('Không thể truy cập microphone. Vui lòng cấp quyền.');
+          if (mounted)
+            context.showErrorSnackBar(
+              AppLocalizations.of(context)!.micPermissionDenied,
+            );
           return;
         }
         notifier.updateMicStatus(false);
         setState(() => _voice = true);
       } catch (e) {
-        if (mounted) context.showErrorSnackBar('Lỗi micro: $e');
+        if (mounted)
+          context.showErrorSnackBar(
+            AppLocalizations.of(context)!.micError(e.toString()),
+          );
       }
     } else {
       await webrtc?.stopAudioStream();
@@ -763,21 +835,30 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.leaveRoom, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(
+          l10n.leaveRoom,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: Text(l10n.leaveRoomConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref.read(whiteboardProvider.notifier).webrtc?.stopAudioStream();
+              await ref
+                  .read(whiteboardProvider.notifier)
+                  .webrtc
+                  ?.stopAudioStream();
               ref.read(whiteboardProvider.notifier).updateMicStatus(true);
-              setState(() {
-                _voice = false;
-                _isVoicePanelCollapsed = true;
-              });
+              if (!mounted) return;
+              _leave();
             },
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
             child: Text(l10n.leaveRoom),
           ),
         ],
@@ -802,23 +883,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     };
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.createObject,
-      {
-        'id': noteId,
-        'type': 'discussion_note',
-        'data': noteData,
-      },
+      {'id': noteId, 'type': 'discussion_note', 'data': noteData},
       shouldSaveBackend: true,
     );
     _discussionNoteController.clear();
+    _noteFocus.requestFocus();
+    _scrollNotesToEnd();
   }
 
   void _deleteDiscussionNote(String noteId) {
     ref.read(whiteboardProvider.notifier).createOperation(
       OperationType.deleteObject,
-      {
-        'id': noteId,
-        'type': 'discussion_note',
-      },
+      {'id': noteId, 'type': 'discussion_note'},
       shouldSaveBackend: true,
     );
   }
@@ -854,14 +930,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     if (scene.pages.isEmpty) return;
     final idx = _currentPageIndex.clamp(0, scene.pages.length - 1);
     final currentPage = scene.pages[idx];
-    final currentName = currentPage['name'] as String? ?? '${l10n.pageTitlePrefix} 1';
+    final currentName =
+        currentPage['name'] as String? ?? '${l10n.pageTitlePrefix} 1';
     final pageId = currentPage['id'] as String;
 
     final controller = TextEditingController(text: currentName);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.renamePage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(
+          l10n.renamePage,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -871,7 +951,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
             onPressed: () {
               final newName = controller.text.trim();
@@ -879,7 +962,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 AppToast.show(context, message: l10n.pageNameEmpty);
                 return;
               }
-              final isDuplicate = scene.pages.any((p) => p['id'] != pageId && (p['name'] as String?).toString().toLowerCase() == newName.toLowerCase());
+              final isDuplicate = scene.pages.any(
+                (p) =>
+                    p['id'] != pageId &&
+                    (p['name'] as String?).toString().toLowerCase() ==
+                        newName.toLowerCase(),
+              );
               if (isDuplicate) {
                 AppToast.show(context, message: l10n.pageNameExists);
                 return;
@@ -917,12 +1005,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           children: [
             const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
             const SizedBox(width: 8),
-            Text(l10n.deletePage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              l10n.deletePage,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(l10n.deletePageConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
@@ -935,7 +1029,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 _currentPageIndex = math.max(0, _currentPageIndex - 1);
               });
             },
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
             child: Text(l10n.deletePage),
           ),
         ],
@@ -945,7 +1041,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
   // ===== Assignee Name Resolution (2.2: Không bao giờ hiện UUID) =====
 
-  String _resolveAssigneeName(String idOrName, Map<String, dynamic> task, AppLocalizations l10n) {
+  String _resolveAssigneeName(
+    String idOrName,
+    Map<String, dynamic> task,
+    AppLocalizations l10n,
+  ) {
     final trimmed = idOrName.trim();
     if (trimmed.isEmpty) return l10n.unassigned;
 
@@ -979,8 +1079,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     }
 
     // 4. If it's already a regular name (not a UUID)
-    final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(trimmed) ||
-                   RegExp(r'^[0-9a-fA-F]{32}$').hasMatch(trimmed);
+    final isUuid =
+        RegExp(
+          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+        ).hasMatch(trimmed) ||
+        RegExp(r'^[0-9a-fA-F]{32}$').hasMatch(trimmed);
     if (!isUuid && trimmed.length < 30) {
       return trimmed;
     }
@@ -1018,23 +1121,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     return clean.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
-  List<Map<String, dynamic>> _filterTasks(Iterable<Map<String, dynamic>> tasks) {
+  List<Map<String, dynamic>> _filterTasks(
+    Iterable<Map<String, dynamic>> tasks,
+  ) {
+    final q = _taskSearchQuery.toLowerCase();
+    if (q.isEmpty) return tasks.toList();
     return tasks.where((t) {
-      if (_priorityFilter != 'all') {
-        final p = (t['priority'] as String? ?? 'medium').toLowerCase();
-        if (p != _priorityFilter) return false;
-      }
-      if (_selectedTagFilters.isNotEmpty) {
-        final labels = List<String>.from(t['labels'] ?? []);
-        if (!labels.any((l) => _selectedTagFilters.contains(l))) return false;
-      }
-      if (_taskSearchQuery.isNotEmpty) {
-        final title = (t['title'] as String? ?? '').toLowerCase();
-        final desc = _getCleanDescription(t['description'] as String?).toLowerCase();
-        final q = _taskSearchQuery.toLowerCase();
-        if (!title.contains(q) && !desc.contains(q)) return false;
-      }
-      return true;
+      final title = (t['title'] as String? ?? '').toLowerCase();
+      final desc = _getCleanDescription(
+        t['description'] as String?,
+      ).toLowerCase();
+      final labels = List<String>.from(
+        t['labels'] ?? [],
+      ).join(' ').toLowerCase();
+      return title.contains(q) || desc.contains(q) || labels.contains(q);
     }).toList();
   }
 
@@ -1072,7 +1172,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         continue;
       }
 
-      final data = {'id': id, ...Map<String, dynamic>.from(op.payload['data'] ?? {})};
+      final data = {
+        'id': id,
+        ...Map<String, dynamic>.from(op.payload['data'] ?? {}),
+      };
       switch (type) {
         case 'stroke':
           strokes.removeWhere((item) => item['id'] == id);
@@ -1129,7 +1232,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(whiteboardProvider);
     final user = ref.watch(authStateProvider).user;
-    final selfName = user?.name?.isNotEmpty == true ? user!.name! : (user?.email ?? l10n.you);
+    final selfName = user?.name?.isNotEmpty == true
+        ? user!.name!
+        : (user?.email ?? l10n.you);
     _syncWaveAnimation(
       (_voice && state.localSpeaking) ||
           state.peers.any((p) => p.isSpeaking == true && p.isMuted != true),
@@ -1143,13 +1248,24 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: isDark ? const Color(0xFF13131A) : const Color(0xFFF7F8FC),
-      drawer: isMobile ? Drawer(child: _buildLeftSidebar(selfName, isDark, state, l10n)) : null,
+      backgroundColor: isDark
+          ? const Color(0xFF13131A)
+          : const Color(0xFFF7F8FC),
+      drawer: isMobile
+          ? Drawer(child: _buildLeftSidebar(selfName, isDark, state, l10n))
+          : null,
       endDrawer: !isDesktop
           ? Drawer(
               width: 320,
               child: SafeArea(
-                child: _buildRightVoicePanel(selfName, isDark, scene, state, l10n, isDrawer: true),
+                child: _buildRightVoicePanel(
+                  selfName,
+                  isDark,
+                  scene,
+                  state,
+                  l10n,
+                  isDrawer: true,
+                ),
               ),
             )
           : null,
@@ -1158,8 +1274,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ==================== LEFT SIDEBAR (Desktop & Tablet) ====================
-            if (!isMobile)
-              _buildLeftSidebar(selfName, isDark, state, l10n),
+            if (!isMobile) _buildLeftSidebar(selfName, isDark, state, l10n),
 
             // ==================== MAIN CONTENT AREA ====================
             Expanded(
@@ -1181,7 +1296,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             // ==================== RIGHT VOICE MEETING PANEL (Image 1 & 2) ====================
             // 1.2: Appears on BOTH Kanban and Whiteboard screens (docked only on Desktop >= 1280)
             if (!_isVoicePanelCollapsed && isDesktop)
-              _buildRightVoicePanel(selfName, isDark, scene, state, l10n, isDrawer: false),
+              _buildRightVoicePanel(
+                selfName,
+                isDark,
+                scene,
+                state,
+                l10n,
+                isDrawer: false,
+              ),
           ],
         ),
       ),
@@ -1195,24 +1317,21 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               label: Text(l10n.roomMembersTitle(1 + state.peers.length)),
             )
           : (_isVoicePanelCollapsed
-              ? FloatingActionButton.extended(
-                  onPressed: () => setState(() => _isVoicePanelCollapsed = false),
-                  backgroundColor: const Color(0xFF5B4CF0),
-                  foregroundColor: Colors.white,
-                  icon: const Icon(Icons.people_alt_outlined, size: 18),
-                  label: Text(l10n.roomMembersTitle(1 + state.peers.length)),
-                )
-              : null),
+                ? FloatingActionButton.extended(
+                    onPressed: () =>
+                        setState(() => _isVoicePanelCollapsed = false),
+                    backgroundColor: const Color(0xFF5B4CF0),
+                    foregroundColor: Colors.white,
+                    icon: const Icon(Icons.people_alt_outlined, size: 18),
+                    label: Text(l10n.roomMembersTitle(1 + state.peers.length)),
+                  )
+                : null),
     );
   }
 
   // ==================== TOP SEARCH BAR ====================
   void _leave() {
     final board = ref.read(currentBoardProvider).value;
-    if (context.canPop()) {
-      context.pop();
-      return;
-    }
     if (board != null) {
       context.go('/workspace/${board.workspaceId}/boards');
     } else {
@@ -1220,9 +1339,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     }
   }
 
-  Widget _buildTopSearchBar(bool isDark, AppLocalizations l10n, bool isMobile, bool isDesktop, WhiteboardState state) {
+  Widget _buildTopSearchBar(
+    bool isDark,
+    AppLocalizations l10n,
+    bool isMobile,
+    bool isDesktop,
+    WhiteboardState state,
+  ) {
     final board = ref.watch(currentBoardProvider).value;
-    final boardTitle = board?.name.isNotEmpty == true ? board!.name : l10n.boards;
+    final boardTitle = board?.name.isNotEmpty == true
+        ? board!.name
+        : l10n.boards;
     return LayoutBuilder(
       builder: (context, constraints) => _buildTopBarContent(
         isDark: isDark,
@@ -1285,39 +1412,54 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           const SizedBox(width: 12),
 
           // Search Input
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF262636) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF3B3B4F) : const Color(0xFFE2E8F0),
+          if (_page != _BoardPage.tasks)
+            const Spacer()
+          else
+            Expanded(
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF262636)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF3B3B4F)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    const Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: Color(0xFF94A3B8),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(fontSize: 13),
+                        decoration: InputDecoration(
+                          hintText: l10n.searchPlaceholder,
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (val) =>
+                            setState(() => _taskSearchQuery = val.trim()),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: InputDecoration(
-                        hintText: l10n.searchPlaceholder,
-                        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      onChanged: (val) => setState(() => _taskSearchQuery = val.trim()),
-                    ),
-                  ),
-                ],
-              ),
             ),
-          ),
           const SizedBox(width: 10),
 
           // Nút "Họp nhanh P2P" (Toggle mic directly, no toast)
@@ -1330,10 +1472,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 height: 40,
                 padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
                 decoration: BoxDecoration(
-                  color: _voice ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                  color: _voice
+                      ? const Color(0xFFECFDF5)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _voice ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1),
+                    color: _voice
+                        ? const Color(0xFFA7F3D0)
+                        : const Color(0xFFCBD5E1),
                   ),
                 ),
                 child: Row(
@@ -1343,7 +1489,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                       width: 7,
                       height: 7,
                       decoration: BoxDecoration(
-                        color: _voice ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        color: _voice
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1354,7 +1502,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: _voice ? const Color(0xFF047857) : const Color(0xFF475569),
+                          color: _voice
+                              ? const Color(0xFF047857)
+                              : const Color(0xFF475569),
                         ),
                       ),
                     ],
@@ -1373,7 +1523,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               style: IconButton.styleFrom(
                 backgroundColor: const Color(0xFF5B4CF0),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               icon: const Icon(Icons.add_rounded, size: 20),
             )
@@ -1381,33 +1533,35 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             FilledButton.icon(
               onPressed: () => _openTask(null),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(l10n.createNewAction, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              label: Text(
+                l10n.createNewAction,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF5B4CF0),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
             ),
-          if (!compact) ...[
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: () {
-                AppToast.show(context, message: 'Exporting canvas/tasks...');
-              },
-              icon: const Icon(Icons.file_upload_outlined, size: 18),
-              label: Text(l10n.exportAction, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 40),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
-                side: BorderSide(color: isDark ? const Color(0xFF3B3B4F) : const Color(0xFFCBD5E1)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: isDark ? l10n.themeLight : l10n.themeDark,
+            icon: Icon(
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              size: 20,
             ),
-          ],
+            onPressed: () => ref
+                .read(themeModeProvider.notifier)
+                .setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark),
+          ),
           if (!isDesktop && !isMobile) ...[
             const SizedBox(width: 8),
             IconButton(
@@ -1415,7 +1569,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               icon: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.people_alt_outlined, size: 20, color: Color(0xFF5B4CF0)),
+                  const Icon(
+                    Icons.people_alt_outlined,
+                    size: 20,
+                    color: Color(0xFF5B4CF0),
+                  ),
                   if (state.peers.isNotEmpty)
                     Positioned(
                       right: -2,
@@ -1440,7 +1598,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   // ==================== LEFT SIDEBAR ====================
-  Widget _buildLeftSidebar(String selfName, bool isDark, WhiteboardState state, AppLocalizations l10n) {
+  Widget _buildLeftSidebar(
+    String selfName,
+    bool isDark,
+    WhiteboardState state,
+    AppLocalizations l10n,
+  ) {
     final width = _isSidebarCollapsed ? 76.0 : 256.0;
     final onlineCount = state.peers.where((p) => p.connected).length + 1;
     final hasVoiceLive = _voice || state.peers.any((p) => !p.isMuted);
@@ -1462,7 +1625,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           // Logo Header
           Container(
             height: 58,
-            padding: EdgeInsets.symmetric(horizontal: _isSidebarCollapsed ? 16 : 18),
+            padding: EdgeInsets.symmetric(
+              horizontal: _isSidebarCollapsed ? 16 : 18,
+            ),
             alignment: Alignment.centerLeft,
             child: Row(
               children: [
@@ -1474,7 +1639,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
-                    child: Icon(Icons.hub_rounded, color: Colors.white, size: 20),
+                    child: Icon(
+                      Icons.hub_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
                 if (!_isSidebarCollapsed) ...[
@@ -1505,7 +1674,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           if (_isSidebarCollapsed)
             Center(
               child: IconButton(
-                tooltip: 'Mở rộng sidebar',
+                tooltip: AppLocalizations.of(context)!.expandSidebar,
                 icon: const Icon(Icons.last_page_rounded, size: 20),
                 onPressed: () => setState(() => _isSidebarCollapsed = false),
               ),
@@ -1549,12 +1718,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 if (!_isSidebarCollapsed) ...[
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF222230) : const Color(0xFFF8FAFC),
+                      color: isDark
+                          ? const Color(0xFF222230)
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFEDF2F7),
+                        color: isDark
+                            ? const Color(0xFF2E2E3E)
+                            : const Color(0xFFEDF2F7),
                       ),
                     ),
                     child: Row(
@@ -1571,12 +1747,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                         Expanded(
                           child: Text(
                             l10n.onlinePeople(onlineCount),
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         if (hasVoiceLive) ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFDCFCE7),
                               borderRadius: BorderRadius.circular(10),
@@ -1626,21 +1808,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           borderRadius: BorderRadius.circular(8),
           child: Container(
             height: 42,
-            padding: EdgeInsets.symmetric(horizontal: _isSidebarCollapsed ? 0 : 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: _isSidebarCollapsed ? 0 : 12,
+            ),
             decoration: BoxDecoration(
               color: isActive ? const Color(0xFF5B4CF0) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
-              mainAxisAlignment:
-                  _isSidebarCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+              mainAxisAlignment: _isSidebarCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Icon(
                   icon,
                   size: 20,
                   color: isActive
                       ? Colors.white
-                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                      : (isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B)),
                 ),
                 if (!_isSidebarCollapsed) ...[
                   const SizedBox(width: 10),
@@ -1651,7 +1838,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isActive
                             ? Colors.white
                             : (isDark ? Colors.white : const Color(0xFF1E293B)),
@@ -1660,9 +1849,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                   ),
                   if (badgeText != null) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: badgeColor ?? (isActive ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF1F5F9)),
+                        color:
+                            badgeColor ??
+                            (isActive
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -1670,7 +1866,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: isActive ? Colors.white : const Color(0xFF475569),
+                          color: isActive
+                              ? Colors.white
+                              : const Color(0xFF475569),
                         ),
                       ),
                     ),
@@ -1684,7 +1882,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildUserProfileBottom(String selfName, bool isDark, AppLocalizations l10n) {
+  Widget _buildUserProfileBottom(
+    String selfName,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
@@ -1696,15 +1898,21 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         ),
       ),
       child: PopupMenuButton<String>(
-        tooltip: 'Tài khoản & Cài đặt',
+        tooltip: AppLocalizations.of(context)!.accountAndSettings,
         offset: const Offset(0, -180),
         onSelected: (val) {
           if (val == 'profile') {
-            showDialog(context: context, builder: (_) => const EditProfileDialog());
+            showDialog(
+              context: context,
+              builder: (_) => const EditProfileDialog(),
+            );
           } else if (val == 'settings') {
             context.push('/settings');
           } else if (val == 'password') {
-            showDialog(context: context, builder: (_) => const ChangePasswordDialog());
+            showDialog(
+              context: context,
+              builder: (_) => const ChangePasswordDialog(),
+            );
           } else if (val == 'logout') {
             ref.read(authStateProvider.notifier).logout();
             context.go('/login');
@@ -1746,9 +1954,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             value: 'logout',
             child: Row(
               children: [
-                const Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                const Icon(
+                  Icons.logout_rounded,
+                  size: 18,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(width: 10),
-                Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),
+                Text(
+                  l10n.logout,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
               ],
             ),
           ),
@@ -1767,7 +1982,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                       backgroundColor: const Color(0xFF5B4CF0),
                       child: Text(
                         selfName.isNotEmpty ? selfName[0].toUpperCase() : 'T',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -1799,17 +2018,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E1B4B),
                           ),
                         ),
-                        const Text(
-                          'Team Lead',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                        Text(
+                          ref.watch(authStateProvider).user?.email ?? '',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.unfold_more_rounded, size: 18, color: Color(0xFF94A3B8)),
+                  const Icon(
+                    Icons.unfold_more_rounded,
+                    size: 18,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ],
               ],
             ),
@@ -1820,14 +2048,26 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   // ==================== WHITEBOARD CANVAS VIEW ====================
-  Widget _buildWhiteboardView(_Scene scene, bool isDark, AppLocalizations l10n) {
+  Widget _buildWhiteboardView(
+    _Scene scene,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     final activePageId = _getActivePageId(scene);
 
     // Filter content on active page
-    final pageStrokes = scene.strokes.where((s) => (s['pageId'] ?? 'page-1') == activePageId).toList();
-    final pageShapes = scene.shapes.where((sh) => (sh['pageId'] ?? 'page-1') == activePageId).toList();
-    final pageNotes = scene.notes.where((n) => (n['pageId'] ?? 'page-1') == activePageId).toList();
-    final pageTexts = scene.texts.where((t) => (t['pageId'] ?? 'page-1') == activePageId).toList();
+    final pageStrokes = scene.strokes
+        .where((s) => (s['pageId'] ?? 'page-1') == activePageId)
+        .toList();
+    final pageShapes = scene.shapes
+        .where((sh) => (sh['pageId'] ?? 'page-1') == activePageId)
+        .toList();
+    final pageNotes = scene.notes
+        .where((n) => (n['pageId'] ?? 'page-1') == activePageId)
+        .toList();
+    final pageTexts = scene.texts
+        .where((t) => (t['pageId'] ?? 'page-1') == activePageId)
+        .toList();
 
     return Stack(
       children: [
@@ -1848,7 +2088,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                   livePoints: _points,
                   liveColor: _color,
                   liveWidth: _strokeWidth,
-                  liveShapeType: (_tool == _WhiteboardTool.rectangle ||
+                  liveShapeType:
+                      (_tool == _WhiteboardTool.rectangle ||
                           _tool == _WhiteboardTool.circle ||
                           _tool == _WhiteboardTool.arrow)
                       ? _tool.name
@@ -1882,7 +2123,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   // 1.3: Top Toolbar centered and evenly spaced without title label
-  Widget _buildWhiteboardTopToolbar(bool isDark, AppLocalizations l10n, _Scene scene) {
+  Widget _buildWhiteboardTopToolbar(
+    bool isDark,
+    AppLocalizations l10n,
+    _Scene scene,
+  ) {
     return Center(
       child: Container(
         height: 48,
@@ -1890,9 +2135,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0),
+          ),
           boxShadow: const [
-            BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 4)),
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         child: SingleChildScrollView(
@@ -1901,16 +2152,57 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             mainAxisSize: MainAxisSize.min,
             children: [
               // Drawing Tools
-              _buildToolIcon(Icons.near_me_outlined, l10n.toolSelect, _WhiteboardTool.select),
-              _buildToolIcon(Icons.pan_tool_outlined, l10n.toolHand, _WhiteboardTool.hand),
-              _buildToolIcon(Icons.edit_outlined, l10n.toolPen, _WhiteboardTool.pen),
-              _buildToolIcon(Icons.cleaning_services_outlined, l10n.toolEraser, _WhiteboardTool.eraser),
-              _buildToolIcon(Icons.crop_square_rounded, l10n.toolRectangle, _WhiteboardTool.rectangle),
-              _buildToolIcon(Icons.circle_outlined, l10n.toolCircle, _WhiteboardTool.circle),
-              _buildToolIcon(Icons.arrow_forward_rounded, l10n.toolArrow, _WhiteboardTool.arrow),
-              _buildToolIcon(Icons.sticky_note_2_outlined, l10n.toolStickyNote, _WhiteboardTool.note),
-              _buildToolIcon(Icons.title_rounded, l10n.toolText, _WhiteboardTool.text),
-              _buildToolIcon(Icons.view_kanban_outlined, l10n.toolKanban, _WhiteboardTool.kanban, isKanbanBtn: true),
+              _buildToolIcon(
+                Icons.near_me_outlined,
+                l10n.toolSelect,
+                _WhiteboardTool.select,
+              ),
+              _buildToolIcon(
+                Icons.pan_tool_outlined,
+                l10n.toolHand,
+                _WhiteboardTool.hand,
+              ),
+              _buildToolIcon(
+                Icons.edit_outlined,
+                l10n.toolPen,
+                _WhiteboardTool.pen,
+              ),
+              _buildToolIcon(
+                Icons.cleaning_services_outlined,
+                l10n.toolEraser,
+                _WhiteboardTool.eraser,
+              ),
+              _buildToolIcon(
+                Icons.crop_square_rounded,
+                l10n.toolRectangle,
+                _WhiteboardTool.rectangle,
+              ),
+              _buildToolIcon(
+                Icons.circle_outlined,
+                l10n.toolCircle,
+                _WhiteboardTool.circle,
+              ),
+              _buildToolIcon(
+                Icons.arrow_forward_rounded,
+                l10n.toolArrow,
+                _WhiteboardTool.arrow,
+              ),
+              _buildToolIcon(
+                Icons.sticky_note_2_outlined,
+                l10n.toolStickyNote,
+                _WhiteboardTool.note,
+              ),
+              _buildToolIcon(
+                Icons.title_rounded,
+                l10n.toolText,
+                _WhiteboardTool.text,
+              ),
+              _buildToolIcon(
+                Icons.view_kanban_outlined,
+                l10n.toolKanban,
+                _WhiteboardTool.kanban,
+                isKanbanBtn: true,
+              ),
               _buildToolbarVerticalDivider(isDark),
 
               // Undo / Clear all
@@ -1926,7 +2218,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 message: l10n.clearAll,
                 child: IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.delete_sweep_outlined, size: 18, color: Color(0xFFEF4444)),
+                  icon: const Icon(
+                    Icons.delete_sweep_outlined,
+                    size: 18,
+                    color: Color(0xFFEF4444),
+                  ),
                   onPressed: () => _confirmClearAll(l10n, scene),
                 ),
               ),
@@ -1950,12 +2246,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                       color: swatch,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _color == swatch ? Colors.white : Colors.transparent,
+                        color: _color == swatch
+                            ? Colors.white
+                            : Colors.transparent,
                         width: 2,
                       ),
                       boxShadow: _color == swatch
                           ? [
-                              BoxShadow(color: swatch.withValues(alpha: 0.6), blurRadius: 4),
+                              BoxShadow(
+                                color: swatch.withValues(alpha: 0.6),
+                                blurRadius: 4,
+                              ),
                             ]
                           : null,
                     ),
@@ -1976,12 +2277,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   // ẢNH 3: Thanh phân trang đáy canvas (‹ Page 1 › + Add page)
-  Widget _buildWhiteboardPaginationBar(bool isDark, AppLocalizations l10n, _Scene scene) {
+  Widget _buildWhiteboardPaginationBar(
+    bool isDark,
+    AppLocalizations l10n,
+    _Scene scene,
+  ) {
     final pages = scene.pages;
     final totalPages = pages.length;
     final safeIndex = _currentPageIndex.clamp(0, totalPages - 1);
     final currentPage = pages[safeIndex];
-    final pageName = currentPage['name'] as String? ?? '${l10n.pageTitlePrefix} ${safeIndex + 1}';
+    final pageName =
+        currentPage['name'] as String? ??
+        '${l10n.pageTitlePrefix} ${safeIndex + 1}';
 
     return Center(
       child: Container(
@@ -1990,9 +2297,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0),
+          ),
           boxShadow: const [
-            BoxShadow(color: Color(0x10000000), blurRadius: 10, offset: Offset(0, 3)),
+            BoxShadow(
+              color: Color(0x10000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
           ],
         ),
         child: SingleChildScrollView(
@@ -2000,124 +2313,165 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-            // Previous Page Button ‹
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded, size: 20),
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Trang trước',
-              onPressed: safeIndex > 0
-                  ? () => setState(() => _currentPageIndex = safeIndex - 1)
-                  : null,
-            ),
-            const SizedBox(width: 4),
+              // Previous Page Button ‹
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                visualDensity: VisualDensity.compact,
+                tooltip: AppLocalizations.of(context)!.previousPage,
+                onPressed: safeIndex > 0
+                    ? () => setState(() => _currentPageIndex = safeIndex - 1)
+                    : null,
+              ),
+              const SizedBox(width: 4),
 
-            // Page Name with menu to jump or rename
-            PopupMenuButton<String>(
-              tooltip: 'Danh sách trang / Đổi tên',
-              onSelected: (val) {
-                if (val == 'rename') {
-                  _renameCurrentPage(l10n, scene);
-                } else if (val == 'delete') {
-                  _confirmDeleteCurrentPage(l10n, scene);
-                } else if (val.startsWith('jump_')) {
-                  final idx = int.tryParse(val.replaceFirst('jump_', '')) ?? 0;
-                  setState(() => _currentPageIndex = idx);
-                }
-              },
-              itemBuilder: (ctx) => [
-                for (var i = 0; i < pages.length; i++)
+              // Page Name with menu to jump or rename
+              PopupMenuButton<String>(
+                tooltip: AppLocalizations.of(context)!.pageListRename,
+                onSelected: (val) {
+                  if (val == 'rename') {
+                    _renameCurrentPage(l10n, scene);
+                  } else if (val == 'delete') {
+                    _confirmDeleteCurrentPage(l10n, scene);
+                  } else if (val.startsWith('jump_')) {
+                    final idx =
+                        int.tryParse(val.replaceFirst('jump_', '')) ?? 0;
+                    setState(() => _currentPageIndex = idx);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  for (var i = 0; i < pages.length; i++)
+                    PopupMenuItem(
+                      value: 'jump_$i',
+                      child: Row(
+                        children: [
+                          Icon(
+                            i == safeIndex
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            size: 16,
+                            color: i == safeIndex
+                                ? const Color(0xFF5B4CF0)
+                                : const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            pages[i]['name'] as String? ??
+                                '${l10n.pageTitlePrefix} ${i + 1}',
+                          ),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuDivider(),
                   PopupMenuItem(
-                    value: 'jump_$i',
+                    value: 'rename',
                     child: Row(
                       children: [
-                        Icon(
-                          i == safeIndex ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                          size: 16,
-                          color: i == safeIndex ? const Color(0xFF5B4CF0) : const Color(0xFF94A3B8),
-                        ),
+                        const Icon(Icons.edit_outlined, size: 16),
                         const SizedBox(width: 8),
-                        Text(pages[i]['name'] as String? ?? '${l10n.pageTitlePrefix} ${i + 1}'),
+                        Text(l10n.renamePage),
                       ],
                     ),
                   ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'rename',
+                  if (totalPages > 1)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                            color: Color(0xFFEF4444),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.deletePage,
+                            style: const TextStyle(color: Color(0xFFEF4444)),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.edit_outlined, size: 16),
-                      const SizedBox(width: 8),
-                      Text(l10n.renamePage),
+                      Text(
+                        pageName,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 18,
+                        color: Color(0xFF64748B),
+                      ),
                     ],
                   ),
                 ),
-                if (totalPages > 1)
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
-                        const SizedBox(width: 8),
-                        Text(l10n.deletePage, style: const TextStyle(color: Color(0xFFEF4444))),
-                      ],
-                    ),
+              ),
+              const SizedBox(width: 4),
+
+              // Next Page Button ›
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                visualDensity: VisualDensity.compact,
+                tooltip: AppLocalizations.of(context)!.nextPage,
+                onPressed: safeIndex < totalPages - 1
+                    ? () => setState(() => _currentPageIndex = safeIndex + 1)
+                    : null,
+              ),
+              const SizedBox(width: 6),
+
+              // + Add page Button
+              FilledButton.tonal(
+                onPressed: () => _addNewPage(l10n, scene),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFF3E8FF),
+                  foregroundColor: const Color(0xFF7C3AED),
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-              ],
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      pageName,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
+                    const Icon(Icons.add_rounded, size: 15),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_drop_down_rounded, size: 18, color: Color(0xFF64748B)),
+                    Text(
+                      l10n.addPage,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-
-            // Next Page Button ›
-            IconButton(
-              icon: const Icon(Icons.chevron_right_rounded, size: 20),
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Trang sau',
-              onPressed: safeIndex < totalPages - 1
-                  ? () => setState(() => _currentPageIndex = safeIndex + 1)
-                  : null,
-            ),
-            const SizedBox(width: 6),
-
-            // + Add page Button
-            FilledButton.tonal(
-              onPressed: () => _addNewPage(l10n, scene),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF3E8FF),
-                foregroundColor: const Color(0xFF7C3AED),
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_rounded, size: 15),
-                  const SizedBox(width: 4),
-                  Text(l10n.addPage, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  Widget _buildToolIcon(IconData icon, String tooltip, _WhiteboardTool toolType, {bool isKanbanBtn = false}) {
+  Widget _buildToolIcon(
+    IconData icon,
+    String tooltip,
+    _WhiteboardTool toolType, {
+    bool isKanbanBtn = false,
+  }) {
     final isSelected = _tool == toolType;
 
     if (isKanbanBtn) {
@@ -2129,13 +2483,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             _openTask(null);
           },
           style: FilledButton.styleFrom(
-            backgroundColor: isSelected ? const Color(0xFF5B4CF0) : const Color(0xFFF1F5F9),
-            foregroundColor: isSelected ? Colors.white : const Color(0xFF5B4CF0),
+            backgroundColor: isSelected
+                ? const Color(0xFF5B4CF0)
+                : const Color(0xFFF1F5F9),
+            foregroundColor: isSelected
+                ? Colors.white
+                : const Color(0xFF5B4CF0),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             minimumSize: const Size(0, 32),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
           ),
-          child: const Text('Thêm thẻ Kanban', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+          child: Text(
+            AppLocalizations.of(context)!.addKanbanCard,
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+          ),
         ),
       );
     }
@@ -2170,7 +2533,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         margin: const EdgeInsets.symmetric(horizontal: 3),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF5B4CF0).withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xFF5B4CF0).withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: isSelected ? const Color(0xFF5B4CF0) : Colors.transparent,
@@ -2181,7 +2546,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: isSelected ? const Color(0xFF5B4CF0) : const Color(0xFF64748B),
+            color: isSelected
+                ? const Color(0xFF5B4CF0)
+                : const Color(0xFF64748B),
           ),
         ),
       ),
@@ -2232,13 +2599,24 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                     l10n.roomMembersTitle(membersCount),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8)),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                 ),
                 IconButton(
-                  tooltip: isDrawer ? 'Đóng panel' : 'Thu gọn panel',
+                  tooltip: isDrawer
+                      ? AppLocalizations.of(context)!.closePanel
+                      : AppLocalizations.of(context)!.collapsePanel,
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(isDrawer ? Icons.close_rounded : Icons.chevron_right_rounded, size: 20),
+                  icon: Icon(
+                    isDrawer
+                        ? Icons.close_rounded
+                        : Icons.chevron_right_rounded,
+                    size: 20,
+                  ),
                   onPressed: () {
                     if (isDrawer) {
                       Navigator.of(context).pop();
@@ -2259,11 +2637,17 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 // Current User (Self)
                 _buildVoiceMemberRow(
                   name: selfName,
-                  roleBadge: 'HOST',
-                  subtitle: _voice ? (state.localSpeaking ? l10n.speaking : 'Mic on') : 'Mic off',
+                  roleBadge: AppLocalizations.of(context)!.hostBadge,
+                  subtitle: _voice
+                      ? (state.localSpeaking
+                            ? l10n.speaking
+                            : AppLocalizations.of(context)!.micOn)
+                      : AppLocalizations.of(context)!.micOff,
                   isSpeaking: _voice && state.localSpeaking,
                   isMuted: !_voice,
-                  initial: selfName.isNotEmpty ? selfName[0].toUpperCase() : 'Q',
+                  initial: selfName.isNotEmpty
+                      ? selfName[0].toUpperCase()
+                      : 'Q',
                   avatarColor: const Color(0xFF5B4CF0),
                   isDark: isDark,
                 ),
@@ -2284,29 +2668,51 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFF1F5F9))),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF2A2A3C)
+                      : const Color(0xFFF1F5F9),
+                ),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Mic Button
                 IconButton(
-                  tooltip: _voice ? 'Mute Mic' : 'Unmute Mic',
+                  tooltip: _voice
+                      ? AppLocalizations.of(context)!.muteMic
+                      : AppLocalizations.of(context)!.unmuteMic,
                   style: IconButton.styleFrom(
-                    backgroundColor: _voice ? const Color(0xFF5B4CF0) : const Color(0xFFF1F5F9),
-                    foregroundColor: _voice ? Colors.white : const Color(0xFF64748B),
+                    backgroundColor: _voice
+                        ? const Color(0xFF5B4CF0)
+                        : const Color(0xFFF1F5F9),
+                    foregroundColor: _voice
+                        ? Colors.white
+                        : const Color(0xFF64748B),
                   ),
-                  icon: Icon(_voice ? Icons.mic_rounded : Icons.mic_off_rounded, size: 18),
+                  icon: Icon(
+                    _voice ? Icons.mic_rounded : Icons.mic_off_rounded,
+                    size: 18,
+                  ),
                   onPressed: _toggleMic,
                 ),
                 // Speaker Button
                 IconButton(
-                  tooltip: _speakerOn ? 'Mute Audio' : 'Unmute Audio',
+                  tooltip: _speakerOn
+                      ? AppLocalizations.of(context)!.muteAudio
+                      : AppLocalizations.of(context)!.unmuteAudio,
                   style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
                     foregroundColor: const Color(0xFF64748B),
                   ),
-                  icon: Icon(_speakerOn ? Icons.volume_up_rounded : Icons.volume_off_rounded, size: 18),
+                  icon: Icon(
+                    _speakerOn
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    size: 18,
+                  ),
                   onPressed: _toggleSpeaker,
                 ),
                 // Distinct Red End Call Button
@@ -2328,7 +2734,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   Widget _buildPeerVoiceRow(dynamic peer, bool isDark) {
-    String peerName = 'Thành viên';
+    String peerName = AppLocalizations.of(context)!.member;
     final peerUserId = peer.userId as String?;
     final match = _members.firstWhere(
       (m) => m['id'] == peerUserId,
@@ -2337,7 +2743,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     if (match.isNotEmpty && match['name'] != null) {
       peerName = match['name'] as String;
     } else if (peer.socketId != null && (peer.socketId as String).isNotEmpty) {
-      peerName = 'Node ${(peer.socketId as String).substring(0, math.min(4, (peer.socketId as String).length))}';
+      peerName =
+          'Node ${(peer.socketId as String).substring(0, math.min(4, (peer.socketId as String).length))}';
     }
 
     final isMuted = peer.isMuted == true;
@@ -2346,8 +2753,12 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
     return _buildVoiceMemberRow(
       name: peerName,
-      roleBadge: 'PEER',
-      subtitle: isMuted ? 'Mic off' : (isSpeaking ? 'Speaking' : 'Listening'),
+      roleBadge: AppLocalizations.of(context)!.peerBadge,
+      subtitle: isMuted
+          ? AppLocalizations.of(context)!.micOff
+          : (isSpeaking
+                ? AppLocalizations.of(context)!.speaking
+                : AppLocalizations.of(context)!.listening),
       isSpeaking: isSpeaking,
       isMuted: isMuted,
       initial: initial,
@@ -2380,7 +2791,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             backgroundColor: avatarColor,
             child: Text(
               initial,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -2395,26 +2810,39 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF5B4CF0).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         roleBadge,
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF5B4CF0)),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF5B4CF0),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ],
             ),
@@ -2426,11 +2854,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 final v = _waveAnimController.value;
                 return Row(
                   children: [
-                    Container(width: 2.5, height: 6 + 10 * v, decoration: BoxDecoration(color: const Color(0xFF5B4CF0), borderRadius: BorderRadius.circular(2))),
+                    Container(
+                      width: 2.5,
+                      height: 6 + 10 * v,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B4CF0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                     const SizedBox(width: 2),
-                    Container(width: 2.5, height: 16 - 10 * v, decoration: BoxDecoration(color: const Color(0xFF5B4CF0), borderRadius: BorderRadius.circular(2))),
+                    Container(
+                      width: 2.5,
+                      height: 16 - 10 * v,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B4CF0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                     const SizedBox(width: 2),
-                    Container(width: 2.5, height: 8 + 8 * v, decoration: BoxDecoration(color: const Color(0xFF5B4CF0), borderRadius: BorderRadius.circular(2))),
+                    Container(
+                      width: 2.5,
+                      height: 8 + 8 * v,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B4CF0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ],
                 );
               },
@@ -2439,7 +2888,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             Icon(
               isMuted ? Icons.mic_off_rounded : Icons.mic_none_rounded,
               size: 16,
-              color: isMuted ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+              color: isMuted
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF10B981),
             ),
           ],
         ],
@@ -2455,8 +2906,23 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     }
   }
 
+  void _scrollNotesToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_notesScroll.hasClients) return;
+      _notesScroll.animateTo(
+        _notesScroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   // Quick discussion notes widget
-  Widget _buildQuickDiscussionNotes(_Scene scene, bool isDark, AppLocalizations l10n) {
+  Widget _buildQuickDiscussionNotes(
+    _Scene scene,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     final user = ref.watch(authStateProvider).user;
     final currentUserId = user?.id;
 
@@ -2465,21 +2931,30 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF222230) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF10B981)),
+              const Icon(
+                Icons.edit_note_rounded,
+                size: 16,
+                color: Color(0xFF10B981),
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   l10n.quickDiscussionNotes,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -2487,6 +2962,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
           const SizedBox(height: 8),
 
           // Notes List
+          if (scene.discussionNotes.length != _shownNoteCount) ...[
+            Builder(
+              builder: (_) {
+                _shownNoteCount = scene.discussionNotes.length;
+                _scrollNotesToEnd();
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
           if (scene.discussionNotes.isEmpty) ...[
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -2499,15 +2983,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 180),
               child: ListView.builder(
+                controller: _notesScroll,
                 shrinkWrap: true,
                 itemCount: scene.discussionNotes.length,
                 itemBuilder: (ctx, i) {
                   final note = scene.discussionNotes[i];
                   final noteId = note['id'] as String;
                   final text = note['text'] as String? ?? '';
-                  final author = note['authorName'] as String? ?? 'Thành viên';
+                  final author =
+                      note['authorName'] as String? ??
+                      AppLocalizations.of(context)!.member;
                   final authorId = note['authorId'] as String?;
-                  final canDelete = authorId == currentUserId || authorId == 'self';
+                  final canDelete =
+                      authorId == currentUserId || authorId == 'self';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -2515,7 +3003,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1A1A24) : Colors.white,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF2E2E3E)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2525,21 +3017,41 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                             CircleAvatar(
                               radius: 8,
                               backgroundColor: const Color(0xFF5B4CF0),
-                              child: Text(author.isNotEmpty ? author[0] : 'U', style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                author.isNotEmpty ? author[0] : 'U',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
-                              child: Text(author, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                              child: Text(
+                                author,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                             if (canDelete)
                               InkWell(
                                 onTap: () => _deleteDiscussionNote(noteId),
-                                child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF94A3B8)),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  size: 14,
+                                  color: Color(0xFF94A3B8),
+                                ),
                               ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(text, style: const TextStyle(fontSize: 11.5, height: 1.3)),
+                        Text(
+                          text,
+                          style: const TextStyle(fontSize: 11.5, height: 1.3),
+                        ),
                       ],
                     ),
                   );
@@ -2554,22 +3066,42 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
-                  controller: _discussionNoteController,
-                  maxLines: 2,
-                  style: const TextStyle(fontSize: 12),
-                  decoration: InputDecoration(
-                    hintText: l10n.typeDiscussionNote,
-                    hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.all(8),
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF1A1A24) : Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: isDark ? const Color(0xFF2E2E3E) : const Color(0xFFCBD5E1)),
+                child: CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.enter):
+                        _postDiscussionNote,
+                    const SingleActivator(LogicalKeyboardKey.numpadEnter):
+                        _postDiscussionNote,
+                  },
+                  child: TextField(
+                    controller: _discussionNoteController,
+                    focusNode: _noteFocus,
+                    minLines: 1,
+                    maxLines: 3,
+                    textInputAction: TextInputAction.send,
+                    style: const TextStyle(fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: l10n.typeDiscussionNote,
+                      hintStyle: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      contentPadding: const EdgeInsets.all(8),
+                      filled: true,
+                      fillColor: isDark
+                          ? const Color(0xFF1A1A24)
+                          : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? const Color(0xFF2E2E3E)
+                              : const Color(0xFFCBD5E1),
+                        ),
+                      ),
                     ),
+                    onSubmitted: (_) => _postDiscussionNote(),
                   ),
-                  onSubmitted: (_) => _postDiscussionNote(),
                 ),
               ),
               const SizedBox(width: 6),
@@ -2577,11 +3109,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 onPressed: _postDiscussionNote,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF5B4CF0),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
                   minimumSize: const Size(0, 36),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-                child: Text(l10n.post, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text(
+                  l10n.post,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -2592,180 +3135,27 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
   // ==================== KANBAN BOARD VIEW (Image 2) ====================
   Widget _buildKanbanView(_Scene scene, bool isDark, AppLocalizations l10n) {
-    return Column(
-      children: [
-        // 2.1: Header dồn gọn lên 1 hàng, xóa tiêu đề Sprint 04
-        _buildCleanFilterHeader(isDark, scene, l10n),
-
-        // 4 Kanban Columns Area
-        Expanded(
-          child: _buildKanbanColumnsArea(scene, isDark, l10n),
-        ),
-      ],
-    );
-  }
-
-  // 2.1: Clean 1-row header aligned with "+ Tạo nhiệm vụ" & "Tự động đồng bộ P2P"
-  Widget _buildCleanFilterHeader(bool isDark, _Scene scene, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF181824) : Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFEDF2F7),
-          ),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Search field
-            SizedBox(
-              width: 200,
-              height: 34,
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(fontSize: 12.5),
-                decoration: InputDecoration(
-                  hintText: l10n.searchFilterPlaceholder,
-                  hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                  prefixIcon: const Icon(Icons.filter_list_rounded, size: 16, color: Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF242436) : const Color(0xFFF8FAFC),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: isDark ? const Color(0xFF33334A) : const Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: isDark ? const Color(0xFF33334A) : const Color(0xFFE2E8F0)),
-                  ),
-                ),
-                onChanged: (val) => setState(() => _taskSearchQuery = val.trim()),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Tag Filter Chips
-            for (final tag in ['#UI/Design', '#Frontend', '#Checkout', '#P2P-Sync']) ...[
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: FilterChip(
-                  label: Text(tag),
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _selectedTagFilters.contains(tag) ? const Color(0xFF5B4CF0) : const Color(0xFF64748B),
-                  ),
-                  selected: _selectedTagFilters.contains(tag),
-                  selectedColor: const Color(0xFF5B4CF0).withValues(alpha: 0.15),
-                  backgroundColor: isDark ? const Color(0xFF242436) : const Color(0xFFF1F5F9),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        _selectedTagFilters.add(tag);
-                      } else {
-                        _selectedTagFilters.remove(tag);
-                      }
-                    });
-                  },
-                ),
-              ),
-            ],
-
-              // Priority Dropdown
-              Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF242436) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: isDark ? const Color(0xFF33334A) : const Color(0xFFE2E8F0)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _priorityFilter,
-                    icon: const Icon(Icons.arrow_drop_down_rounded, size: 18),
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF475569),
-                    ),
-                    items: [
-                      DropdownMenuItem(value: 'all', child: Text(l10n.filterPriorityAll)),
-                      DropdownMenuItem(value: 'urgent', child: Text(l10n.filterPriorityUrgent)),
-                      DropdownMenuItem(value: 'high', child: Text(l10n.filterPriorityHigh)),
-                      DropdownMenuItem(value: 'medium', child: Text(l10n.filterPriorityMedium)),
-                      DropdownMenuItem(value: 'low', child: Text(l10n.filterPriorityLow)),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _priorityFilter = val);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              // Auto-sync indicator
-              Row(
-                children: [
-                  const Icon(Icons.sync_rounded, size: 14, color: Color(0xFF10B981)),
-                  const SizedBox(width: 4),
-                  Text(
-                    l10n.autoSyncP2P,
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-
-              // Prominent CTA "+ Tạo nhiệm vụ"
-              FilledButton.icon(
-                onPressed: () => _openTask(null),
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: Text(l10n.createTaskCTA, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B4CF0),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(0, 32),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Button "+ Thêm cột"
-              OutlinedButton.icon(
-                onPressed: () => AppToast.show(context, message: 'Thêm cột mới vào bảng'),
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: Text(l10n.addColumn, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 32),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  foregroundColor: const Color(0xFF64748B),
-                  side: BorderSide(color: isDark ? const Color(0xFF33334A) : const Color(0xFFCBD5E1)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    if (_tasksLoading && scene.tasks.isEmpty) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
+    }
+    return _buildKanbanColumnsArea(scene, isDark, l10n);
   }
 
   // ==================== KANBAN COLUMNS ====================
-  Widget _buildKanbanColumnsArea(_Scene scene, bool isDark, AppLocalizations l10n) {
+  Widget _buildKanbanColumnsArea(
+    _Scene scene,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     final allFiltered = _filterTasks(scene.tasks);
 
     final todoTasks = allFiltered.where((t) => t['status'] == 'todo').toList();
-    final doingTasks = allFiltered.where((t) => t['status'] == 'doing').toList();
-    final reviewTasks = allFiltered.where((t) => t['status'] == 'review').toList();
+    final doingTasks = allFiltered
+        .where((t) => t['status'] == 'doing')
+        .toList();
+    final reviewTasks = allFiltered
+        .where((t) => t['status'] == 'review')
+        .toList();
     final doneTasks = allFiltered.where((t) => t['status'] == 'done').toList();
 
     return LayoutBuilder(
@@ -2864,7 +3254,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             border: Border.all(
               color: candidate.isNotEmpty
                   ? const Color(0xFF5B4CF0)
-                  : (isDark ? const Color(0xFF2E2E3E) : const Color(0xFFE2E8F0)),
+                  : (isDark
+                        ? const Color(0xFF2E2E3E)
+                        : const Color(0xFFE2E8F0)),
               width: candidate.isNotEmpty ? 1.5 : 1,
             ),
           ),
@@ -2875,25 +3267,43 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
                 child: Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle)),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.2),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: accentColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         countBadge,
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: accentColor),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: accentColor,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -2920,13 +3330,18 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                           l10n.noTasks,
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            color: isDark
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFF94A3B8),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
                           final task = tasks[index];
@@ -2938,7 +3353,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                               elevation: 6,
                               borderRadius: BorderRadius.circular(12),
                               child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 260),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 260,
+                                ),
                                 child: _buildKanbanTaskCard(task, isDark, l10n),
                               ),
                             ),
@@ -2964,11 +3381,19 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.add_rounded, size: 16, color: Color(0xFF5B4CF0)),
+                        const Icon(
+                          Icons.add_rounded,
+                          size: 16,
+                          color: Color(0xFF5B4CF0),
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           l10n.addNewCard,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF5B4CF0)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF5B4CF0),
+                          ),
                         ),
                       ],
                     ),
@@ -2983,8 +3408,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
   }
 
   // ==================== TASK CARD (2.2: Hiển thị tên người phụ trách thật, không hiện UUID) ====================
-  Widget _buildKanbanTaskCard(Map<String, dynamic> task, bool isDark, AppLocalizations l10n) {
-    final title = task['title'] as String? ?? 'Nhiệm vụ mới';
+  Widget _buildKanbanTaskCard(
+    Map<String, dynamic> task,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
+    final title =
+        task['title'] as String? ?? AppLocalizations.of(context)!.newTaskTitle;
     final desc = _getCleanDescription(task['description'] as String?);
     final priority = task['priority'] as String? ?? 'medium';
     final labels = List<String>.from(task['labels'] ?? []);
@@ -3029,9 +3459,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF242436) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDark ? const Color(0xFF33334A) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF33334A) : const Color(0xFFE2E8F0),
+          ),
           boxShadow: const [
-            BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -3081,17 +3517,27 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
             // Row 4: Người phụ trách (Icon người + tên)
             Tooltip(
-              message: fullAssigneeTooltip.isNotEmpty ? fullAssigneeTooltip : assigneeDisplay,
+              message: fullAssigneeTooltip.isNotEmpty
+                  ? fullAssigneeTooltip
+                  : assigneeDisplay,
               child: Row(
                 children: [
-                  const Icon(Icons.person_outline_rounded, size: 16, color: Color(0xFF64748B)),
+                  const Icon(
+                    Icons.person_outline_rounded,
+                    size: 16,
+                    color: Color(0xFF64748B),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       assigneeDisplay,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -3102,14 +3548,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
             // Row 5: Ngày (Icon lịch + start_date -> due_date dạng dd/MM/yyyy)
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF64748B)),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: Color(0xFF64748B),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     dateDisplay,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -3122,7 +3576,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
                 desc,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.35),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  height: 1.35,
+                ),
               ),
             ],
           ],
@@ -3169,7 +3627,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -3180,7 +3641,11 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: fg,
+              ),
             ),
           ),
         ],
@@ -3195,20 +3660,25 @@ class _BoardScreenState extends ConsumerState<BoardScreen> with SingleTickerProv
     if (label.toLowerCase().contains('backend')) {
       bg = const Color(0xFFF5F3FF);
       fg = const Color(0xFF6D28D9);
-    } else if (label.toLowerCase().contains('design') || label.toLowerCase().contains('ui')) {
+    } else if (label.toLowerCase().contains('design') ||
+        label.toLowerCase().contains('ui')) {
       bg = const Color(0xFFFDF2F8);
       fg = const Color(0xFFBE185D);
     } else if (label.toLowerCase().contains('frontend')) {
       bg = const Color(0xFFECFDF5);
       fg = const Color(0xFF047857);
-    } else if (label.toLowerCase().contains('sync') || label.toLowerCase().contains('p2p')) {
+    } else if (label.toLowerCase().contains('sync') ||
+        label.toLowerCase().contains('p2p')) {
       bg = const Color(0xFFFFFBEB);
       fg = const Color(0xFFB45309);
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Text(
         label,
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
@@ -3270,7 +3740,8 @@ class _WhiteboardCanvasPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Grid dot background
     final gridPaint = Paint()
-      ..color = (isDark ? const Color(0xFF2E2E3E) : const Color(0xFFCBD5E1)).withValues(alpha: 0.4);
+      ..color = (isDark ? const Color(0xFF2E2E3E) : const Color(0xFFCBD5E1))
+          .withValues(alpha: 0.4);
     const gap = 28.0;
     for (var y = 0.0; y < size.height; y += gap) {
       for (var x = 0.0; x < size.width; x += gap) {
@@ -3303,8 +3774,14 @@ class _WhiteboardCanvasPainter extends CustomPainter {
       _drawShape(
         canvas,
         shape['shapeType'] as String? ?? 'rectangle',
-        Offset((shape['startX'] as num).toDouble(), (shape['startY'] as num).toDouble()),
-        Offset((shape['endX'] as num).toDouble(), (shape['endY'] as num).toDouble()),
+        Offset(
+          (shape['startX'] as num).toDouble(),
+          (shape['startY'] as num).toDouble(),
+        ),
+        Offset(
+          (shape['endX'] as num).toDouble(),
+          (shape['endY'] as num).toDouble(),
+        ),
         Color((shape['color'] as num?)?.toInt() ?? 0xFF5B4CF0),
         (shape['width'] as num?)?.toDouble() ?? 2.0,
       );
@@ -3340,13 +3817,23 @@ class _WhiteboardCanvasPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
 
-      canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(8)), notePaint);
-      canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(8)), borderPaint);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+        notePaint,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+        borderPaint,
+      );
 
       final textPainter = TextPainter(
         text: TextSpan(
           text: text,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF78350F), height: 1.3),
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF78350F),
+            height: 1.3,
+          ),
         ),
         textDirection: TextDirection.ltr,
         maxLines: 4,
@@ -3374,11 +3861,25 @@ class _WhiteboardCanvasPainter extends CustomPainter {
 
     // Render live shape preview
     if (liveShapeType != null && shapeStart != null && shapeCurrent != null) {
-      _drawShape(canvas, liveShapeType!, shapeStart!, shapeCurrent!, liveColor, liveWidth);
+      _drawShape(
+        canvas,
+        liveShapeType!,
+        shapeStart!,
+        shapeCurrent!,
+        liveColor,
+        liveWidth,
+      );
     }
   }
 
-  void _drawShape(Canvas canvas, String type, Offset start, Offset end, Color color, double width) {
+  void _drawShape(
+    Canvas canvas,
+    String type,
+    Offset start,
+    Offset end,
+    Color color,
+    double width,
+  ) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = width
@@ -3410,7 +3911,12 @@ class _WhiteboardCanvasPainter extends CustomPainter {
         ..lineTo(p1.dx, p1.dy)
         ..lineTo(p2.dx, p2.dy)
         ..close();
-      canvas.drawPath(arrowPath, Paint()..color = color..style = PaintingStyle.fill);
+      canvas.drawPath(
+        arrowPath,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill,
+      );
     }
   }
 

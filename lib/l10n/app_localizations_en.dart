@@ -1979,4 +1979,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTitle => 'Settings';
+
+  @override
+  String get canvasRestored => 'Canvas restored';
+
+  @override
+  String get taskCreatedToast => 'Task created';
+
+  @override
+  String get taskUpdatedToast => 'Task updated';
+
+  @override
+  String get taskDeletedToast => 'Task deleted';
+
+  @override
+  String get addTextTitle => 'Add text';
+
+  @override
+  String get enterTextHint => 'Type your text...';
+
+  @override
+  String get addAction => 'Add';
+
+  @override
+  String get addStickyNoteTitle => 'Add sticky note';
+
+  @override
+  String get enterNoteHint => 'Type a note...';
+
+  @override
+  String get pasteNote => 'Paste note';
+
+  @override
+  String get micPermissionDenied =>
+      'Cannot access the microphone. Please allow microphone permission.';
+
+  @override
+  String micError(String error) {
+    return 'Microphone error: $error';
+  }
+
+  @override
+  String get expandSidebar => 'Expand sidebar';
+
+  @override
+  String get accountAndSettings => 'Account & settings';
+
+  @override
+  String get previousPage => 'Previous page';
+
+  @override
+  String get nextPage => 'Next page';
+
+  @override
+  String get pageListRename => 'Pages / rename';
+
+  @override
+  String get addKanbanCard => 'Add Kanban card';
+
+  @override
+  String get closePanel => 'Close panel';
+
+  @override
+  String get collapsePanel => 'Collapse panel';
+
+  @override
+  String get hostBadge => 'HOST';
+
+  @override
+  String get peerBadge => 'PEER';
+
+  @override
+  String get micOn => 'Mic on';
+
+  @override
+  String get micOff => 'Mic off';
+
+  @override
+  String get muteMic => 'Mute mic';
+
+  @override
+  String get unmuteMic => 'Unmute mic';
+
+  @override
+  String get muteAudio => 'Mute audio';
+
+  @override
+  String get unmuteAudio => 'Unmute audio';
+
+  @override
+  String get listening => 'Listening';
+
+  @override
+  String get newTaskTitle => 'New task';
+
+  @override
+  String get deadlineBeforeStart =>
+      'The due date must be on or after the start date';
+
+  @override
+  String get sprintHint => 'Attach the task directly to the sprint cycle.';
 }

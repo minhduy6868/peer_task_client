@@ -37,7 +37,7 @@ jobs:
           cache: true
       - run: flutter pub get
       - name: Build the site
-        run: flutter build web --release --base-href /
+        run: flutter build web --release --base-href / --no-web-resources-cdn
       - name: Install Android SDK
         run: |
           set -euo pipefail

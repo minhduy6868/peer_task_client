@@ -9,11 +9,7 @@ class _LabelItem {
   final Color bg;
   final Color text;
 
-  const _LabelItem({
-    required this.name,
-    required this.bg,
-    required this.text,
-  });
+  const _LabelItem({required this.name, required this.bg, required this.text});
 }
 
 const List<_LabelItem> _kAvailableLabels = [
@@ -73,7 +69,8 @@ class TaskDialog extends StatefulWidget {
     List<String>? assignees,
     List<String>? labels,
     double? estimatedHours,
-  }) onSave;
+  })
+  onSave;
 
   const TaskDialog({
     super.key,
@@ -128,26 +125,27 @@ class _TaskDialogState extends State<TaskDialog> {
     super.initState();
 
     final parsed = _parseDescription(widget.existingTask?.description);
-    _titleController = TextEditingController(text: widget.existingTask?.title ?? '');
+    _titleController = TextEditingController(
+      text: widget.existingTask?.title ?? '',
+    );
     _descController = TextEditingController(text: parsed.notes);
 
     _startDate = parsed.startDate ?? DateTime.now();
-    _dueDate = widget.existingTask?.deadline ?? DateTime.now().add(const Duration(days: 3));
+    _dueDate =
+        widget.existingTask?.deadline ??
+        DateTime.now().add(const Duration(days: 3));
 
     _priority = widget.existingTask?.priority ?? 'medium';
     _status = widget.existingTask?.status ?? widget.initialStatus;
 
-    if (widget.existingTask?.assignees != null && widget.existingTask!.assignees.isNotEmpty) {
+    if (widget.existingTask?.assignees != null &&
+        widget.existingTask!.assignees.isNotEmpty) {
       _selectedAssignees.clear();
       _selectedAssignees.addAll(widget.existingTask!.assignees);
-    } else if (widget.boardMembers.isNotEmpty) {
-      final firstMemberId = (widget.boardMembers.first['id'] ?? widget.boardMembers.first['user_id'])?.toString();
-      if (firstMemberId != null && firstMemberId.isNotEmpty) {
-        _selectedAssignees.add(firstMemberId);
-      }
     }
 
-    if (widget.existingTask?.labels != null && widget.existingTask!.labels.isNotEmpty) {
+    if (widget.existingTask?.labels != null &&
+        widget.existingTask!.labels.isNotEmpty) {
       _selectedLabels.clear();
       _selectedLabels.addAll(widget.existingTask!.labels);
     }
@@ -196,17 +194,16 @@ class _TaskDialogState extends State<TaskDialog> {
       notesLines.add(line);
     }
 
-    return (
-      startDate: startDate,
-      notes: notesLines.join('\n').trim(),
-    );
+    return (startDate: startDate, notes: notesLines.join('\n').trim());
   }
 
   bool _validateDates([AppLocalizations? l10n]) {
     if (_startDate != null && _dueDate != null) {
       if (_dueDate!.isBefore(_startDate!)) {
         setState(() {
-          _dateRangeError = l10n?.dueDateMustBeAfterStartDate ?? 'Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu';
+          _dateRangeError =
+              l10n?.dueDateMustBeAfterStartDate ??
+              AppLocalizations.of(context)!.deadlineBeforeStart;
         });
         return false;
       }
@@ -278,7 +275,8 @@ class _TaskDialogState extends State<TaskDialog> {
     return FocusScope(
       autofocus: true,
       onKeyEvent: (node, event) {
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
           Navigator.of(context).pop();
           return KeyEventResult.handled;
         }
@@ -291,14 +289,14 @@ class _TaskDialogState extends State<TaskDialog> {
         child: Center(
           child: Container(
             width: dialogWidth,
-            constraints: BoxConstraints(
-              maxHeight: screenSize.height * 0.94,
-            ),
+            constraints: BoxConstraints(maxHeight: screenSize.height * 0.94),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E2D) : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFE5E7EB),
+                color: isDark
+                    ? const Color(0xFF2D2D3F)
+                    : const Color(0xFFE5E7EB),
                 width: 1,
               ),
               boxShadow: const [
@@ -417,7 +415,9 @@ class _TaskDialogState extends State<TaskDialog> {
                   l10n.taskDialogSubtitle,
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -463,28 +463,51 @@ class _TaskDialogState extends State<TaskDialog> {
             ),
             filled: true,
             fillColor: isDark ? const Color(0xFF262638) : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 11,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+              borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3B3B52)
+                    : const Color(0xFFE2E8F0),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+              borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3B3B52)
+                    : const Color(0xFFE2E8F0),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF5B4CF0), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF5B4CF0),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+              borderSide: const BorderSide(
+                color: Color(0xFFEF4444),
+                width: 1.2,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFEF4444),
+                width: 1.5,
+              ),
             ),
-            errorStyle: const TextStyle(fontSize: 11.5, color: Color(0xFFEF4444)),
+            errorStyle: const TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFFEF4444),
+            ),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -512,11 +535,17 @@ class _TaskDialogState extends State<TaskDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2A3F) : const Color(0xFFF8FAFC),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  color: isDark
+                      ? const Color(0xFF2A2A3F)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
                   border: Border(
                     bottom: BorderSide(
-                      color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? const Color(0xFF3B3B52)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
                 ),
@@ -542,7 +571,8 @@ class _TaskDialogState extends State<TaskDialog> {
                         icon: Icons.format_underlined_rounded,
                         tooltip: '${l10n.formatUnderline} (Ctrl+U)',
                         isActive: _isUnderline,
-                        onTap: () => setState(() => _isUnderline = !_isUnderline),
+                        onTap: () =>
+                            setState(() => _isUnderline = !_isUnderline),
                         isDark: isDark,
                       ),
                       _buildToolbarDivider(isDark),
@@ -589,14 +619,18 @@ class _TaskDialogState extends State<TaskDialog> {
                   fontSize: 13.5,
                   fontWeight: _isBold ? FontWeight.w700 : FontWeight.w400,
                   fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
-                  decoration: _isUnderline ? TextDecoration.underline : TextDecoration.none,
+                  decoration: _isUnderline
+                      ? TextDecoration.underline
+                      : TextDecoration.none,
                   color: isDark ? Colors.white : const Color(0xFF1E293B),
                 ),
                 decoration: InputDecoration(
                   hintText: l10n.descriptionPlaceholder,
                   hintStyle: TextStyle(
                     fontSize: 13,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                   ),
                   filled: false,
                   contentPadding: const EdgeInsets.all(12),
@@ -732,7 +766,9 @@ class _TaskDialogState extends State<TaskDialog> {
                   color: isDark ? const Color(0xFF262638) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF3B3B52)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Row(
@@ -749,7 +785,9 @@ class _TaskDialogState extends State<TaskDialog> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF1E293B),
                         ),
                       ),
                     ),
@@ -758,10 +796,15 @@ class _TaskDialogState extends State<TaskDialog> {
                       child: Switch(
                         value: _enableReminder,
                         thumbColor: WidgetStateProperty.resolveWith(
-                          (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                          (states) => states.contains(WidgetState.selected)
+                              ? const Color(0xFF5B4CF0)
+                              : null,
                         ),
-                        activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
-                        onChanged: (val) => setState(() => _enableReminder = val),
+                        activeTrackColor: const Color(
+                          0xFF5B4CF0,
+                        ).withValues(alpha: 0.5),
+                        onChanged: (val) =>
+                            setState(() => _enableReminder = val),
                       ),
                     ),
                   ],
@@ -777,7 +820,9 @@ class _TaskDialogState extends State<TaskDialog> {
                   color: isDark ? const Color(0xFF262638) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF3B3B52)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Row(
@@ -793,20 +838,39 @@ class _TaskDialogState extends State<TaskDialog> {
                         child: DropdownButton<String>(
                           value: _repeatInterval,
                           isExpanded: true,
-                          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+                          icon: const Icon(
+                            Icons.expand_more_rounded,
+                            size: 18,
+                            color: Color(0xFF64748B),
+                          ),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
                           ),
                           items: [
-                            DropdownMenuItem(value: 'none', child: Text(l10n.doesNotRepeat)),
-                            DropdownMenuItem(value: 'daily', child: Text(l10n.repeatDaily)),
-                            DropdownMenuItem(value: 'weekly', child: Text(l10n.repeatWeekly)),
-                            DropdownMenuItem(value: 'monthly', child: Text(l10n.repeatMonthly)),
+                            DropdownMenuItem(
+                              value: 'none',
+                              child: Text(l10n.doesNotRepeat),
+                            ),
+                            DropdownMenuItem(
+                              value: 'daily',
+                              child: Text(l10n.repeatDaily),
+                            ),
+                            DropdownMenuItem(
+                              value: 'weekly',
+                              child: Text(l10n.repeatWeekly),
+                            ),
+                            DropdownMenuItem(
+                              value: 'monthly',
+                              child: Text(l10n.repeatMonthly),
+                            ),
                           ],
                           onChanged: (val) {
-                            if (val != null) setState(() => _repeatInterval = val);
+                            if (val != null)
+                              setState(() => _repeatInterval = val);
                           },
                         ),
                       ),
@@ -877,7 +941,9 @@ class _TaskDialogState extends State<TaskDialog> {
                       l10n.quickCreationBody,
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                         height: 1.3,
                       ),
                     ),
@@ -947,9 +1013,13 @@ class _TaskDialogState extends State<TaskDialog> {
                     child: Switch(
                       value: _notifyMembers,
                       thumbColor: WidgetStateProperty.resolveWith(
-                        (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                        (states) => states.contains(WidgetState.selected)
+                            ? const Color(0xFF5B4CF0)
+                            : null,
                       ),
-                      activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+                      activeTrackColor: const Color(
+                        0xFF5B4CF0,
+                      ).withValues(alpha: 0.5),
                       onChanged: (val) => setState(() => _notifyMembers = val),
                     ),
                   ),
@@ -973,16 +1043,20 @@ class _TaskDialogState extends State<TaskDialog> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Tooltip(
-                          message: 'Đính kèm task trực tiếp vào chu kỳ sprint.',
+                          message: AppLocalizations.of(context)!.sprintHint,
                           child: Icon(
                             Icons.info_outline_rounded,
                             size: 14,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF94A3B8),
                           ),
                         ),
                       ],
@@ -993,9 +1067,13 @@ class _TaskDialogState extends State<TaskDialog> {
                     child: Switch(
                       value: _addToSprint,
                       thumbColor: WidgetStateProperty.resolveWith(
-                        (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                        (states) => states.contains(WidgetState.selected)
+                            ? const Color(0xFF5B4CF0)
+                            : null,
                       ),
-                      activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+                      activeTrackColor: const Color(
+                        0xFF5B4CF0,
+                      ).withValues(alpha: 0.5),
                       onChanged: (val) => setState(() => _addToSprint = val),
                     ),
                   ),
@@ -1053,7 +1131,9 @@ class _TaskDialogState extends State<TaskDialog> {
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: title.isEmpty
-                        ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
+                        ? (isDark
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF94A3B8))
                         : (isDark ? Colors.white : const Color(0xFF1E293B)),
                   ),
                 ),
@@ -1074,10 +1154,17 @@ class _TaskDialogState extends State<TaskDialog> {
               children: _selectedLabels.map((lbl) {
                 final def = _kAvailableLabels.firstWhere(
                   (l) => l.name == lbl,
-                  orElse: () => _LabelItem(name: lbl, bg: const Color(0xFFF1F5F9), text: const Color(0xFF475569)),
+                  orElse: () => _LabelItem(
+                    name: lbl,
+                    bg: const Color(0xFFF1F5F9),
+                    text: const Color(0xFF475569),
+                  ),
                 );
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: def.bg,
                     borderRadius: BorderRadius.circular(6),
@@ -1099,15 +1186,25 @@ class _TaskDialogState extends State<TaskDialog> {
           // Assignee
           Row(
             children: [
-              const Icon(Icons.person_outline_rounded, size: 14, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.person_outline_rounded,
+                size: 14,
+                color: Color(0xFF64748B),
+              ),
               const SizedBox(width: 6),
-              Text(
-                _selectedAssignees.isEmpty
-                    ? l10n.unassigned
-                    : _getAssigneeName(_selectedAssignees.first, l10n),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              Flexible(
+                child: Text(
+                  _selectedAssignees.isEmpty
+                      ? l10n.unassigned
+                      : _getAssigneeName(_selectedAssignees.first, l10n),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
+                  ),
                 ),
               ),
             ],
@@ -1117,14 +1214,20 @@ class _TaskDialogState extends State<TaskDialog> {
           // Date range
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 13,
+                color: Color(0xFF64748B),
+              ),
               const SizedBox(width: 6),
               Text(
                 '${_formatDate(_startDate)}  →  ${_formatDate(_dueDate)}',
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
                 ),
               ),
             ],
@@ -1141,7 +1244,9 @@ class _TaskDialogState extends State<TaskDialog> {
               fontStyle: desc.isEmpty ? FontStyle.italic : FontStyle.normal,
               color: desc.isEmpty
                   ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
-                  : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+                  : (isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF475569)),
             ),
           ),
         ],
@@ -1171,12 +1276,21 @@ class _TaskDialogState extends State<TaskDialog> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
               foregroundColor: isDark ? Colors.white : const Color(0xFF475569),
-              side: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3B3B52)
+                    : const Color(0xFFCBD5E1),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: Text(
               l10n.cancel,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -1186,9 +1300,13 @@ class _TaskDialogState extends State<TaskDialog> {
             onPressed: _isLoading ? null : _handleSave,
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF5B4CF0),
-              disabledBackgroundColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+              disabledBackgroundColor: const Color(
+                0xFF5B4CF0,
+              ).withValues(alpha: 0.5),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               elevation: 0,
             ),
             child: _isLoading
@@ -1203,7 +1321,11 @@ class _TaskDialogState extends State<TaskDialog> {
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                      const Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         isEdit ? l10n.saveChanges : l10n.createTask,
@@ -1237,10 +1359,14 @@ class _TaskDialogState extends State<TaskDialog> {
               decoration: BoxDecoration(
                 color: _isDragHovered
                     ? const Color(0xFF5B4CF0).withValues(alpha: 0.08)
-                    : (isDark ? const Color(0xFF262638) : const Color(0xFFFAFAFE)),
+                    : (isDark
+                          ? const Color(0xFF262638)
+                          : const Color(0xFFFAFAFE)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _isDragHovered ? const Color(0xFF5B4CF0) : const Color(0xFFC7D2FE),
+                  color: _isDragHovered
+                      ? const Color(0xFF5B4CF0)
+                      : const Color(0xFFC7D2FE),
                   width: 1.5,
                   style: BorderStyle.solid,
                 ),
@@ -1267,7 +1393,9 @@ class _TaskDialogState extends State<TaskDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                      color: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1275,7 +1403,9 @@ class _TaskDialogState extends State<TaskDialog> {
                     l10n.fileSupportHint,
                     style: TextStyle(
                       fontSize: 11.5,
-                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : const Color(0xFF94A3B8),
                     ),
                   ),
                 ],
@@ -1292,13 +1422,23 @@ class _TaskDialogState extends State<TaskDialog> {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF262638) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF262638)
+                    : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF3B3B52)
+                      : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.insert_drive_file_outlined, size: 18, color: Color(0xFF5B4CF0)),
+                  const Icon(
+                    Icons.insert_drive_file_outlined,
+                    size: 18,
+                    color: Color(0xFF5B4CF0),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -1309,21 +1449,34 @@ class _TaskDialogState extends State<TaskDialog> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
                           ),
                         ),
                         Text(
                           f.size,
-                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF10B981)),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 16,
+                    color: Color(0xFF10B981),
+                  ),
                   const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () => setState(() => _attachedFiles.remove(f)),
-                    child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ),
@@ -1335,7 +1488,11 @@ class _TaskDialogState extends State<TaskDialog> {
   }
 
   // ==================== Helper Components ====================
-  Widget _buildFieldLabel(String label, {bool isRequired = false, required bool isDark}) {
+  Widget _buildFieldLabel(
+    String label, {
+    bool isRequired = false,
+    required bool isDark,
+  }) {
     return Row(
       children: [
         Text(
@@ -1348,7 +1505,14 @@ class _TaskDialogState extends State<TaskDialog> {
         ),
         if (isRequired) ...[
           const SizedBox(width: 3),
-          const Text('*', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.bold)),
+          const Text(
+            '*',
+            style: TextStyle(
+              color: Color(0xFFEF4444),
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ],
     );
@@ -1361,18 +1525,40 @@ class _TaskDialogState extends State<TaskDialog> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF262638) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _status,
           isExpanded: true,
-          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+          icon: const Icon(
+            Icons.expand_more_rounded,
+            size: 18,
+            color: Color(0xFF64748B),
+          ),
           items: [
-            _buildStatusMenuItem('todo', l10n.statusTodo, const Color(0xFF5B4CF0)),
-            _buildStatusMenuItem('doing', l10n.statusDoing, const Color(0xFFF59E0B)),
-            _buildStatusMenuItem('review', l10n.statusReview, const Color(0xFF3B82F6)),
-            _buildStatusMenuItem('done', l10n.statusDone, const Color(0xFF10B981)),
+            _buildStatusMenuItem(
+              'todo',
+              l10n.statusTodo,
+              const Color(0xFF5B4CF0),
+            ),
+            _buildStatusMenuItem(
+              'doing',
+              l10n.statusDoing,
+              const Color(0xFFF59E0B),
+            ),
+            _buildStatusMenuItem(
+              'review',
+              l10n.statusReview,
+              const Color(0xFF3B82F6),
+            ),
+            _buildStatusMenuItem(
+              'done',
+              l10n.statusDone,
+              const Color(0xFF10B981),
+            ),
           ],
           onChanged: (val) {
             if (val != null) setState(() => _status = val);
@@ -1382,7 +1568,11 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  DropdownMenuItem<String> _buildStatusMenuItem(String val, String title, Color color) {
+  DropdownMenuItem<String> _buildStatusMenuItem(
+    String val,
+    String title,
+    Color color,
+  ) {
     return DropdownMenuItem(
       value: val,
       child: Row(
@@ -1393,7 +1583,10 @@ class _TaskDialogState extends State<TaskDialog> {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
@@ -1406,18 +1599,40 @@ class _TaskDialogState extends State<TaskDialog> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF262638) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _priority,
           isExpanded: true,
-          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+          icon: const Icon(
+            Icons.expand_more_rounded,
+            size: 18,
+            color: Color(0xFF64748B),
+          ),
           items: [
-            _buildPriorityMenuItem('urgent', l10n.priorityUrgent, const Color(0xFFEF4444)),
-            _buildPriorityMenuItem('high', l10n.priorityHigh, const Color(0xFFF97316)),
-            _buildPriorityMenuItem('medium', l10n.priorityMedium, const Color(0xFFF59E0B)),
-            _buildPriorityMenuItem('low', l10n.priorityLow, const Color(0xFF10B981)),
+            _buildPriorityMenuItem(
+              'urgent',
+              l10n.priorityUrgent,
+              const Color(0xFFEF4444),
+            ),
+            _buildPriorityMenuItem(
+              'high',
+              l10n.priorityHigh,
+              const Color(0xFFF97316),
+            ),
+            _buildPriorityMenuItem(
+              'medium',
+              l10n.priorityMedium,
+              const Color(0xFFF59E0B),
+            ),
+            _buildPriorityMenuItem(
+              'low',
+              l10n.priorityLow,
+              const Color(0xFF10B981),
+            ),
           ],
           onChanged: (val) {
             if (val != null) setState(() => _priority = val);
@@ -1427,14 +1642,21 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  DropdownMenuItem<String> _buildPriorityMenuItem(String val, String title, Color color) {
+  DropdownMenuItem<String> _buildPriorityMenuItem(
+    String val,
+    String title,
+    Color color,
+  ) {
     return DropdownMenuItem(
       value: val,
       child: Row(
         children: [
           Icon(Icons.flag_rounded, size: 15, color: color),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
@@ -1507,11 +1729,17 @@ class _TaskDialogState extends State<TaskDialog> {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF262638) : Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+          ),
         ),
         child: Row(
           children: [
-            const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF64748B)),
+            const Icon(
+              Icons.person_outline_rounded,
+              size: 18,
+              color: Color(0xFF64748B),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -1525,70 +1753,32 @@ class _TaskDialogState extends State<TaskDialog> {
                 ),
               ),
             ),
-            const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+            const Icon(
+              Icons.expand_more_rounded,
+              size: 18,
+              color: Color(0xFF64748B),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showAssigneePicker(AppLocalizations l10n) {
-    showModalBottomSheet(
+  Future<void> _showAssigneePicker(AppLocalizations l10n) async {
+    final picked = await showDialog<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      builder: (ctx) => _AssigneePickerDialog(
+        members: widget.boardMembers,
+        selectedId: _selectedAssignees.isEmpty
+            ? null
+            : _selectedAssignees.first,
       ),
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.assigneeLabel,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              if (widget.boardMembers.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(l10n.noTasks),
-                )
-              else
-                for (final m in widget.boardMembers) ...[
-                  Builder(
-                    builder: (context) {
-                      final id = (m['id'] ?? m['user_id'])?.toString() ?? '';
-                      final mName = (m['name'] ?? m['email'] ?? id).toString();
-                      final isSelected = _selectedAssignees.contains(id);
-
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF5B4CF0),
-                          child: Text(
-                            mName.isNotEmpty ? mName[0].toUpperCase() : '?',
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                          ),
-                        ),
-                        title: Text(mName),
-                        trailing: isSelected ? const Icon(Icons.check_rounded, color: Color(0xFF5B4CF0)) : null,
-                        onTap: () {
-                          setState(() {
-                            _selectedAssignees.clear();
-                            _selectedAssignees.add(id);
-                          });
-                          Navigator.of(ctx).pop();
-                        },
-                      );
-                    },
-                  ),
-                ],
-            ],
-          ),
-        );
-      },
     );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _selectedAssignees.clear();
+      if (picked.isNotEmpty) _selectedAssignees.add(picked);
+    });
   }
 
   String _getAssigneeName(String id, [AppLocalizations? l10n]) {
@@ -1607,7 +1797,9 @@ class _TaskDialogState extends State<TaskDialog> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF262638) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1621,15 +1813,23 @@ class _TaskDialogState extends State<TaskDialog> {
                 labelStyle: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? lbl.text : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  color: isSelected
+                      ? lbl.text
+                      : (isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B)),
                 ),
                 selected: isSelected,
                 selectedColor: lbl.bg,
-                backgroundColor: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF1F5F9),
+                backgroundColor: isDark
+                    ? const Color(0xFF2D2D3F)
+                    : const Color(0xFFF1F5F9),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                   side: BorderSide(
-                    color: isSelected ? lbl.text.withValues(alpha: 0.4) : Colors.transparent,
+                    color: isSelected
+                        ? lbl.text.withValues(alpha: 0.4)
+                        : Colors.transparent,
                   ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1689,7 +1889,9 @@ class _TaskDialogState extends State<TaskDialog> {
             Icon(
               Icons.calendar_today_outlined,
               size: 16,
-              color: hasError ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+              color: hasError
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF64748B),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -1700,7 +1902,9 @@ class _TaskDialogState extends State<TaskDialog> {
                   fontWeight: FontWeight.w500,
                   color: date != null
                       ? (isDark ? Colors.white : const Color(0xFF1E293B))
-                      : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                      : (isDark
+                            ? const Color(0xFF64748B)
+                            : const Color(0xFF94A3B8)),
                 ),
               ),
             ),
@@ -1730,7 +1934,9 @@ class _TaskDialogState extends State<TaskDialog> {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF5B4CF0).withValues(alpha: 0.15) : Colors.transparent,
+            color: isActive
+                ? const Color(0xFF5B4CF0).withValues(alpha: 0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Icon(
@@ -1751,6 +1957,186 @@ class _TaskDialogState extends State<TaskDialog> {
       width: 1,
       height: 16,
       color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+    );
+  }
+}
+
+/// Pops the chosen member id, or an empty string for "Unassigned".
+class _AssigneePickerDialog extends StatefulWidget {
+  final List<Map<String, dynamic>> members;
+  final String? selectedId;
+
+  const _AssigneePickerDialog({required this.members, this.selectedId});
+
+  @override
+  State<_AssigneePickerDialog> createState() => _AssigneePickerDialogState();
+}
+
+class _AssigneePickerDialogState extends State<_AssigneePickerDialog> {
+  String _query = '';
+
+  static String _idOf(Map<String, dynamic> m) =>
+      (m['id'] ?? m['user_id'])?.toString() ?? '';
+  static String _nameOf(Map<String, dynamic> m) =>
+      (m['name'] ?? m['email'] ?? _idOf(m)).toString();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final q = _query.toLowerCase();
+    final members = widget.members.where((m) {
+      if (q.isEmpty) return true;
+      return _nameOf(m).toLowerCase().contains(q) ||
+          (m['email']?.toString().toLowerCase().contains(q) ?? false);
+    }).toList();
+
+    Widget row({
+      required String id,
+      required String title,
+      String? subtitle,
+      required Widget avatar,
+    }) {
+      final selected = (widget.selectedId ?? '') == id;
+      return ListTile(
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        selected: selected,
+        selectedTileColor: const Color(0xFF5B4CF0).withValues(alpha: 0.08),
+        leading: avatar,
+        title: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+        ),
+        subtitle: subtitle == null
+            ? null
+            : Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+              ),
+        trailing: selected
+            ? const Icon(
+                Icons.check_rounded,
+                color: Color(0xFF5B4CF0),
+                size: 20,
+              )
+            : null,
+        onTap: () => Navigator.of(context).pop(id),
+      );
+    }
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380, maxHeight: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.assigneeLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                autofocus: true,
+                onChanged: (v) => setState(() => _query = v.trim()),
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.searchMembersPlaceholder,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                  filled: true,
+                  fillColor: isDark
+                      ? const Color(0xFF262638)
+                      : const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    row(
+                      id: '',
+                      title: l10n.unassigned,
+                      avatar: const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Color(0xFFE2E8F0),
+                        child: Icon(
+                          Icons.person_off_outlined,
+                          size: 16,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    if (widget.members.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          l10n.noMembersAvailable,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      )
+                    else if (members.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          l10n.noMembersFound,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      )
+                    else
+                      for (final m in members)
+                        row(
+                          id: _idOf(m),
+                          title: _nameOf(m),
+                          subtitle: m['name'] != null && m['email'] != null
+                              ? m['email'].toString()
+                              : null,
+                          avatar: CircleAvatar(
+                            radius: 16,
+                            backgroundColor: const Color(0xFF5B4CF0),
+                            child: Text(
+                              _nameOf(m).isNotEmpty
+                                  ? _nameOf(m)[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancel),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

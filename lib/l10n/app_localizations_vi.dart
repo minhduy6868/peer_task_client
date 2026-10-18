@@ -1975,4 +1975,104 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsTitle => 'Cài đặt';
+
+  @override
+  String get canvasRestored => 'Đã khôi phục bản vẽ';
+
+  @override
+  String get taskCreatedToast => 'Đã tạo nhiệm vụ';
+
+  @override
+  String get taskUpdatedToast => 'Đã cập nhật nhiệm vụ';
+
+  @override
+  String get taskDeletedToast => 'Đã xóa nhiệm vụ';
+
+  @override
+  String get addTextTitle => 'Thêm văn bản';
+
+  @override
+  String get enterTextHint => 'Nhập nội dung văn bản...';
+
+  @override
+  String get addAction => 'Thêm';
+
+  @override
+  String get addStickyNoteTitle => 'Thêm ghi chú sticky';
+
+  @override
+  String get enterNoteHint => 'Nhập ghi chú thảo luận...';
+
+  @override
+  String get pasteNote => 'Dán ghi chú';
+
+  @override
+  String get micPermissionDenied =>
+      'Không thể truy cập microphone. Vui lòng cấp quyền.';
+
+  @override
+  String micError(String error) {
+    return 'Lỗi micro: $error';
+  }
+
+  @override
+  String get expandSidebar => 'Mở rộng thanh bên';
+
+  @override
+  String get accountAndSettings => 'Tài khoản & Cài đặt';
+
+  @override
+  String get previousPage => 'Trang trước';
+
+  @override
+  String get nextPage => 'Trang sau';
+
+  @override
+  String get pageListRename => 'Danh sách trang / Đổi tên';
+
+  @override
+  String get addKanbanCard => 'Thêm thẻ Kanban';
+
+  @override
+  String get closePanel => 'Đóng panel';
+
+  @override
+  String get collapsePanel => 'Thu gọn panel';
+
+  @override
+  String get hostBadge => 'CHỦ PHÒNG';
+
+  @override
+  String get peerBadge => 'THÀNH VIÊN';
+
+  @override
+  String get micOn => 'Đang bật mic';
+
+  @override
+  String get micOff => 'Đã tắt mic';
+
+  @override
+  String get muteMic => 'Tắt mic';
+
+  @override
+  String get unmuteMic => 'Bật mic';
+
+  @override
+  String get muteAudio => 'Tắt âm thanh';
+
+  @override
+  String get unmuteAudio => 'Bật âm thanh';
+
+  @override
+  String get listening => 'Đang nghe';
+
+  @override
+  String get newTaskTitle => 'Nhiệm vụ mới';
+
+  @override
+  String get deadlineBeforeStart =>
+      'Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu';
+
+  @override
+  String get sprintHint => 'Đính kèm task trực tiếp vào chu kỳ sprint.';
 }
