@@ -71,32 +71,43 @@ class DashboardTopBar extends StatelessWidget {
                 ),
               ),
             ),
-          if (title != null && title!.isNotEmpty) ...[
-            const SizedBox(width: 14),
-            Flexible(
-              child: Text(
-                title!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppShellStyle.textDark,
-                ),
-              ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (title != null && title!.isNotEmpty)
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 14),
+                      child: Text(
+                        title!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppShellStyle.textDark,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+                if (searchController != null)
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 14),
+                      child: ShellSearchField(
+                        controller: searchController!,
+                        onChanged: onSearch,
+                        hintText: '${l10n.search}...',
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
-          const Spacer(),
-          if (searchController != null) ...[
-            Flexible(
-              child: ShellSearchField(
-                controller: searchController!,
-                onChanged: onSearch,
-                hintText: '${l10n.search}...',
-              ),
-            ),
-            const SizedBox(width: 14),
-          ],
+          ),
+          const SizedBox(width: 14),
           const ShellLanguageMenu(),
           const SizedBox(width: 14),
           if (onLogout != null)

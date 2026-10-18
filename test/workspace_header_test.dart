@@ -23,6 +23,40 @@ class _FakeLanguageNotifier extends StateNotifier<Locale>
 }
 
 void main() {
+  testWidgets('DashboardTopBar keeps language and account flush right', (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 800);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          languageProvider.overrideWith((ref) => _FakeLanguageNotifier(const Locale('vi'))),
+        ],
+        child: MaterialApp(
+          locale: const Locale('vi'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: DashboardTopBar(
+              title: 'Duy',
+              onBack: () {},
+              onProfileTap: () {},
+              onLogout: () {},
+              user: const User(id: 'u1', email: 'an@example.com', name: 'An'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    final account = tester.getRect(find.byType(ShellAccountMenu));
+    expect(account.right, closeTo(1280 - 12, 1));
+  });
+
   testWidgets('WorkspaceHeader fits phones and exposes logout', (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
