@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/language_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/cloudinary_service.dart';
 import '../../utils/apk_download.dart';
 import '../../utils/error_display.dart';
@@ -146,6 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final currentLocale = ref.watch(languageProvider);
+    final currentThemeMode = ref.watch(themeModeProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
@@ -153,7 +154,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          l10n.profile,
+          l10n.settingsTitle,
           style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w700),
         ),
         centerTitle: false,
@@ -199,7 +200,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 3. Account & Security Section
+                // 3. Theme / Appearance Selector
+                _ModernSettingsSection(
+                  title: l10n.themeModeLabel,
+                  icon: Icons.palette_outlined,
+                  children: [
+                    _ThemeChoiceTile(
+                      label: l10n.themeLight,
+                      subtitle: currentLocale.languageCode == 'vi' ? 'Giao diện nền sáng' : 'Standard light background',
+                      icon: Icons.light_mode_rounded,
+                      isSelected: currentThemeMode == ThemeMode.light,
+                      onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light),
+                    ),
+                    const Divider(height: 1, indent: 64, endIndent: 20, color: AppColors.borderLight),
+                    _ThemeChoiceTile(
+                      label: l10n.themeDark,
+                      subtitle: currentLocale.languageCode == 'vi' ? 'Giao diện nền tối' : 'Comfortable dark background',
+                      icon: Icons.dark_mode_rounded,
+                      isSelected: currentThemeMode == ThemeMode.dark,
+                      onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark),
+                    ),
+                    const Divider(height: 1, indent: 64, endIndent: 20, color: AppColors.borderLight),
+                    _ThemeChoiceTile(
+                      label: l10n.themeSystem,
+                      subtitle: currentLocale.languageCode == 'vi' ? 'Tự động theo thiết bị' : 'Sync with system settings',
+                      icon: Icons.brightness_auto_rounded,
+                      isSelected: currentThemeMode == ThemeMode.system,
+                      onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 4. Account & Security Section
                 _ModernSettingsSection(
                   title: l10n.profile,
                   icon: Icons.shield_outlined,
@@ -571,11 +604,15 @@ class _ModernSettingsSection extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: AppColors.primaryDark),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: AppTextStyles.titleSmall.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -741,6 +778,80 @@ class _ModernActionTile extends StatelessWidget {
               ),
               child: const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeChoiceTile extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeChoiceTile({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primarySubtle : AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.titleSmall.copyWith(
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryDark,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+              ),
           ],
         ),
       ),

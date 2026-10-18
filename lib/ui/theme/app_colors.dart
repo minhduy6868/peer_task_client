@@ -12,6 +12,9 @@ class AppColors {
   static const Color primaryLight = Color(0xFFC4B8FF);
   
   static const Color primaryDark = Color(0xFF5B4AD4);
+
+  /// Brand purple matching UI token #5B4CF0
+  static const Color brandPurple = Color(0xFF5B4CF0);
   
   static const Color primarySubtle = Color(0xFFF3F0FF);
   

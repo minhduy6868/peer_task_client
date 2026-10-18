@@ -1,110 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/task_model.dart';
 
-/// Preset Pastel Label definitions matching modern SaaS UI Kit
-class _PastelLabelDef {
+/// Label definitions with modern pastel background and text colors
+class _LabelItem {
   final String name;
   final Color bg;
   final Color text;
 
-  const _PastelLabelDef({
+  const _LabelItem({
     required this.name,
     required this.bg,
     required this.text,
   });
 }
 
-const List<_PastelLabelDef> _kPresetLabels = [
-  _PastelLabelDef(
-    name: 'Awaiting Approval',
-    bg: Color(0xFFFDE8E8), // Pastel pink
-    text: Color(0xFF9F1239),
+const List<_LabelItem> _kAvailableLabels = [
+  _LabelItem(
+    name: 'Web',
+    bg: Color(0xFFEFF6FF), // soft blue
+    text: Color(0xFF1D4ED8),
   ),
-  _PastelLabelDef(
-    name: 'Bug',
-    bg: Color(0xFFFADBD8), // Pastel soft red
-    text: Color(0xFF991B1B),
+  _LabelItem(
+    name: 'Backend',
+    bg: Color(0xFFF5F3FF), // soft purple
+    text: Color(0xFF6D28D9),
   ),
-  _PastelLabelDef(
-    name: 'Yellow',
-    bg: Color(0xFFFEF3C7), // Pale yellow
-    text: Color(0xFF854D0E),
+  _LabelItem(
+    name: 'Frontend',
+    bg: Color(0xFFECFDF5), // soft emerald
+    text: Color(0xFF047857),
   ),
-  _PastelLabelDef(
-    name: 'Green',
-    bg: Color(0xFFDEF7EC), // Light green
-    text: Color(0xFF03543F),
+  _LabelItem(
+    name: 'UI/UX',
+    bg: Color(0xFFFDF2F8), // soft pink
+    text: Color(0xFFBE185D),
   ),
-  _PastelLabelDef(
-    name: 'Awaiting Review',
-    bg: Color(0xFFE1EFFE), // Light blue
-    text: Color(0xFF1E429F),
-  ),
-  _PastelLabelDef(
-    name: 'Purple',
-    bg: Color(0xFFEDEBFE), // Pastel purple
-    text: Color(0xFF5521B5),
+  _LabelItem(
+    name: 'P2P-Sync',
+    bg: Color(0xFFFFFBEB), // soft amber
+    text: Color(0xFFB45309),
   ),
 ];
 
-/// Half-filled circle icon for "In progress" status
-class _HalfFilledCircleIcon extends StatelessWidget {
-  final double size;
-  final Color color;
+class _UploadedFileItem {
+  final String name;
+  final String size;
+  final double progress;
+  final bool isCompleted;
 
-  const _HalfFilledCircleIcon({
-    this.size = 16,
-    this.color = const Color(0xFF0078D4),
+  const _UploadedFileItem({
+    required this.name,
+    required this.size,
+    this.progress = 1.0,
+    this.isCompleted = true,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _HalfCirclePainter(color),
-    );
-  }
 }
 
-class _HalfCirclePainter extends CustomPainter {
-  final Color color;
-  _HalfCirclePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 1.5;
-
-    // Fill the bottom half
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      0,
-      3.141592653589793,
-      true,
-      fillPaint,
-    );
-
-    // Draw outline circle
-    final strokePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-    canvas.drawCircle(center, radius, strokePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _HalfCirclePainter oldDelegate) =>
-      oldDelegate.color != color;
-}
-
-/// Comprehensive, modern SaaS Task Creation & Details Modal
-/// Designed with 8px border radius, clean white aesthetics, soft drop shadows,
-/// single-column centered dialog without extraneous showcase columns,
-/// and interactive checklist with sample items & state persistence.
 class TaskDialog extends StatefulWidget {
   final TaskModel? existingTask;
   final String initialStatus;
@@ -116,6 +69,7 @@ class TaskDialog extends StatefulWidget {
     required String priority,
     required String status,
     DateTime? deadline,
+    DateTime? startDate,
     List<String>? assignees,
     List<String>? labels,
     double? estimatedHours,
@@ -136,55 +90,95 @@ class TaskDialog extends StatefulWidget {
 
 class _TaskDialogState extends State<TaskDialog> {
   late TextEditingController _titleController;
-  late TextEditingController _notesController;
-  late TextEditingController _checklistInputController;
-  late final FocusNode _checklistFocusNode;
+  late TextEditingController _descController;
+  final FocusNode _focusNode = FocusNode();
 
   // Form State
-  String _status = 'todo'; // 'todo' (Not started), 'doing' (In progress), 'done' (Completed)
-  String _priority = 'medium'; // 'urgent', 'high' (Important), 'medium', 'low'
+  String _status = 'todo'; // todo, doing, review, done
+  String _priority = 'medium'; // urgent, high, medium, low
   DateTime? _startDate;
   DateTime? _dueDate;
-  String _repeat = 'Does not repeat';
-  String _bucket = 'To do';
+  bool _enableReminder = false;
+  String _repeatInterval = 'none';
 
   // Labels & Assignees
-  final List<String> _selectedLabels = [];
+  final List<String> _selectedLabels = ['Web', 'Backend'];
   final List<String> _selectedAssignees = [];
 
-  // Checklist items: [{'title': '...', 'done': false}]
-  final List<Map<String, dynamic>> _checklist = [];
+  // Options
+  bool _notifyMembers = true;
+  bool _addToSprint = false;
 
+  // Rich Text Mock Formatting States
+  bool _isBold = false;
+  bool _isItalic = false;
+  bool _isUnderline = false;
+
+  // File Upload Dropzone State
+  bool _isDragHovered = false;
+  final List<_UploadedFileItem> _attachedFiles = [];
+
+  // Validation & Saving
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  String? _dateRangeError;
 
-  static ({
-    DateTime? startDate,
-    String? repeat,
-    String? bucket,
-    List<Map<String, dynamic>> checklist,
-    String notes,
-  }) _parseDescription(String? raw) {
+  @override
+  void initState() {
+    super.initState();
+
+    final parsed = _parseDescription(widget.existingTask?.description);
+    _titleController = TextEditingController(text: widget.existingTask?.title ?? '');
+    _descController = TextEditingController(text: parsed.notes);
+
+    _startDate = parsed.startDate ?? DateTime.now();
+    _dueDate = widget.existingTask?.deadline ?? DateTime.now().add(const Duration(days: 3));
+
+    _priority = widget.existingTask?.priority ?? 'medium';
+    _status = widget.existingTask?.status ?? widget.initialStatus;
+
+    if (widget.existingTask?.assignees != null && widget.existingTask!.assignees.isNotEmpty) {
+      _selectedAssignees.clear();
+      _selectedAssignees.addAll(widget.existingTask!.assignees);
+    } else if (widget.boardMembers.isNotEmpty) {
+      final firstMemberId = (widget.boardMembers.first['id'] ?? widget.boardMembers.first['user_id'])?.toString();
+      if (firstMemberId != null && firstMemberId.isNotEmpty) {
+        _selectedAssignees.add(firstMemberId);
+      }
+    }
+
+    if (widget.existingTask?.labels != null && widget.existingTask!.labels.isNotEmpty) {
+      _selectedLabels.clear();
+      _selectedLabels.addAll(widget.existingTask!.labels);
+    }
+
+    _titleController.addListener(_onFormUpdated);
+    _descController.addListener(_onFormUpdated);
+  }
+
+  void _onFormUpdated() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _titleController.removeListener(_onFormUpdated);
+    _descController.removeListener(_onFormUpdated);
+    _titleController.dispose();
+    _descController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  static ({DateTime? startDate, String notes}) _parseDescription(String? raw) {
     if (raw == null || raw.trim().isEmpty) {
-      return (
-        startDate: null,
-        repeat: null,
-        bucket: null,
-        checklist: <Map<String, dynamic>>[],
-        notes: '',
-      );
+      return (startDate: null, notes: '');
     }
 
     DateTime? startDate;
-    String? repeat;
-    String? bucket;
-    final checklist = <Map<String, dynamic>>[];
     final notesLines = <String>[];
-
     final lines = raw.replaceAll('\r', '').split('\n');
     final startDateRegex = RegExp(r'<!--start_date:([^>]+)-->');
-    final repeatRegex = RegExp(r'<!--repeat:([^>]+)-->');
-    final bucketRegex = RegExp(r'<!--bucket:([^>]+)-->');
-    final checklistRegex = RegExp(r'^\s*-\s*\[([ xX])\]\s*(.*)$');
 
     for (final line in lines) {
       final trimmed = line.trim();
@@ -196,347 +190,243 @@ class _TaskDialogState extends State<TaskDialog> {
         }
         continue;
       }
-
-      final repeatMatch = repeatRegex.firstMatch(trimmed);
-      if (repeatMatch != null) {
-        repeat = repeatMatch.group(1)?.trim();
-        continue;
-      }
-
-      final bucketMatch = bucketRegex.firstMatch(trimmed);
-      if (bucketMatch != null) {
-        bucket = bucketMatch.group(1)?.trim();
-        continue;
-      }
-
-      final checkMatch = checklistRegex.firstMatch(line);
-      if (checkMatch != null) {
-        final isDone = checkMatch.group(1)!.toLowerCase() == 'x';
-        final itemTitle = (checkMatch.group(2) ?? '').trim();
-        if (itemTitle.isNotEmpty) {
-          checklist.add({'title': itemTitle, 'done': isDone});
-        }
-        continue;
-      }
-
       if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) {
         continue;
       }
-
       notesLines.add(line);
     }
 
-    final notes = notesLines.join('\n').trim();
     return (
       startDate: startDate,
-      repeat: repeat,
-      bucket: bucket,
-      checklist: checklist,
-      notes: notes,
+      notes: notesLines.join('\n').trim(),
     );
   }
 
-  static String _formatDescription({
-    DateTime? startDate,
-    String? repeat,
-    String? bucket,
-    required List<Map<String, dynamic>> checklist,
-    required String notes,
-  }) {
-    final buffer = StringBuffer();
-
-    if (startDate != null) {
-      buffer.writeln('<!--start_date:${startDate.toIso8601String()}-->');
-    }
-
-    if (repeat != null && repeat.isNotEmpty && repeat != 'Does not repeat') {
-      buffer.writeln('<!--repeat:$repeat-->');
-    }
-
-    if (bucket != null && bucket.isNotEmpty) {
-      buffer.writeln('<!--bucket:$bucket-->');
-    }
-
-    for (final item in checklist) {
-      final done = item['done'] == true;
-      final title = (item['title'] ?? '').toString().trim();
-      if (title.isNotEmpty) {
-        buffer.writeln('- [${done ? 'x' : ' '}] $title');
+  bool _validateDates([AppLocalizations? l10n]) {
+    if (_startDate != null && _dueDate != null) {
+      if (_dueDate!.isBefore(_startDate!)) {
+        setState(() {
+          _dateRangeError = l10n?.dueDateMustBeAfterStartDate ?? 'Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu';
+        });
+        return false;
       }
     }
-
-    final trimmedNotes = notes.trim();
-    if (trimmedNotes.isNotEmpty) {
-      if (buffer.isNotEmpty) {
-        buffer.writeln();
-      }
-      buffer.write(trimmedNotes);
-    }
-
-    return buffer.toString().trim();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Task title: empty by default for new tasks, NO default placeholder text
-    _titleController = TextEditingController(
-      text: widget.existingTask?.title ?? '',
-    );
-
-    final parsed = _parseDescription(widget.existingTask?.description);
-    _notesController = TextEditingController(text: parsed.notes);
-    _startDate = parsed.startDate;
-    if (parsed.repeat != null && parsed.repeat!.isNotEmpty) {
-      _repeat = parsed.repeat!;
-    }
-    _checklist.addAll(parsed.checklist);
-
-    _checklistInputController = TextEditingController();
-    _checklistFocusNode = FocusNode();
-    _checklistFocusNode.addListener(() {
-      if (!_checklistFocusNode.hasFocus) {
-        _addChecklistItem();
-      }
-    });
-
-    _priority = widget.existingTask?.priority ?? 'medium';
-    _status = widget.existingTask?.status ?? widget.initialStatus;
-
-    if (widget.existingTask?.deadline != null) {
-      _dueDate = widget.existingTask!.deadline;
-    }
-
-    if (widget.existingTask?.assignees != null) {
-      _selectedAssignees.addAll(widget.existingTask!.assignees);
-    }
-
-    if (widget.existingTask?.labels != null) {
-      _selectedLabels.addAll(widget.existingTask!.labels);
-    }
-
-    // Map bucket based on parsed bucket or status
-    _bucket = parsed.bucket ?? _mapStatusToBucket(_status);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _notesController.dispose();
-    _checklistInputController.dispose();
-    _checklistFocusNode.dispose();
-    super.dispose();
-  }
-
-  String _mapStatusToBucket(String status) {
-    switch (status) {
-      case 'done':
-        return 'Done';
-      case 'doing':
-      case 'in_progress':
-        return 'Doing';
-      default:
-        return 'To do';
-    }
-  }
-
-  bool get _isCompleted => _status == 'done';
-
-  void _toggleCompleted() {
     setState(() {
-      if (_isCompleted) {
-        _status = 'todo';
-        _bucket = 'To do';
-      } else {
-        _status = 'done';
-        _bucket = 'Done';
-      }
+      _dateRangeError = null;
     });
+    return true;
   }
 
-  void _addChecklistItem() {
-    final text = _checklistInputController.text.trim();
-    if (text.isNotEmpty) {
-      setState(() {
-        _checklist.add({'title': text, 'done': false});
-        _checklistInputController.clear();
-      });
-    }
-  }
+  Future<void> _handleSave() async {
+    final l10n = AppLocalizations.of(context)!;
+    final isValidForm = _formKey.currentState?.validate() ?? false;
+    final isValidDates = _validateDates(l10n);
 
-  void _handleSave() {
-    // If user typed something in checklist but didn't press enter, add it automatically
-    _addChecklistItem();
-
-    if (!_formKey.currentState!.validate()) {
+    if (!isValidForm || !isValidDates) {
       return;
     }
 
-    final fullDescription = _formatDescription(
-      startDate: _startDate,
-      repeat: _repeat,
-      bucket: _bucket,
-      checklist: _checklist,
-      notes: _notesController.text.trim(),
-    );
+    setState(() => _isLoading = true);
 
-    widget.onSave(
-      title: _titleController.text.trim(),
-      description: fullDescription.isNotEmpty ? fullDescription : null,
-      priority: _priority,
-      status: _status,
-      deadline: _dueDate,
-      assignees: _selectedAssignees,
-      labels: _selectedLabels,
-    );
+    try {
+      final cleanNotes = _descController.text.trim();
 
-    Navigator.of(context).pop();
+      widget.onSave(
+        title: _titleController.text.trim(),
+        description: cleanNotes.isNotEmpty ? cleanNotes : null,
+        priority: _priority,
+        status: _status,
+        deadline: _dueDate,
+        startDate: _startDate,
+        assignees: _selectedAssignees,
+        labels: _selectedLabels,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _addSampleFile() {
+    setState(() {
+      _attachedFiles.add(
+        _UploadedFileItem(
+          name: 'tai-lieu-dac-ta-v${_attachedFiles.length + 1}.pdf',
+          size: '2.4 MB',
+          progress: 1.0,
+          isCompleted: true,
+        ),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isEdit = widget.existingTask != null;
     final screenSize = MediaQuery.of(context).size;
-    final l10n = AppLocalizations.of(context);
+    final isDesktop = screenSize.width >= 900;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Clean, centered modal with standard width
-    final dialogWidth = screenSize.width > 640 ? 600.0 : screenSize.width - 24.0;
+    final dialogWidth = isDesktop ? 920.0 : (screenSize.width - 24.0);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Center(
-        child: Container(
-          width: dialogWidth,
-          constraints: BoxConstraints(
-            maxHeight: screenSize.height * 0.92,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A000000),
-                blurRadius: 28,
-                offset: Offset(0, 10),
+    return FocusScope(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+        child: Center(
+          child: Container(
+            width: dialogWidth,
+            constraints: BoxConstraints(
+              maxHeight: screenSize.height * 0.94,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E2D) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFE5E7EB),
+                width: 1,
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: _buildStandardModal(isEdit, l10n),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Standard Dialog view: clean, centered, focused SaaS modal
-  Widget _buildStandardModal(bool isEdit, AppLocalizations? l10n) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildHeaderBar(isEdit),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-            child: Form(
-              key: _formKey,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1F000000),
+                  blurRadius: 32,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTitleSection(),
-                  const SizedBox(height: 14),
-                  _buildTopTagsAndAssigneesRow(),
-                  const SizedBox(height: 18),
-                  _buildTaskDetailsHeader(),
-                  const SizedBox(height: 14),
-                  _buildSixFieldsGrid(),
-                  const SizedBox(height: 22),
-                  _buildChecklistSection(),
-                  const SizedBox(height: 22),
-                  _buildNotesSection(),
+                  // Modal Top Header
+                  _buildModalHeader(isEdit, isDark, l10n),
+
+                  // Modal Main Content (2-Column Scrollable)
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                      child: Form(
+                        key: _formKey,
+                        child: isDesktop
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Left Form Column (60%)
+                                  Expanded(
+                                    flex: 6,
+                                    child: _buildLeftFormColumn(isDark, l10n),
+                                  ),
+                                  const SizedBox(width: 24),
+                                  // Right Preview & Options Column (40%)
+                                  Expanded(
+                                    flex: 4,
+                                    child: _buildRightSideColumn(isDark, l10n),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildLeftFormColumn(isDark, l10n),
+                                  const SizedBox(height: 24),
+                                  const Divider(),
+                                  const SizedBox(height: 16),
+                                  _buildRightSideColumn(isDark, l10n),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  // Sticky Bottom Footer Bar
+                  _buildStickyFooter(isEdit, isDark, l10n),
                 ],
               ),
             ),
           ),
-        ),
-        _buildBottomActionBar(isEdit, l10n),
-      ],
-    );
-  }
-
-  Widget _buildTaskDetailsHeader() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xFF5B4AD4),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.menu_book_rounded,
-              size: 15,
-              color: Colors.white,
-            ),
-            SizedBox(width: 7),
-            Text(
-              'Task details',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
   // ==================== Header ====================
-  Widget _buildHeaderBar(bool isEdit) {
+  Widget _buildModalHeader(bool isEdit, bool isDark, AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6), width: 1)),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2D) : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(4),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F3FF),
-              borderRadius: BorderRadius.circular(6),
+              color: const Color(0xFF5B4CF0).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.task_alt_rounded,
-              size: 16,
-              color: Color(0xFF5B4AD4),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            isEdit ? 'Task Details' : 'Create Task',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
+            child: const Center(
+              child: Icon(
+                Icons.assignment_outlined,
+                color: Color(0xFF5B4CF0),
+                size: 20,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isEdit ? l10n.editTaskTitle : l10n.createNewTaskTitle,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.taskDialogSubtitle,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF6B7280)),
-            splashRadius: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            tooltip: l10n.closeTooltip,
+            icon: const Icon(Icons.close_rounded, size: 20),
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -544,122 +434,572 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  // ==================== Title Section ====================
-  Widget _buildTitleSection() {
-    final l10n = AppLocalizations.of(context);
+  // ==================== Left Column: Form Fields ====================
+  Widget _buildLeftFormColumn(bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Unchecked / Checked circle (toggle completion)
-            InkWell(
-              onTap: _toggleCompleted,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: _isCompleted
-                    ? const Icon(
-                        Icons.check_circle_rounded,
-                        color: Color(0xFF5B4AD4),
-                        size: 24,
-                      )
-                    : Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF9CA3AF),
-                            width: 1.8,
-                          ),
-                        ),
-                      ),
-              ),
+        // 1. Tên nhiệm vụ *
+        _buildFieldLabel(l10n.taskNameLabel, isRequired: true, isDark: isDark),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _titleController,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : const Color(0xFF1E293B),
+          ),
+          decoration: InputDecoration(
+            hintText: l10n.taskNamePlaceholder,
+            hintStyle: TextStyle(
+              fontSize: 13.5,
+              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
             ),
-            // Title input: framed input matching Add label and Assign to
-            Expanded(
-              child: TextFormField(
-                controller: _titleController,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                onChanged: (val) {
-                  if (_formKey.currentState != null && val.trim().isNotEmpty) {
-                    _formKey.currentState!.validate();
-                  }
-                },
+            prefixIcon: const Icon(
+              Icons.schedule_rounded,
+              size: 18,
+              color: Color(0xFF94A3B8),
+            ),
+            filled: true,
+            fillColor: isDark ? const Color(0xFF262638) : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF5B4CF0), width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            ),
+            errorStyle: const TextStyle(fontSize: 11.5, color: Color(0xFFEF4444)),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return l10n.taskNameRequired;
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 18),
+
+        // 2. Mô tả (Rich-text Editor Mock)
+        _buildFieldLabel(l10n.descriptionLabel, isDark: isDark),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF262638) : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Rich-text Toolbar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A2A3F) : const Color(0xFFF8FAFC),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildToolbarButton(
+                        icon: Icons.format_bold_rounded,
+                        tooltip: '${l10n.formatBold} (Ctrl+B)',
+                        isActive: _isBold,
+                        onTap: () => setState(() => _isBold = !_isBold),
+                        isDark: isDark,
+                      ),
+                      _buildToolbarButton(
+                        icon: Icons.format_italic_rounded,
+                        tooltip: '${l10n.formatItalic} (Ctrl+I)',
+                        isActive: _isItalic,
+                        onTap: () => setState(() => _isItalic = !_isItalic),
+                        isDark: isDark,
+                      ),
+                      _buildToolbarButton(
+                        icon: Icons.format_underlined_rounded,
+                        tooltip: '${l10n.formatUnderline} (Ctrl+U)',
+                        isActive: _isUnderline,
+                        onTap: () => setState(() => _isUnderline = !_isUnderline),
+                        isDark: isDark,
+                      ),
+                      _buildToolbarDivider(isDark),
+                      _buildToolbarButton(
+                        icon: Icons.format_list_bulleted_rounded,
+                        tooltip: l10n.formatBulletList,
+                        onTap: () {},
+                        isDark: isDark,
+                      ),
+                      _buildToolbarButton(
+                        icon: Icons.format_list_numbered_rounded,
+                        tooltip: l10n.formatNumberedList,
+                        onTap: () {},
+                        isDark: isDark,
+                      ),
+                      _buildToolbarDivider(isDark),
+                      _buildToolbarButton(
+                        icon: Icons.link_rounded,
+                        tooltip: l10n.formatLink,
+                        onTap: () {},
+                        isDark: isDark,
+                      ),
+                      _buildToolbarButton(
+                        icon: Icons.image_outlined,
+                        tooltip: l10n.formatImage,
+                        onTap: () {},
+                        isDark: isDark,
+                      ),
+                      _buildToolbarButton(
+                        icon: Icons.code_rounded,
+                        tooltip: '${l10n.formatCode} </>',
+                        onTap: () {},
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // TextArea
+              TextFormField(
+                controller: _descController,
+                maxLines: 4,
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1F2937),
-                  decoration: _isCompleted ? TextDecoration.lineThrough : null,
+                  fontSize: 13.5,
+                  fontWeight: _isBold ? FontWeight.w700 : FontWeight.w400,
+                  fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
+                  decoration: _isUnderline ? TextDecoration.underline : TextDecoration.none,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Enter task title...',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  hintText: l10n.descriptionPlaceholder,
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD1D5DB), width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFD1D5DB), width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF5B4AD4), width: 1.5),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-                  ),
-                  errorStyle: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFEF4444),
-                  ),
+                  filled: false,
+                  contentPadding: const EdgeInsets.all(12),
+                  border: InputBorder.none,
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n?.taskTitleRequired ?? 'Task title is required';
-                  }
-                  return null;
-                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // 3. Row: Danh sách (Cột) & Độ ưu tiên
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.listLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildStatusDropdown(isDark, l10n),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.priorityLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildPriorityDropdown(isDark, l10n),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        // Subline metadata
-        Padding(
-          padding: const EdgeInsets.only(left: 34),
-          child: Row(
-            children: [
-              Text(
-                widget.existingTask != null
-                    ? 'Created by ${widget.existingTask?.creatorName ?? 'you'} · Last changed just now by you'
-                    : 'Created just now by you · Last changed just now by you',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF6B7280),
+        const SizedBox(height: 18),
+
+        // 4. Row: Người phụ trách & Nhãn (Label)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.assigneeLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildAssigneeSelector(isDark, l10n),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.labelsLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildLabelChips(isDark),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // 5. Row: Ngày bắt đầu & Hạn hoàn thành
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.startDateLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildDatePickerButton(
+                    date: _startDate,
+                    hint: l10n.pickDate,
+                    onSelect: (dt) {
+                      setState(() {
+                        _startDate = dt;
+                        _validateDates(l10n);
+                      });
+                    },
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel(l10n.dueDateLabel, isDark: isDark),
+                  const SizedBox(height: 6),
+                  _buildDatePickerButton(
+                    date: _dueDate,
+                    hint: l10n.pickDate,
+                    hasError: _dateRangeError != null,
+                    onSelect: (dt) {
+                      setState(() {
+                        _dueDate = dt;
+                        _validateDates(l10n);
+                      });
+                    },
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (_dateRangeError != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            _dateRangeError!,
+            style: const TextStyle(fontSize: 11.5, color: Color(0xFFEF4444)),
+          ),
+        ],
+        const SizedBox(height: 18),
+
+        // 6. Row: Đặt lời nhắc & Lặp lại
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF262638) : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.setReminder,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ),
+                    Transform.scale(
+                      scale: 0.75,
+                      child: Switch(
+                        value: _enableReminder,
+                        thumbColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                        ),
+                        activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+                        onChanged: (val) => setState(() => _enableReminder = val),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 13,
-                color: Color(0xFF9CA3AF),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF262638) : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.repeat_rounded,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _repeatInterval,
+                          isExpanded: true,
+                          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          ),
+                          items: [
+                            DropdownMenuItem(value: 'none', child: Text(l10n.doesNotRepeat)),
+                            DropdownMenuItem(value: 'daily', child: Text(l10n.repeatDaily)),
+                            DropdownMenuItem(value: 'weekly', child: Text(l10n.repeatWeekly)),
+                            DropdownMenuItem(value: 'monthly', child: Text(l10n.repeatMonthly)),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _repeatInterval = val);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // 7. File đính kèm (Dropzone)
+        _buildFieldLabel(l10n.attachmentsLabel, isDark: isDark),
+        const SizedBox(height: 6),
+        _buildFileDropZone(isDark, l10n),
+      ],
+    );
+  }
+
+  // ==================== Right Column: Quick Create + Preview + Other Options ====================
+  Widget _buildRightSideColumn(bool isDark, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Tạo nhiệm vụ nhanh chóng Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF262638) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5B4CF0).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.add_task_rounded,
+                    color: Color(0xFF5B4CF0),
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.quickCreationTitle,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.quickCreationBody,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // 2. Xem trước (Live Realtime Preview)
+        Text(
+          l10n.previewLabel,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildLivePreviewCard(isDark, l10n),
+        const SizedBox(height: 20),
+
+        // 3. Tùy chọn khác
+        Text(
+          l10n.moreOptions,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF262638) : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Gửi thông báo cho các thành viên
+              Row(
+                children: [
+                  const Icon(
+                    Icons.groups_outlined,
+                    size: 18,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.notifyMembers,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.75,
+                    child: Switch(
+                      value: _notifyMembers,
+                      thumbColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                      ),
+                      activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+                      onChanged: (val) => setState(() => _notifyMembers = val),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+              // Thêm vào kế hoạch sprint
+              Row(
+                children: [
+                  const Icon(
+                    Icons.view_kanban_outlined,
+                    size: 18,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          l10n.addToSprintPlan,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: 'Đính kèm task trực tiếp vào chu kỳ sprint.',
+                          child: Icon(
+                            Icons.info_outline_rounded,
+                            size: 14,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.75,
+                    child: Switch(
+                      value: _addToSprint,
+                      thumbColor: WidgetStateProperty.resolveWith(
+                        (states) => states.contains(WidgetState.selected) ? const Color(0xFF5B4CF0) : null,
+                      ),
+                      activeTrackColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+                      onChanged: (val) => setState(() => _addToSprint = val),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -668,891 +1008,484 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  // ==================== Add Label & Assign To Fields ====================
-  Widget _buildTopTagsAndAssigneesRow() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // "Add label" field
-        _buildAnchorBox(
-          onTap: _showLabelsDialog,
-          icon: const Icon(Icons.local_offer_outlined, size: 18, color: Color(0xFF6B7280)),
-          content: _selectedLabels.isEmpty
-              ? const Text(
-                  'Add label',
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
-                )
-              : Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    for (final lbl in _selectedLabels) _buildPastelTagBadge(lbl),
-                    const Icon(Icons.add, size: 14, color: Color(0xFF6B7280)),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 10),
-        // "Assign to" field
-        _buildAnchorBox(
-          onTap: _showAssigneeDialog,
-          icon: const Icon(Icons.person_add_outlined, size: 18, color: Color(0xFF6B7280)),
-          content: _selectedAssignees.isEmpty
-              ? const Text(
-                  'Assign to',
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
-                )
-              : Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    for (final uid in _selectedAssignees) _buildAssigneeBadge(uid),
-                  ],
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAnchorBox({
-    required VoidCallback onTap,
-    required Widget icon,
-    required Widget content,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 40),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFFD1D5DB),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Expanded(child: content),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPastelTagBadge(String name) {
-    final def = _kPresetLabels.firstWhere(
-      (e) => e.name.toLowerCase() == name.toLowerCase(),
-      orElse: () => _PastelLabelDef(
-        name: name,
-        bg: const Color(0xFFF3F4F6),
-        text: const Color(0xFF374151),
-      ),
-    );
+  // ==================== Live Preview Card ====================
+  Widget _buildLivePreviewCard(bool isDark, AppLocalizations l10n) {
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: def.bg,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? const Color(0xFF262638) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title + Dot indicator
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 5),
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF5B4CF0),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title.isEmpty ? l10n.taskNameLabel : title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: title.isEmpty
+                        ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
+                        : (isDark ? Colors.white : const Color(0xFF1E293B)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Priority badge
+          _buildPriorityPill(_priority, l10n),
+          const SizedBox(height: 10),
+
+          // Label chips
+          if (_selectedLabels.isNotEmpty) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: _selectedLabels.map((lbl) {
+                final def = _kAvailableLabels.firstWhere(
+                  (l) => l.name == lbl,
+                  orElse: () => _LabelItem(name: lbl, bg: const Color(0xFFF1F5F9), text: const Color(0xFF475569)),
+                );
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: def.bg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    def.name,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: def.text,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // Assignee
+          Row(
+            children: [
+              const Icon(Icons.person_outline_rounded, size: 14, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Text(
+                _selectedAssignees.isEmpty
+                    ? l10n.unassigned
+                    : _getAssigneeName(_selectedAssignees.first, l10n),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // Date range
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Text(
+                '${_formatDate(_startDate)}  →  ${_formatDate(_dueDate)}',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Description preview
           Text(
-            def.name,
+            desc.isEmpty ? l10n.previewDescriptionDefault : desc,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: def.text,
-            ),
-          ),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: () => setState(() => _selectedLabels.remove(name)),
-            child: Icon(Icons.close, size: 12, color: def.text),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAssigneeBadge(String userId) {
-    final member = widget.boardMembers.firstWhere(
-      (m) => (m['id'] ?? m['user_id'])?.toString() == userId,
-      orElse: () => {'name': userId},
-    );
-    final name = (member['name'] ?? member['email'] ?? userId).toString();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 8,
-            backgroundColor: const Color(0xFF5B4AD4),
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            name,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
-          ),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: () => setState(() => _selectedAssignees.remove(userId)),
-            child: const Icon(Icons.close, size: 12, color: Color(0xFF6B7280)),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-
-  // ==================== 6 Fields Grid ====================
-  Widget _buildSixFieldsGrid() {
-    return Column(
-      children: [
-        // Row 1: Status & Priority
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabel('Status'),
-                  const SizedBox(height: 4),
-                  PopupMenuButton<String>(
-                    onSelected: (val) {
-                      setState(() {
-                        _status = val;
-                        _bucket = _mapStatusToBucket(val);
-                      });
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    elevation: 6,
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'todo',
-                        child: Row(
-                          children: [
-                            if (_status == 'todo')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF6B7280), width: 1.5),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Not started', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'doing',
-                        child: Row(
-                          children: [
-                            if (_status == 'doing' || _status == 'in_progress')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            const _HalfFilledCircleIcon(size: 15, color: Color(0xFF0078D4)),
-                            const SizedBox(width: 8),
-                            const Text('In progress', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'done',
-                        child: Row(
-                          children: [
-                            if (_status == 'done')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF5B4AD4)),
-                            const SizedBox(width: 8),
-                            const Text('Completed', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: _buildFieldContainer(
-                      content: _renderStatusDisplay(),
-                      suffix: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabel('Priority'),
-                  const SizedBox(height: 4),
-                  PopupMenuButton<String>(
-                    onSelected: (val) {
-                      setState(() => _priority = val);
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    elevation: 6,
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'urgent',
-                        child: Row(
-                          children: [
-                            if (_priority == 'urgent')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.notifications_active_rounded, size: 16, color: Color(0xFFDC2626)),
-                            const SizedBox(width: 8),
-                            const Text('Urgent', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'high',
-                        child: Row(
-                          children: [
-                            if (_priority == 'high')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.priority_high_rounded, size: 16, color: Color(0xFFDC2626)),
-                            const SizedBox(width: 8),
-                            const Text('Important', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'medium',
-                        child: Row(
-                          children: [
-                            if (_priority == 'medium')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF16A34A),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Medium', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'low',
-                        child: Row(
-                          children: [
-                            if (_priority == 'low')
-                              const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                            else
-                              const SizedBox(width: 14),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_downward_rounded, size: 16, color: Color(0xFF2563EB)),
-                            const SizedBox(width: 8),
-                            const Text('Low', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: _buildFieldContainer(
-                      content: _renderPriorityDisplay(),
-                      suffix: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Row 2: Start date & Due date
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabel('Start date'),
-                  const SizedBox(height: 4),
-                  InkWell(
-                    onTap: () => _pickDualPaneDate(isForDueDate: false),
-                    borderRadius: BorderRadius.circular(8),
-                    child: _buildFieldContainer(
-                      content: Text(
-                        _startDate != null
-                            ? '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
-                            : 'Set start date',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _startDate != null
-                              ? const Color(0xFF111827)
-                              : const Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      suffix: _startDate != null
-                          ? InkWell(
-                              onTap: () => setState(() => _startDate = null),
-                              child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF6B7280)),
-                            )
-                          : const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF6B7280)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabel('Due date'),
-                  const SizedBox(height: 4),
-                  InkWell(
-                    onTap: () => _pickDualPaneDate(isForDueDate: true),
-                    borderRadius: BorderRadius.circular(8),
-                    child: _buildFieldContainer(
-                      content: Text(
-                        _dueDate != null
-                            ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
-                            : 'Set due date',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _dueDate != null
-                              ? const Color(0xFF111827)
-                              : const Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      suffix: _dueDate != null
-                          ? InkWell(
-                              onTap: () => setState(() => _dueDate = null),
-                              child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF6B7280)),
-                            )
-                          : const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF6B7280)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Row 3: Repeat & Bucket
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabelWithInfo('Repeat'),
-                  const SizedBox(height: 4),
-                  PopupMenuButton<String>(
-                    onSelected: (val) => setState(() => _repeat = val),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    elevation: 6,
-                    itemBuilder: (context) => [
-                      for (final opt in [
-                        'Does not repeat',
-                        'Daily',
-                        'Weekdays',
-                        'Weekly',
-                        'Monthly',
-                        'Yearly',
-                        'Customised',
-                      ])
-                        PopupMenuItem(
-                          value: opt,
-                          child: Row(
-                            children: [
-                              if (_repeat == opt)
-                                const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                              else
-                                const SizedBox(width: 14),
-                              const SizedBox(width: 6),
-                              Text(opt, style: const TextStyle(fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                    ],
-                    child: _buildFieldContainer(
-                      content: Row(
-                        children: [
-                          const Icon(
-                            Icons.repeat_rounded,
-                            size: 16,
-                            color: Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _repeat,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF111827),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      suffix: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildFieldLabelWithInfo('Bucket'),
-                  const SizedBox(height: 4),
-                  PopupMenuButton<String>(
-                    onSelected: (val) {
-                      setState(() {
-                        _bucket = val;
-                        if (val == 'Done') {
-                          _status = 'done';
-                        } else if (val == 'Doing') {
-                          _status = 'doing';
-                        } else {
-                          _status = 'todo';
-                        }
-                      });
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    elevation: 6,
-                    itemBuilder: (context) => [
-                      for (final opt in ['To do', 'Doing', 'Done'])
-                        PopupMenuItem(
-                          value: opt,
-                          child: Row(
-                            children: [
-                              if (_bucket == opt)
-                                const Icon(Icons.check, size: 14, color: Color(0xFF5B4AD4))
-                              else
-                                const SizedBox(width: 14),
-                              const SizedBox(width: 6),
-                              Text(opt, style: const TextStyle(fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                    ],
-                    child: _buildFieldContainer(
-                      content: Text(
-                        _bucket,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF111827),
-                        ),
-                      ),
-                      suffix: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFieldLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF374151),
-      ),
-    );
-  }
-
-  Widget _buildFieldLabelWithInfo(String label) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(width: 4),
-        const Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFF9CA3AF)),
-      ],
-    );
-  }
-
-  Widget _buildFieldContainer({
-    required Widget content,
-    required Widget suffix,
-  }) {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFFD1D5DB),
-          width: 1.0,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: content),
-          suffix,
-        ],
-      ),
-    );
-  }
-
-  Widget _renderStatusDisplay() {
-    switch (_status) {
-      case 'done':
-        return const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF5B4AD4)),
-            SizedBox(width: 8),
-            Text('Completed', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-      case 'doing':
-      case 'in_progress':
-        return const Row(
-          children: [
-            _HalfFilledCircleIcon(size: 15, color: Color(0xFF0078D4)),
-            SizedBox(width: 8),
-            Text('In progress', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-      default:
-        return Row(
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF6B7280), width: 1.5),
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text('Not started', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-    }
-  }
-
-  Widget _renderPriorityDisplay() {
-    switch (_priority) {
-      case 'urgent':
-        return const Row(
-          children: [
-            Icon(Icons.notifications_active_rounded, size: 16, color: Color(0xFFDC2626)),
-            SizedBox(width: 8),
-            Text('Urgent', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-      case 'high':
-        return const Row(
-          children: [
-            Icon(Icons.priority_high_rounded, size: 16, color: Color(0xFFDC2626)),
-            SizedBox(width: 8),
-            Text('Important', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-      case 'low':
-        return const Row(
-          children: [
-            Icon(Icons.arrow_downward_rounded, size: 16, color: Color(0xFF2563EB)),
-            SizedBox(width: 8),
-            Text('Low', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-      default: // medium
-        return Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFF16A34A),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text('Medium', style: TextStyle(fontSize: 13, color: Color(0xFF111827))),
-          ],
-        );
-    }
-  }
-
-  // ==================== Checklist Section ====================
-  Widget _buildChecklistSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Checklist',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Existing checklist items with interactive tick & strikethrough
-        for (int i = 0; i < _checklist.length; i++) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _checklist[i]['done'] = !(_checklist[i]['done'] as bool);
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: (_checklist[i]['done'] as bool)
-                      ? const Icon(
-                          Icons.check_circle_rounded,
-                          size: 19,
-                          color: Color(0xFF5B4AD4),
-                        )
-                      : Container(
-                          width: 17,
-                          height: 17,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF9CA3AF),
-                              width: 1.6,
-                            ),
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _checklist[i]['title'] as String,
-                    style: TextStyle(
-                      fontSize: 13,
-                      decoration: (_checklist[i]['done'] as bool)
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: (_checklist[i]['done'] as bool)
-                          ? const Color(0xFF9CA3AF)
-                          : const Color(0xFF374151),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF9CA3AF)),
-                  onPressed: () => setState(() => _checklist.removeAt(i)),
-                  splashRadius: 14,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                ),
-              ],
+              fontStyle: desc.isEmpty ? FontStyle.italic : FontStyle.normal,
+              color: desc.isEmpty
+                  ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
+                  : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
             ),
           ),
         ],
-        const SizedBox(height: 4),
-        // New step input row
-        Row(
-          children: [
-            Container(
-              width: 17,
-              height: 17,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF9CA3AF), width: 1.6),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _checklistInputController,
-                focusNode: _checklistFocusNode,
-                style: const TextStyle(fontSize: 13),
-                decoration: const InputDecoration(
-                  hintText: 'Add steps to complete this task. Mark them done as you go.',
-                  hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8),
-                ),
-                onSubmitted: (_) => _addChecklistItem(),
-                onTapOutside: (_) => _addChecklistItem(),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_rounded, color: Color(0xFF5B4AD4), size: 20),
-              onPressed: _addChecklistItem,
-              splashRadius: 14,
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
-  // ==================== Notes Section ====================
-  Widget _buildNotesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Notes',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFD1D5DB)),
-          ),
-          child: TextFormField(
-            controller: _notesController,
-            minLines: 4,
-            maxLines: 7,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF111827)),
-            decoration: const InputDecoration(
-              hintText: 'Type a description or add notes here',
-              hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              contentPadding: EdgeInsets.all(12),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
-
-  // ==================== Bottom Actions ====================
-  Widget _buildBottomActionBar(bool isEdit, AppLocalizations? l10n) {
+  // ==================== Sticky Footer ====================
+  Widget _buildStickyFooter(bool isEdit, bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFAFAFA),
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2D) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (isEdit && widget.onDelete != null) ...[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                widget.onDelete!();
-              },
-              child: const Text('Delete', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
-            ),
-            const Spacer(),
-          ],
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF4B5563), fontSize: 13)),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: _handleSave,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5B4AD4),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+          // Cancel button
+          OutlinedButton(
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              foregroundColor: isDark ? Colors.white : const Color(0xFF475569),
+              side: BorderSide(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFCBD5E1)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              isEdit ? 'Save changes' : 'Create task',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              l10n.cancel,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Primary Save/Create Button
+          FilledButton(
+            onPressed: _isLoading ? null : _handleSave,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF5B4CF0),
+              disabledBackgroundColor: const Color(0xFF5B4CF0).withValues(alpha: 0.5),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        isEdit ? l10n.saveChanges : l10n.createTask,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== Dropzone & File List ====================
+  Widget _buildFileDropZone(bool isDark, AppLocalizations l10n) {
+    return Column(
+      children: [
+        MouseRegion(
+          onEnter: (_) => setState(() => _isDragHovered = true),
+          onExit: (_) => setState(() => _isDragHovered = false),
+          child: GestureDetector(
+            onTap: _addSampleFile,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: _isDragHovered
+                    ? const Color(0xFF5B4CF0).withValues(alpha: 0.08)
+                    : (isDark ? const Color(0xFF262638) : const Color(0xFFFAFAFE)),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _isDragHovered ? const Color(0xFF5B4CF0) : const Color(0xFFC7D2FE),
+                  width: 1.5,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B4CF0).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.cloud_upload_outlined,
+                      color: Color(0xFF5B4CF0),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.dragAndDropFiles,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.fileSupportHint,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Attached Files List with simulated progress
+        if (_attachedFiles.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          for (final f in _attachedFiles) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF262638) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.insert_drive_file_outlined, size: 18, color: Color(0xFF5B4CF0)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          f.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          ),
+                        ),
+                        Text(
+                          f.size,
+                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => setState(() => _attachedFiles.remove(f)),
+                    child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  // ==================== Helper Components ====================
+  Widget _buildFieldLabel(String label, {bool isRequired = false, required bool isDark}) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF334155),
+          ),
+        ),
+        if (isRequired) ...[
+          const SizedBox(width: 3),
+          const Text('*', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.bold)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStatusDropdown(bool isDark, AppLocalizations l10n) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262638) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _status,
+          isExpanded: true,
+          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+          items: [
+            _buildStatusMenuItem('todo', l10n.statusTodo, const Color(0xFF5B4CF0)),
+            _buildStatusMenuItem('doing', l10n.statusDoing, const Color(0xFFF59E0B)),
+            _buildStatusMenuItem('review', l10n.statusReview, const Color(0xFF3B82F6)),
+            _buildStatusMenuItem('done', l10n.statusDone, const Color(0xFF10B981)),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _status = val);
+          },
+        ),
+      ),
+    );
+  }
+
+  DropdownMenuItem<String> _buildStatusMenuItem(String val, String title, Color color) {
+    return DropdownMenuItem(
+      value: val,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriorityDropdown(bool isDark, AppLocalizations l10n) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262638) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _priority,
+          isExpanded: true,
+          icon: const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+          items: [
+            _buildPriorityMenuItem('urgent', l10n.priorityUrgent, const Color(0xFFEF4444)),
+            _buildPriorityMenuItem('high', l10n.priorityHigh, const Color(0xFFF97316)),
+            _buildPriorityMenuItem('medium', l10n.priorityMedium, const Color(0xFFF59E0B)),
+            _buildPriorityMenuItem('low', l10n.priorityLow, const Color(0xFF10B981)),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _priority = val);
+          },
+        ),
+      ),
+    );
+  }
+
+  DropdownMenuItem<String> _buildPriorityMenuItem(String val, String title, Color color) {
+    return DropdownMenuItem(
+      value: val,
+      child: Row(
+        children: [
+          Icon(Icons.flag_rounded, size: 15, color: color),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriorityPill(String priority, AppLocalizations l10n) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (priority) {
+      case 'urgent':
+        bg = const Color(0xFFFEE2E2);
+        fg = const Color(0xFFDC2626);
+        label = l10n.priorityBadgeUrgent;
+        break;
+      case 'high':
+        bg = const Color(0xFFFFEDD5);
+        fg = const Color(0xFFEA580C);
+        label = l10n.priorityBadgeHigh;
+        break;
+      case 'low':
+        bg = const Color(0xFFDCFCE7);
+        fg = const Color(0xFF16A34A);
+        label = l10n.priorityBadgeLow;
+        break;
+      case 'medium':
+      default:
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFD97706);
+        label = l10n.priorityBadgeMedium;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.flag_rounded, size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: fg,
             ),
           ),
         ],
@@ -1560,578 +1493,264 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  // ================================================================
-  // DUAL-PANE CALENDAR DIALOG (October 2026 day 11 ring + 2026 months)
-  // ================================================================
-  Future<void> _pickDualPaneDate({required bool isForDueDate}) async {
-    final now = DateTime.now();
-    var viewMonth = DateTime(now.year, now.month);
-    var viewYear = now.year;
-    DateTime? tempSelected = isForDueDate ? _dueDate : _startDate;
+  Widget _buildAssigneeSelector(bool isDark, AppLocalizations l10n) {
+    final name = _selectedAssignees.isEmpty
+        ? l10n.selectMemberPlaceholder
+        : _getAssigneeName(_selectedAssignees.first, l10n);
 
-    final picked = await showDialog<DateTime>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setPickerState) {
-            final monthName = _monthName(viewMonth.month);
-            final daysInMonth = DateUtils.getDaysInMonth(viewMonth.year, viewMonth.month);
-            final firstWeekday = DateTime(viewMonth.year, viewMonth.month, 1).weekday % 7; // Sunday=0
-
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Center(
-                child: Container(
-                  width: 440,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1F000000),
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Left Pane: Month Grid (e.g. October 2026)
-                        Expanded(
-                          flex: 6,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                                      splashRadius: 14,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                      onPressed: () {
-                                        setPickerState(() {
-                                          viewMonth = DateTime(viewMonth.year, viewMonth.month - 1);
-                                        });
-                                      },
-                                    ),
-                                    Text(
-                                      '$monthName ${viewMonth.year}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                                      splashRadius: 14,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                      onPressed: () {
-                                        setPickerState(() {
-                                          viewMonth = DateTime(viewMonth.year, viewMonth.month + 1);
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: const [
-                                    _CalendarColHeader('Su'),
-                                    _CalendarColHeader('Mo'),
-                                    _CalendarColHeader('Tu'),
-                                    _CalendarColHeader('We'),
-                                    _CalendarColHeader('Th'),
-                                    _CalendarColHeader('Fr'),
-                                    _CalendarColHeader('Sa'),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  children: [
-                                    for (int e = 0; e < firstWeekday; e++)
-                                      const SizedBox(width: 30, height: 26),
-                                    for (int d = 1; d <= daysInMonth; d++) ...[
-                                      InkWell(
-                                        onTap: () {
-                                          final selected = DateTime(viewMonth.year, viewMonth.month, d);
-                                          Navigator.of(ctx).pop(selected);
-                                        },
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: SizedBox(
-                                          width: 30,
-                                          height: 26,
-                                          child: Center(
-                                            child: Container(
-                                              width: 24,
-                                              height: 24,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: (tempSelected != null &&
-                                                        tempSelected.year == viewMonth.year &&
-                                                        tempSelected.month == viewMonth.month &&
-                                                        tempSelected.day == d)
-                                                    ? const Color(0xFF5B4AD4)
-                                                    : Colors.transparent,
-                                                border: (viewMonth.month == 10 && viewMonth.year == 2026 && d == 11)
-                                                    ? Border.all(color: const Color(0xFF5B4AD4), width: 1.8)
-                                                    : null,
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                '$d',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: (tempSelected != null &&
-                                                          tempSelected.year == viewMonth.year &&
-                                                          tempSelected.month == viewMonth.month &&
-                                                          tempSelected.day == d)
-                                                      ? Colors.white
-                                                      : ((viewMonth.month == 10 && viewMonth.year == 2026 && d == 11)
-                                                          ? const Color(0xFF5B4AD4)
-                                                          : const Color(0xFF111827)),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-                        // Right Pane: Year & 12 Month Grid
-                        Expanded(
-                          flex: 5,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                                      splashRadius: 14,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                      onPressed: () {
-                                        setPickerState(() {
-                                          viewYear--;
-                                          viewMonth = DateTime(viewYear, viewMonth.month);
-                                        });
-                                      },
-                                    ),
-                                    Text(
-                                      '$viewYear',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                                      splashRadius: 14,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                      onPressed: () {
-                                        setPickerState(() {
-                                          viewYear++;
-                                          viewMonth = DateTime(viewYear, viewMonth.month);
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                GridView.count(
-                                  crossAxisCount: 3,
-                                  shrinkWrap: true,
-                                  mainAxisSpacing: 6,
-                                  crossAxisSpacing: 6,
-                                  childAspectRatio: 1.8,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  children: [
-                                    for (int m = 1; m <= 12; m++)
-                                      InkWell(
-                                        onTap: () {
-                                          setPickerState(() {
-                                            viewMonth = DateTime(viewYear, m);
-                                          });
-                                        },
-                                        borderRadius: BorderRadius.circular(6),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: (viewMonth.month == m && viewMonth.year == viewYear)
-                                                ? const Color(0x1F5B4AD4)
-                                                : const Color(0xFFF9FAFB),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: (viewMonth.month == m && viewMonth.year == viewYear)
-                                                  ? const Color(0xFF5B4AD4)
-                                                  : const Color(0xFFE5E7EB),
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            _shortMonthName(m),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: (viewMonth.month == m && viewMonth.year == viewYear)
-                                                  ? const Color(0xFF5B4AD4)
-                                                  : const Color(0xFF374151),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+    return InkWell(
+      onTap: () => _showAssigneePicker(l10n),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF262638) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF64748B)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        if (isForDueDate) {
-          _dueDate = picked;
-        } else {
-          _startDate = picked;
-        }
-      });
-    }
-  }
-
-  // ==================== Labels Popup Dialog ====================
-  Future<void> _showLabelsDialog() async {
-    final searchCtrl = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDlgState) {
-            final query = searchCtrl.text.trim().toLowerCase();
-            final filtered = _kPresetLabels.where((l) => l.name.toLowerCase().contains(query)).toList();
-
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Center(
-                child: Container(
-                  width: 280,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x1F000000), blurRadius: 16, offset: Offset(0, 6)),
-                    ],
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Labels',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF374151),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => Navigator.of(ctx).pop(),
-                              borderRadius: BorderRadius.circular(12),
-                              child: const Padding(
-                                padding: EdgeInsets.all(4),
-                                child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF6B7280)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        child: Container(
-                          height: 32,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9FAFB),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.search_rounded, size: 14, color: Color(0xFF9CA3AF)),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: TextField(
-                                  controller: searchCtrl,
-                                  style: const TextStyle(fontSize: 12),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search for label',
-                                    hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  onChanged: (_) => setDlgState(() {}),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      for (final labelDef in filtered) ...[
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              if (_selectedLabels.contains(labelDef.name)) {
-                                _selectedLabels.remove(labelDef.name);
-                              } else {
-                                _selectedLabels.add(labelDef.name);
-                              }
-                            });
-                            // Immediately close popup so user can proceed
-                            Navigator.of(ctx).pop();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: labelDef.bg,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: _selectedLabels.contains(labelDef.name)
-                                          ? Border.all(color: labelDef.text, width: 1.5)
-                                          : null,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          labelDef.name,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: labelDef.text,
-                                          ),
-                                        ),
-                                        if (_selectedLabels.contains(labelDef.name))
-                                          Icon(Icons.check_rounded, size: 14, color: labelDef.text),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.edit_outlined, size: 15, color: Color(0xFF6B7280)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
+            ),
+            const Icon(Icons.expand_more_rounded, size: 18, color: Color(0xFF64748B)),
+          ],
+        ),
+      ),
     );
   }
 
-  // ==================== Assignee Popup Dialog ====================
-  Future<void> _showAssigneeDialog() async {
-    await showDialog<void>(
+  void _showAssigneePicker(AppLocalizations l10n) {
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDlgState) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Center(
-                child: Container(
-                  width: 270,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x1F000000), blurRadius: 16, offset: Offset(0, 6)),
-                    ],
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Assign to members',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF374151),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => Navigator.of(ctx).pop(),
-                              borderRadius: BorderRadius.circular(12),
-                              child: const Padding(
-                                padding: EdgeInsets.all(4),
-                                child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF6B7280)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 6),
-                      if (widget.boardMembers.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(12),
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.assigneeLabel,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              if (widget.boardMembers.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(l10n.noTasks),
+                )
+              else
+                for (final m in widget.boardMembers) ...[
+                  Builder(
+                    builder: (context) {
+                      final id = (m['id'] ?? m['user_id'])?.toString() ?? '';
+                      final mName = (m['name'] ?? m['email'] ?? id).toString();
+                      final isSelected = _selectedAssignees.contains(id);
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF5B4CF0),
                           child: Text(
-                            'No members available',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                            mName.isNotEmpty ? mName[0].toUpperCase() : '?',
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
                           ),
-                        )
-                      else
-                        for (final member in widget.boardMembers) ...[
-                          Builder(
-                            builder: (context) {
-                              final userId = (member['id'] ?? member['user_id'])?.toString() ?? '';
-                              final name = (member['name'] ?? member['email'] ?? userId).toString();
-                              final isAssigned = _selectedAssignees.contains(userId);
-
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (isAssigned) {
-                                      _selectedAssignees.remove(userId);
-                                    } else {
-                                      _selectedAssignees.add(userId);
-                                    }
-                                  });
-                                  // Immediately close popup so user can proceed
-                                  Navigator.of(ctx).pop();
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 12,
-                                        backgroundColor: const Color(0xFF5B4AD4),
-                                        child: Text(
-                                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                          style: const TextStyle(color: Colors.white, fontSize: 10),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          name,
-                                          style: const TextStyle(fontSize: 13, color: Color(0xFF111827)),
-                                        ),
-                                      ),
-                                      if (isAssigned)
-                                        const Icon(Icons.check_rounded, size: 16, color: Color(0xFF5B4AD4)),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                    ],
+                        ),
+                        title: Text(mName),
+                        trailing: isSelected ? const Icon(Icons.check_rounded, color: Color(0xFF5B4CF0)) : null,
+                        onTap: () {
+                          setState(() {
+                            _selectedAssignees.clear();
+                            _selectedAssignees.add(id);
+                          });
+                          Navigator.of(ctx).pop();
+                        },
+                      );
+                    },
                   ),
-                ),
-              ),
-            );
-          },
+                ],
+            ],
+          ),
         );
       },
     );
   }
 
-  static String _monthName(int month) {
-    const m = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return m[month - 1];
+  String _getAssigneeName(String id, [AppLocalizations? l10n]) {
+    for (final m in widget.boardMembers) {
+      if ((m['id'] ?? m['user_id'])?.toString() == id) {
+        return (m['name'] ?? m['email'] ?? id).toString();
+      }
+    }
+    return l10n?.unknownUser ?? 'Unknown';
   }
 
-  static String _shortMonthName(int month) {
-    const sm = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return sm[month - 1];
+  Widget _buildLabelChips(bool isDark) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262638) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _kAvailableLabels.map((lbl) {
+            final isSelected = _selectedLabels.contains(lbl.name);
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: FilterChip(
+                label: Text(lbl.name),
+                labelStyle: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? lbl.text : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                ),
+                selected: isSelected,
+                selectedColor: lbl.bg,
+                backgroundColor: isDark ? const Color(0xFF2D2D3F) : const Color(0xFFF1F5F9),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: BorderSide(
+                    color: isSelected ? lbl.text.withValues(alpha: 0.4) : Colors.transparent,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                onSelected: (val) {
+                  setState(() {
+                    if (val) {
+                      _selectedLabels.add(lbl.name);
+                    } else {
+                      _selectedLabels.remove(lbl.name);
+                    }
+                  });
+                },
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
-}
 
-class _CalendarColHeader extends StatelessWidget {
-  final String text;
-  const _CalendarColHeader(this.text);
+  Widget _buildDatePickerButton({
+    required DateTime? date,
+    required String hint,
+    required ValueChanged<DateTime> onSelect,
+    bool hasError = false,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date ?? now,
+          firstDate: now.subtract(const Duration(days: 365)),
+          lastDate: now.add(const Duration(days: 365 * 3)),
+        );
+        if (picked != null) {
+          onSelect(picked);
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF262638) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: hasError
+                ? const Color(0xFFEF4444)
+                : (isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0)),
+            width: hasError ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 16,
+              color: hasError ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                date != null ? _formatDate(date) : hint,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: date != null
+                      ? (isDark ? Colors.white : const Color(0xFF1E293B))
+                      : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 30,
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF9CA3AF),
+  String _formatDate(DateTime? dt) {
+    if (dt == null) return '--/--/----';
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
+  Widget _buildToolbarButton({
+    required IconData icon,
+    required String tooltip,
+    bool isActive = false,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF5B4CF0).withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: isActive
+                ? const Color(0xFF5B4CF0)
+                : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildToolbarDivider(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      width: 1,
+      height: 16,
+      color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
     );
   }
 }

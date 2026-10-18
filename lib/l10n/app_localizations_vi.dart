@@ -870,7 +870,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get updatedAt => 'Cập nhật lúc';
 
   @override
-  String get createTask => 'Tạo công việc';
+  String get createTask => 'Tạo nhiệm vụ';
 
   @override
   String get editTask => 'Sửa công việc';
@@ -896,7 +896,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get noTasks => 'Chưa có công việc nào';
+  String get noTasks => 'Chưa có nhiệm vụ';
 
   @override
   String get addFirstTask => 'Thêm công việc đầu tiên để bắt đầu';
@@ -1620,4 +1620,359 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dueToday => 'Hôm nay';
+
+  @override
+  String roomMembersTitle(int count) {
+    return 'THÀNH VIÊN TRONG PHÒNG ($count)';
+  }
+
+  @override
+  String get quickDiscussionNotes => 'Ghi chú thảo luận nhanh';
+
+  @override
+  String get unassigned => 'Chưa giao';
+
+  @override
+  String get unknownUser => 'Không xác định';
+
+  @override
+  String get post => 'Đăng';
+
+  @override
+  String get renamePage => 'Đổi tên trang';
+
+  @override
+  String get deletePage => 'Xóa trang';
+
+  @override
+  String get deletePageConfirm => 'Bạn có chắc chắn muốn xóa trang này không?';
+
+  @override
+  String get cannotDeleteLastPage => 'Không thể xóa trang cuối cùng';
+
+  @override
+  String get pageNameExists => 'Tên trang đã tồn tại';
+
+  @override
+  String get pageNameEmpty => 'Tên trang không được để trống';
+
+  @override
+  String get pageTitlePrefix => 'Trang';
+
+  @override
+  String get autoSyncP2P => 'Tự động đồng bộ P2P 0.1s';
+
+  @override
+  String get leaveRoom => 'Rời phòng';
+
+  @override
+  String get leaveRoomConfirm =>
+      'Bạn có chắc chắn muốn ngắt kết nối và rời phòng họp thoại không?';
+
+  @override
+  String get clearCanvasConfirm =>
+      'Bạn có chắc chắn muốn xóa toàn bộ nét vẽ và hình trên trang này?';
+
+  @override
+  String get clearAll => 'Xóa tất cả';
+
+  @override
+  String get undoTooltip => 'Hoàn tác (Ctrl+Z)';
+
+  @override
+  String get redoTooltip => 'Làm lại (Ctrl+Shift+Z)';
+
+  @override
+  String get toolSelect => 'Chọn (V)';
+
+  @override
+  String get toolHand => 'Di chuyển tay (H)';
+
+  @override
+  String get toolPen => 'Bút vẽ (P)';
+
+  @override
+  String get toolEraser => 'Cục tẩy (E)';
+
+  @override
+  String get toolRectangle => 'Hình chữ nhật (R)';
+
+  @override
+  String get toolCircle => 'Hình tròn (O)';
+
+  @override
+  String get toolArrow => 'Mũi tên (A)';
+
+  @override
+  String get toolStickyNote => 'Ghi chú sticky (N)';
+
+  @override
+  String get toolText => 'Văn bản (T)';
+
+  @override
+  String get toolKanban => 'Thêm thẻ Kanban (K)';
+
+  @override
+  String get filterAssignee => 'Phụ trách:';
+
+  @override
+  String get filterPriorityAll => 'Mức ưu tiên: Tất cả';
+
+  @override
+  String get filterPriorityUrgent => 'Khẩn cấp';
+
+  @override
+  String get filterPriorityHigh => 'Ưu tiên cao';
+
+  @override
+  String get filterPriorityMedium => 'Ưu tiên trung bình';
+
+  @override
+  String get filterPriorityLow => 'Ưu tiên thấp';
+
+  @override
+  String get addColumn => 'Thêm cột';
+
+  @override
+  String get addNewCard => 'Thêm thẻ mới';
+
+  @override
+  String onlinePeople(int count) {
+    return '$count người online';
+  }
+
+  @override
+  String get voiceLive => 'Voice live';
+
+  @override
+  String get quickMeetP2P => 'Họp nhanh P2P';
+
+  @override
+  String get searchPlaceholder => 'Tìm việc, ghi chú cuộc họp, bảng vẽ...';
+
+  @override
+  String get searchFilterPlaceholder => 'Lọc thẻ dự án...';
+
+  @override
+  String get exportAction => 'Export';
+
+  @override
+  String get createNewAction => 'Tạo mới';
+
+  @override
+  String get createTaskCTA => 'Tạo nhiệm vụ';
+
+  @override
+  String get enterPageName => 'Nhập tên trang...';
+
+  @override
+  String get createNewTaskTitle => 'Tạo nhiệm vụ mới';
+
+  @override
+  String get editTaskTitle => 'Chỉnh sửa nhiệm vụ';
+
+  @override
+  String get taskDialogSubtitle =>
+      'Thêm nhiệm vụ để theo dõi tiến độ công việc của bạn và nhóm.';
+
+  @override
+  String get taskNameLabel => 'Tên nhiệm vụ';
+
+  @override
+  String get taskNamePlaceholder => 'Nhập tên nhiệm vụ...';
+
+  @override
+  String get taskNameRequired => 'Vui lòng nhập tên nhiệm vụ';
+
+  @override
+  String get descriptionLabel => 'Mô tả';
+
+  @override
+  String get descriptionPlaceholder => 'Nhập mô tả chi tiết về nhiệm vụ...';
+
+  @override
+  String get listLabel => 'Danh sách';
+
+  @override
+  String get statusTodo => 'Cần làm';
+
+  @override
+  String get statusDoing => 'Đang làm';
+
+  @override
+  String get statusReview => 'Review / Kiểm thử';
+
+  @override
+  String get statusDone => 'Đã hoàn thành';
+
+  @override
+  String get priorityLabel => 'Độ ưu tiên';
+
+  @override
+  String get priorityUrgent => 'Khẩn cấp';
+
+  @override
+  String get priorityHigh => 'Cao';
+
+  @override
+  String get priorityMedium => 'Trung bình';
+
+  @override
+  String get priorityLow => 'Thấp';
+
+  @override
+  String get assigneeLabel => 'Người phụ trách';
+
+  @override
+  String get selectMemberPlaceholder => 'Chọn thành viên...';
+
+  @override
+  String get labelsLabel => 'Nhãn (Label)';
+
+  @override
+  String get startDateLabel => 'Ngày bắt đầu';
+
+  @override
+  String get dueDateLabel => 'Hạn hoàn thành';
+
+  @override
+  String get pickDate => 'Chọn ngày';
+
+  @override
+  String get setReminder => 'Đặt lời nhắc';
+
+  @override
+  String get repeatIntervalLabel => 'Lặp lại';
+
+  @override
+  String get doesNotRepeat => 'Không lặp lại';
+
+  @override
+  String get repeatDaily => 'Hàng ngày';
+
+  @override
+  String get repeatWeekly => 'Hàng tuần';
+
+  @override
+  String get repeatMonthly => 'Hàng tháng';
+
+  @override
+  String get attachmentsLabel => 'File đính kèm';
+
+  @override
+  String get dragAndDropFiles => 'Kéo thả file tại đây hoặc chọn file';
+
+  @override
+  String get fileSupportHint => 'Hỗ trợ JPG, PNG, PDF, DOC... (tối đa 10MB)';
+
+  @override
+  String get quickCreationTitle => 'Tạo nhiệm vụ nhanh chóng';
+
+  @override
+  String get quickCreationBody =>
+      'Điền thông tin và nhấn \"Tạo nhiệm vụ\" để lưu và bắt đầu làm việc.';
+
+  @override
+  String get previewLabel => 'Xem trước';
+
+  @override
+  String get previewDescriptionDefault => 'Mô tả nhiệm vụ...';
+
+  @override
+  String get moreOptions => 'Tùy chọn khác';
+
+  @override
+  String get notifyMembers => 'Gửi thông báo cho các thành viên';
+
+  @override
+  String get addToSprintPlan => 'Thêm vào kế hoạch sprint';
+
+  @override
+  String get formatBold => 'In đậm';
+
+  @override
+  String get formatItalic => 'In nghiêng';
+
+  @override
+  String get formatUnderline => 'Gạch chân';
+
+  @override
+  String get formatBulletList => 'Danh sách';
+
+  @override
+  String get formatNumberedList => 'Danh sách số';
+
+  @override
+  String get formatLink => 'Liên kết';
+
+  @override
+  String get formatImage => 'Hình ảnh';
+
+  @override
+  String get formatCode => 'Mã';
+
+  @override
+  String get dueDateMustBeAfterStartDate =>
+      'Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu';
+
+  @override
+  String get closeTooltip => 'Đóng (ESC)';
+
+  @override
+  String get columnTodo => 'CẦN LÀM';
+
+  @override
+  String get columnDoing => 'ĐANG LÀM';
+
+  @override
+  String get columnReview => 'REVIEW / KIỂM THỬ';
+
+  @override
+  String get columnDone => 'ĐÃ HOÀN THÀNH';
+
+  @override
+  String get priorityBadgeUrgent => 'Khẩn cấp';
+
+  @override
+  String get priorityBadgeHigh => 'Ưu tiên cao';
+
+  @override
+  String get priorityBadgeMedium => 'Ưu tiên trung bình';
+
+  @override
+  String get priorityBadgeLow => 'Ưu tiên thấp';
+
+  @override
+  String dateFrom(String date) {
+    return 'Từ $date';
+  }
+
+  @override
+  String dateTo(String date) {
+    return 'Đến $date';
+  }
+
+  @override
+  String get noDueDate => 'Chưa đặt hạn';
+
+  @override
+  String get typeDiscussionNote => 'Nhập ghi chú (Enter)...';
+
+  @override
+  String get noDiscussionNotes => 'Chưa có ghi chú nào. Nhập và nhấn Đăng.';
+
+  @override
+  String get themeModeLabel => 'Giao diện';
+
+  @override
+  String get themeSystem => 'Theo hệ thống';
+
+  @override
+  String get themeLight => 'Sáng';
+
+  @override
+  String get themeDark => 'Tối';
+
+  @override
+  String get settingsTitle => 'Cài đặt';
 }

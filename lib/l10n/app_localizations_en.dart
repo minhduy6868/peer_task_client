@@ -785,7 +785,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useInviteLinkToAdd => 'Use invite link to add members';
 
   @override
-  String get saveChanges => 'Save Changes';
+  String get saveChanges => 'Save changes';
 
   @override
   String get role => 'Role';
@@ -874,7 +874,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updatedAt => 'Updated at';
 
   @override
-  String get createTask => 'Create Task';
+  String get createTask => 'Create task';
 
   @override
   String get editTask => 'Edit Task';
@@ -900,7 +900,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noTasks => 'No tasks yet';
+  String get noTasks => 'No tasks';
 
   @override
   String get addFirstTask => 'Add your first task to get started';
@@ -1623,4 +1623,360 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dueToday => 'Due today';
+
+  @override
+  String roomMembersTitle(int count) {
+    return 'ROOM MEMBERS ($count)';
+  }
+
+  @override
+  String get quickDiscussionNotes => 'Quick discussion notes';
+
+  @override
+  String get unassigned => 'Unassigned';
+
+  @override
+  String get unknownUser => 'Unknown';
+
+  @override
+  String get post => 'Post';
+
+  @override
+  String get renamePage => 'Rename page';
+
+  @override
+  String get deletePage => 'Delete page';
+
+  @override
+  String get deletePageConfirm => 'Are you sure you want to delete this page?';
+
+  @override
+  String get cannotDeleteLastPage => 'Cannot delete the last page';
+
+  @override
+  String get pageNameExists => 'Page name already exists';
+
+  @override
+  String get pageNameEmpty => 'Page name cannot be empty';
+
+  @override
+  String get pageTitlePrefix => 'Page';
+
+  @override
+  String get autoSyncP2P => 'Auto-sync P2P 0.1s';
+
+  @override
+  String get leaveRoom => 'Leave room';
+
+  @override
+  String get leaveRoomConfirm =>
+      'Are you sure you want to disconnect and leave the voice room?';
+
+  @override
+  String get clearCanvasConfirm =>
+      'Are you sure you want to clear all drawings and shapes on this page?';
+
+  @override
+  String get clearAll => 'Clear all';
+
+  @override
+  String get undoTooltip => 'Undo (Ctrl+Z)';
+
+  @override
+  String get redoTooltip => 'Redo (Ctrl+Shift+Z)';
+
+  @override
+  String get toolSelect => 'Select (V)';
+
+  @override
+  String get toolHand => 'Pan (H)';
+
+  @override
+  String get toolPen => 'Pen (P)';
+
+  @override
+  String get toolEraser => 'Eraser (E)';
+
+  @override
+  String get toolRectangle => 'Rectangle (R)';
+
+  @override
+  String get toolCircle => 'Circle (O)';
+
+  @override
+  String get toolArrow => 'Arrow (A)';
+
+  @override
+  String get toolStickyNote => 'Sticky note (N)';
+
+  @override
+  String get toolText => 'Text (T)';
+
+  @override
+  String get toolKanban => 'Add Kanban card (K)';
+
+  @override
+  String get filterAssignee => 'Assignee:';
+
+  @override
+  String get filterPriorityAll => 'Priority: All';
+
+  @override
+  String get filterPriorityUrgent => 'Urgent';
+
+  @override
+  String get filterPriorityHigh => 'High';
+
+  @override
+  String get filterPriorityMedium => 'Medium';
+
+  @override
+  String get filterPriorityLow => 'Low';
+
+  @override
+  String get addColumn => 'Add column';
+
+  @override
+  String get addNewCard => 'Add new card';
+
+  @override
+  String onlinePeople(int count) {
+    return '$count online';
+  }
+
+  @override
+  String get voiceLive => 'Voice live';
+
+  @override
+  String get quickMeetP2P => 'P2P Quick Meet';
+
+  @override
+  String get searchPlaceholder => 'Search tasks, meeting notes, drawings...';
+
+  @override
+  String get searchFilterPlaceholder => 'Filter project cards...';
+
+  @override
+  String get exportAction => 'Export';
+
+  @override
+  String get createNewAction => 'New';
+
+  @override
+  String get createTaskCTA => 'Create task';
+
+  @override
+  String get enterPageName => 'Enter page name...';
+
+  @override
+  String get createNewTaskTitle => 'Create new task';
+
+  @override
+  String get editTaskTitle => 'Edit task';
+
+  @override
+  String get taskDialogSubtitle =>
+      'Add a task to track the progress of your work and your team.';
+
+  @override
+  String get taskNameLabel => 'Task name';
+
+  @override
+  String get taskNamePlaceholder => 'Enter task name...';
+
+  @override
+  String get taskNameRequired => 'Please enter task name';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get descriptionPlaceholder =>
+      'Enter a detailed description of the task...';
+
+  @override
+  String get listLabel => 'List';
+
+  @override
+  String get statusTodo => 'To do';
+
+  @override
+  String get statusDoing => 'In progress';
+
+  @override
+  String get statusReview => 'Review / Testing';
+
+  @override
+  String get statusDone => 'Done';
+
+  @override
+  String get priorityLabel => 'Priority';
+
+  @override
+  String get priorityUrgent => 'Urgent';
+
+  @override
+  String get priorityHigh => 'High';
+
+  @override
+  String get priorityMedium => 'Medium';
+
+  @override
+  String get priorityLow => 'Low';
+
+  @override
+  String get assigneeLabel => 'Assignee';
+
+  @override
+  String get selectMemberPlaceholder => 'Select member...';
+
+  @override
+  String get labelsLabel => 'Labels';
+
+  @override
+  String get startDateLabel => 'Start date';
+
+  @override
+  String get dueDateLabel => 'Due date';
+
+  @override
+  String get pickDate => 'Pick a date';
+
+  @override
+  String get setReminder => 'Set reminder';
+
+  @override
+  String get repeatIntervalLabel => 'Repeat';
+
+  @override
+  String get doesNotRepeat => 'Does not repeat';
+
+  @override
+  String get repeatDaily => 'Daily';
+
+  @override
+  String get repeatWeekly => 'Weekly';
+
+  @override
+  String get repeatMonthly => 'Monthly';
+
+  @override
+  String get attachmentsLabel => 'Attachments';
+
+  @override
+  String get dragAndDropFiles => 'Drag and drop files here or choose a file';
+
+  @override
+  String get fileSupportHint => 'Supports JPG, PNG, PDF, DOC... (max 10MB)';
+
+  @override
+  String get quickCreationTitle => 'Quick task creation';
+
+  @override
+  String get quickCreationBody =>
+      'Fill in the details and press \"Create task\" to save and get started.';
+
+  @override
+  String get previewLabel => 'Preview';
+
+  @override
+  String get previewDescriptionDefault => 'Task description...';
+
+  @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get notifyMembers => 'Notify members';
+
+  @override
+  String get addToSprintPlan => 'Add to sprint plan';
+
+  @override
+  String get formatBold => 'Bold';
+
+  @override
+  String get formatItalic => 'Italic';
+
+  @override
+  String get formatUnderline => 'Underline';
+
+  @override
+  String get formatBulletList => 'Bullet list';
+
+  @override
+  String get formatNumberedList => 'Numbered list';
+
+  @override
+  String get formatLink => 'Link';
+
+  @override
+  String get formatImage => 'Image';
+
+  @override
+  String get formatCode => 'Code';
+
+  @override
+  String get dueDateMustBeAfterStartDate =>
+      'Due date must be after or on start date';
+
+  @override
+  String get closeTooltip => 'Close (ESC)';
+
+  @override
+  String get columnTodo => 'TO DO';
+
+  @override
+  String get columnDoing => 'IN PROGRESS';
+
+  @override
+  String get columnReview => 'REVIEW / TESTING';
+
+  @override
+  String get columnDone => 'DONE';
+
+  @override
+  String get priorityBadgeUrgent => 'Urgent';
+
+  @override
+  String get priorityBadgeHigh => 'High priority';
+
+  @override
+  String get priorityBadgeMedium => 'Medium priority';
+
+  @override
+  String get priorityBadgeLow => 'Low priority';
+
+  @override
+  String dateFrom(String date) {
+    return 'From $date';
+  }
+
+  @override
+  String dateTo(String date) {
+    return 'To $date';
+  }
+
+  @override
+  String get noDueDate => 'No due date';
+
+  @override
+  String get typeDiscussionNote => 'Type a note (Enter)...';
+
+  @override
+  String get noDiscussionNotes => 'No notes yet. Type and press Post.';
+
+  @override
+  String get themeModeLabel => 'Appearance (Theme)';
+
+  @override
+  String get themeSystem => 'System default';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get settingsTitle => 'Settings';
 }

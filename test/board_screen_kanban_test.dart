@@ -214,28 +214,29 @@ void main() {
     expect(find.text('Mobile App Tasks'), findsOneWidget);
     expect(find.byIcon(Icons.add_rounded), findsWidgets);
 
-    // Verify sub-header view tabs (Board, Canvas)
-    expect(find.byIcon(Icons.view_kanban_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.draw_rounded), findsOneWidget);
+    // Back to the board list, and Board / Canvas switches in the sidebar
+    expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.view_kanban_outlined), findsWidgets);
+    expect(find.byIcon(Icons.draw_outlined), findsOneWidget);
 
-    // Verify Filter and Sort buttons
+    // Filter field above the columns
     expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.swap_vert_rounded), findsOneWidget);
 
-    // Verify column headers (To Do, Doing, Done in Vietnamese: Cần thực hiện, Đang thực hiện, Hoàn thành)
-    expect(find.text('Cần thực hiện'), findsWidgets);
-    expect(find.text('Đang thực hiện'), findsWidgets);
-    expect(find.text('Hoàn thành'), findsWidgets);
+    // Four columns: To do, Doing, Review, Done
+    expect(find.text('CẦN LÀM'), findsWidgets);
+    expect(find.text('ĐANG LÀM'), findsWidgets);
+    expect(find.text('REVIEW / KIỂM THỬ'), findsWidgets);
+    expect(find.text('ĐÃ HOÀN THÀNH'), findsWidgets);
 
     // Verify task cards loaded from board
     expect(find.text('Customer Journey Mapping'), findsOneWidget);
     expect(find.text('Database Customization'), findsOneWidget);
     expect(find.text('Redesign Marketing Website'), findsOneWidget);
 
-    // Verify uppercase category tags
-    expect(find.text('DESIGN'), findsOneWidget);
-    expect(find.text('DEVELOPMENT'), findsOneWidget);
-    expect(find.text('MARKETING'), findsOneWidget);
+    // Task labels
+    expect(find.text('Design'), findsOneWidget);
+    expect(find.text('Development'), findsOneWidget);
+    expect(find.text('Marketing'), findsOneWidget);
   });
 
   testWidgets('BoardScreen adapts responsively on phone viewport without layout overflow', (tester) async {
@@ -255,14 +256,14 @@ void main() {
     // Must not throw any RenderFlex overflow exception
     expect(tester.takeException(), isNull);
 
-    // Filter toggle works cleanly on mobile
-    final filterButton = find.byIcon(Icons.filter_list_rounded);
-    expect(filterButton, findsOneWidget);
-    await tester.tap(filterButton);
-    await tester.pumpAndSettle();
-
-    // Filter toolbar is visible with search input
+    // Filter field is visible on mobile
+    expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
     expect(find.byType(TextField), findsWidgets);
+
+    // Menu opens the sidebar drawer
+    await tester.tap(find.byIcon(Icons.menu_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(Drawer), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

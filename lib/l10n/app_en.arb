@@ -1,11 +1,9 @@
 {
   "@@locale": "en",
-  
   "appTitle": "PeerTask",
   "@appTitle": {
     "description": "Application title"
   },
-
   "login": "Login",
   "register": "Register",
   "signIn": "Sign In",
@@ -18,7 +16,6 @@
   "dontHaveAccount": "Don't have an account?",
   "alreadyHaveAccount": "Already have an account?",
   "logout": "Logout",
-  
   "signInTitle": "SIGN IN",
   "signUpTitle": "SIGN UP",
   "signInSubtitle": "Welcome back! Please sign in to continue",
@@ -40,9 +37,8 @@
   "termsAgreement": "I agree to the Terms of Service and Privacy Policy",
   "termsAgreementRequired": "Please agree to the Terms of Service and Privacy Policy to continue",
   "byRegistering": "By registering you with our Terms and Conditions",
-  
   "emailRequired": "Email is required",
-  "emailInvalid": "Invalid email address",
+  "emailInvalid": "Enter a valid email",
   "passwordRequired": "Password is required",
   "passwordMinLength": "Password must be at least 6 characters",
   "passwordMinLength8": "Password must be at least 8 characters",
@@ -59,15 +55,23 @@
   "fieldMinLength": "{field} must be at least {min} characters",
   "@fieldMinLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
     }
   },
   "fieldMaxLength": "{field} cannot exceed {max} characters",
   "@fieldMaxLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "max": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "phoneNumberRequired": "Phone number is required",
@@ -80,23 +84,37 @@
   "valueMin": "{field} must be greater than or equal to {min}",
   "@valueMin": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "num"
+      }
     }
   },
   "valueMax": "{field} must be less than or equal to {max}",
   "@valueMax": {
     "placeholders": {
-      "field": {"type": "String"},
-      "max": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "num"
+      }
     }
   },
   "valueRange": "{field} must be between {min} and {max}",
   "@valueRange": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "num"},
-      "max": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "num"
+      },
+      "max": {
+        "type": "num"
+      }
     }
   },
   "workspaceNameRequired": "Workspace name is required",
@@ -104,7 +122,6 @@
   "workspaceNameMaxLength": "Workspace name cannot exceed 50 characters",
   "taskTitleRequired": "Task title is required",
   "taskTitleMaxLength": "Task title cannot exceed 200 characters",
-
   "workspaces": "Workspaces",
   "createWorkspace": "Create Workspace",
   "workspaceName": "Workspace Name",
@@ -121,10 +138,9 @@
   "boardCreatedSuccess": "Board \"{name}\" created successfully!",
   "noBoardsYet": "No boards yet",
   "createFirstBoard": "Create your first board to start collaborating",
-
   "inviteMembers": "Invite Members",
   "inviteLink": "Invite Link",
-  "inviteByEmail": "Invite by Email",
+  "inviteByEmail": "Invite by email",
   "joinWorkspace": "Join Workspace",
   "scanQR": "Scan QR",
   "generateInviteLink": "Generate Invite Link",
@@ -141,7 +157,6 @@
   "scanQRToJoin": "Scan QR code to join",
   "enterInviteLink": "Enter Invite Link",
   "joinedSuccessfully": "Successfully joined workspace!",
-
   "whiteboard": "Whiteboard",
   "drawingTools": "Drawing Tools",
   "select": "Select",
@@ -159,7 +174,6 @@
   "undo": "Undo",
   "redo": "Redo",
   "clear": "Clear",
-
   "properties": "Properties",
   "noObjectSelected": "No object selected",
   "selectObjectToEdit": "Select an object to edit properties",
@@ -169,31 +183,26 @@
   "priority": "Priority",
   "position": "Position",
   "delete": "Delete",
-
   "taskStatus": "Task Status",
   "todo": "To Do",
   "inProgress": "In Progress",
   "done": "Done",
   "blocked": "Blocked",
-
   "taskPriority": "Task Priority",
   "high": "High",
   "medium": "Medium",
   "low": "Low",
-
   "peers": "Peers",
   "online": "Online",
   "offline": "Offline",
   "connected": "Connected",
   "disconnected": "Disconnected",
-
   "settings": "Settings",
   "language": "Language",
   "english": "English",
   "vietnamese": "Tiếng Việt",
   "profile": "Profile",
   "about": "About",
-
   "hybridBoard": "Hybrid Board",
   "canvas": "Canvas",
   "tasks": "Tasks",
@@ -211,10 +220,9 @@
   "pending": "Pending",
   "doing": "Doing",
   "empty": "Empty",
-  
   "members": "Members",
   "addMember": "Add Member",
-  "removeMember": "Remove Member",
+  "removeMember": "Remove member",
   "changeRole": "Change Role",
   "changePermission": "Change Permission",
   "owner": "Owner",
@@ -227,7 +235,6 @@
   "permissions": "Permissions",
   "workspaceRole": "Workspace Role",
   "boardPermission": "Board Permission",
-
   "save": "Save",
   "cancel": "Cancel",
   "ok": "OK",
@@ -237,7 +244,6 @@
   "success": "Success",
   "loading": "Loading...",
   "retry": "Retry",
-
   "serverError": "Server error. Please try again later.",
   "networkError": "Network error. Please check your connection.",
   "connectionError": "Connection failed. Please try again.",
@@ -247,33 +253,24 @@
   "permissionDenied": "You don't have permission to perform this action",
   "notFound": "Resource not found",
   "invalidCredentials": "Invalid email or password",
-  "emailRequired": "Email is required",
-  "emailInvalid": "Enter a valid email",
-  "passwordRequired": "Password is required",
   "passwordTooShort": "Password must be at least 6 characters",
   "passwordsDoNotMatch": "Passwords do not match",
-  "nameRequired": "Name is required",
-  
   "taskSavedSuccess": "Task saved successfully",
   "taskUpdatedSuccess": "Task updated successfully",
   "taskDeletedSuccess": "Task deleted successfully",
   "taskSaveError": "Failed to save task",
   "taskUpdateError": "Failed to update task",
   "taskDeleteError": "Failed to delete task",
-  "taskTitleRequired": "Task title is required",
-  
   "boardUpdatedSuccess": "Board updated successfully",
   "boardDeletedSuccess": "Board deleted successfully",
   "boardUpdateError": "Failed to update board",
   "boardDeleteError": "Failed to delete board",
   "boardDeleteConfirm": "Are you sure you want to delete this board?",
   "boardNameRequired": "Board name is required",
-  
   "operationSuccess": "Operation completed successfully",
   "operationFailed": "Operation failed",
   "pleaseWait": "Please wait...",
   "processing": "Processing...",
-
   "workspace": "Workspace",
   "workspaceInfo": "Workspace Info",
   "workspaceSettings": "Workspace Settings",
@@ -307,7 +304,7 @@
   "makeMember": "Make Member",
   "remove": "Remove",
   "useInviteLinkToAdd": "Use invite link to add members",
-  "saveChanges": "Save Changes",
+  "saveChanges": "Save changes",
   "role": "Role",
   "errorLoadingMembers": "Error loading members: {error}",
   "welcome": "Welcome!",
@@ -318,7 +315,6 @@
   "yourWorkspaces": "Your Workspaces",
   "selectWorkspace": "Select a workspace to continue",
   "enterWorkspaceName": "Enter workspace name",
-  
   "taskCard": "Task Card",
   "untitled": "Untitled",
   "overdue": "Overdue",
@@ -329,7 +325,9 @@
   "moreAssignees": "{count} more",
   "@moreAssignees": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "move": "Move",
@@ -341,7 +339,7 @@
   "actualHours": "Actual Hours",
   "createdBy": "Created by",
   "updatedAt": "Updated at",
-  "createTask": "Create Task",
+  "createTask": "Create task",
   "editTask": "Edit Task",
   "deleteTask": "Delete Task",
   "deleteTaskConfirm": "Are you sure you want to delete this task?",
@@ -351,12 +349,13 @@
   "taskCount": "{count} tasks",
   "@taskCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-  "noTasks": "No tasks yet",
+  "noTasks": "No tasks",
   "addFirstTask": "Add your first task to get started",
-
   "aiBrainstorm": "AI Brainstorm",
   "aiAssistant": "AI Assistant",
   "aiThinking": "Thinking...",
@@ -365,29 +364,24 @@
   "aiConnectionError": "Cannot connect to Ollama",
   "aiConnectionErrorHint": "Make sure Ollama is running (ollama serve)",
   "aiRetryConnection": "Retry Connection",
-  
   "brainstormMode": "Brainstorm",
   "brainstormHint": "Expand ideas",
   "tasksMode": "Tasks",
   "tasksHint": "Generate task list",
   "improveMode": "Improve",
   "improveHint": "Improve text",
-  
   "enterIdeaToBrainstorm": "Enter idea to brainstorm...",
   "describeProjectForTasks": "Describe project to generate tasks...",
   "enterTextToImprove": "Enter text to improve...",
-  
   "addToBoard": "Add to Board",
   "addedToCanvas": "Added to canvas!",
   "copy": "Copy",
   "copied": "Copied!",
-  
   "mainIdea": "Main Idea",
   "relatedIdeas": "Related Ideas",
   "connections": "Connections",
   "nextActions": "Next Actions",
   "questionsToConsider": "Questions to Consider",
-  
   "highPriority": "High Priority",
   "mediumPriority": "Medium Priority",
   "lowPriority": "Low Priority",
@@ -395,23 +389,18 @@
   "summary": "Summary",
   "totalTasks": "Total Tasks",
   "estimatedTime": "Estimated Time",
-  
   "improvedText": "Improved Text",
   "changes": "Changes",
-  
   "dragToMove": "Drag to move",
   "clickToSelect": "Click to select",
   "textAddedToBoard": "Text added to board",
-  
   "voiceCall": "Voice Call",
   "startVoiceCall": "Start Voice Call",
   "endVoiceCall": "End Voice Call",
   "microphonePermissionDenied": "Microphone permission denied",
-  
   "screenshot": "Screenshot",
   "screenshotSaved": "Screenshot saved!",
   "screenshotFailed": "Failed to capture screenshot",
-  
   "canvasAndKanban": "Canvas + Kanban",
   "showKanban": "Show Kanban",
   "hideKanban": "Hide Kanban",
@@ -478,7 +467,6 @@
   "noMembersAvailable": "No members available",
   "addLabel": "Add a label",
   "selectDate": "Select date",
-  "inviteByEmail": "Invite by email",
   "workspaceOverview": "Workspace Overview",
   "openBoardHint": "Click to open board",
   "allCaughtUp": "All caught up!",
@@ -496,7 +484,9 @@
   "membersCount": "{count} members",
   "@membersCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "oneMember": "1 member",
@@ -529,7 +519,9 @@
   "greetingMorning": "Good morning, {name}!",
   "@greetingMorning": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "greetingSubtitle": "Have a productive day! Complete your pending tasks!",
@@ -571,7 +563,6 @@
   "columnTasks": "Assigned tasks",
   "columnStatus": "Activity status",
   "columnActions": "Actions",
-  "removeMember": "Remove member",
   "removeMemberConfirm": "Are you sure you want to remove this member from the workspace?",
   "noMembersFound": "No matching members found",
   "inviteSentSuccess": "Invitation sent successfully!",
@@ -591,7 +582,6 @@
   "projectName": "Project Name",
   "projectDescription": "Project Description",
   "projectOwner": "Project Owner",
-  "saveChanges": "Save Changes",
   "archiveProject": "Archive Project",
   "archiveProjectDesc": "Archive this completed project. It will become read-only.",
   "deleteProject": "Delete Project",
@@ -618,5 +608,146 @@
   "filterOverdue": "Overdue",
   "taskDeadline": "Deadline",
   "dueToday": "Due today",
-  "overdue": "Overdue"
+  "roomMembersTitle": "ROOM MEMBERS ({count})",
+  "@roomMembersTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quickDiscussionNotes": "Quick discussion notes",
+  "unassigned": "Unassigned",
+  "unknownUser": "Unknown",
+  "post": "Post",
+  "renamePage": "Rename page",
+  "deletePage": "Delete page",
+  "deletePageConfirm": "Are you sure you want to delete this page?",
+  "cannotDeleteLastPage": "Cannot delete the last page",
+  "pageNameExists": "Page name already exists",
+  "pageNameEmpty": "Page name cannot be empty",
+  "pageTitlePrefix": "Page",
+  "autoSyncP2P": "Auto-sync P2P 0.1s",
+  "leaveRoom": "Leave room",
+  "leaveRoomConfirm": "Are you sure you want to disconnect and leave the voice room?",
+  "clearCanvasConfirm": "Are you sure you want to clear all drawings and shapes on this page?",
+  "clearAll": "Clear all",
+  "undoTooltip": "Undo (Ctrl+Z)",
+  "redoTooltip": "Redo (Ctrl+Shift+Z)",
+  "toolSelect": "Select (V)",
+  "toolHand": "Pan (H)",
+  "toolPen": "Pen (P)",
+  "toolEraser": "Eraser (E)",
+  "toolRectangle": "Rectangle (R)",
+  "toolCircle": "Circle (O)",
+  "toolArrow": "Arrow (A)",
+  "toolStickyNote": "Sticky note (N)",
+  "toolText": "Text (T)",
+  "toolKanban": "Add Kanban card (K)",
+  "filterAssignee": "Assignee:",
+  "filterPriorityAll": "Priority: All",
+  "filterPriorityUrgent": "Urgent",
+  "filterPriorityHigh": "High",
+  "filterPriorityMedium": "Medium",
+  "filterPriorityLow": "Low",
+  "addColumn": "Add column",
+  "addNewCard": "Add new card",
+  "onlinePeople": "{count} online",
+  "@onlinePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceLive": "Voice live",
+  "quickMeetP2P": "P2P Quick Meet",
+  "searchPlaceholder": "Search tasks, meeting notes, drawings...",
+  "searchFilterPlaceholder": "Filter project cards...",
+  "exportAction": "Export",
+  "createNewAction": "New",
+  "createTaskCTA": "Create task",
+  "enterPageName": "Enter page name...",
+  "createNewTaskTitle": "Create new task",
+  "editTaskTitle": "Edit task",
+  "taskDialogSubtitle": "Add a task to track the progress of your work and your team.",
+  "taskNameLabel": "Task name",
+  "taskNamePlaceholder": "Enter task name...",
+  "taskNameRequired": "Please enter task name",
+  "descriptionLabel": "Description",
+  "descriptionPlaceholder": "Enter a detailed description of the task...",
+  "listLabel": "List",
+  "statusTodo": "To do",
+  "statusDoing": "In progress",
+  "statusReview": "Review / Testing",
+  "statusDone": "Done",
+  "priorityLabel": "Priority",
+  "priorityUrgent": "Urgent",
+  "priorityHigh": "High",
+  "priorityMedium": "Medium",
+  "priorityLow": "Low",
+  "assigneeLabel": "Assignee",
+  "selectMemberPlaceholder": "Select member...",
+  "labelsLabel": "Labels",
+  "startDateLabel": "Start date",
+  "dueDateLabel": "Due date",
+  "pickDate": "Pick a date",
+  "setReminder": "Set reminder",
+  "repeatIntervalLabel": "Repeat",
+  "doesNotRepeat": "Does not repeat",
+  "repeatDaily": "Daily",
+  "repeatWeekly": "Weekly",
+  "repeatMonthly": "Monthly",
+  "attachmentsLabel": "Attachments",
+  "dragAndDropFiles": "Drag and drop files here or choose a file",
+  "fileSupportHint": "Supports JPG, PNG, PDF, DOC... (max 10MB)",
+  "quickCreationTitle": "Quick task creation",
+  "quickCreationBody": "Fill in the details and press \"Create task\" to save and get started.",
+  "previewLabel": "Preview",
+  "previewDescriptionDefault": "Task description...",
+  "moreOptions": "More options",
+  "notifyMembers": "Notify members",
+  "addToSprintPlan": "Add to sprint plan",
+  "formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatUnderline": "Underline",
+  "formatBulletList": "Bullet list",
+  "formatNumberedList": "Numbered list",
+  "formatLink": "Link",
+  "formatImage": "Image",
+  "formatCode": "Code",
+  "dueDateMustBeAfterStartDate": "Due date must be after or on start date",
+  "closeTooltip": "Close (ESC)",
+  "columnTodo": "TO DO",
+  "columnDoing": "IN PROGRESS",
+  "columnReview": "REVIEW / TESTING",
+  "columnDone": "DONE",
+  "priorityBadgeUrgent": "Urgent",
+  "priorityBadgeHigh": "High priority",
+  "priorityBadgeMedium": "Medium priority",
+  "priorityBadgeLow": "Low priority",
+  "dateFrom": "From {date}",
+  "@dateFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dateTo": "To {date}",
+  "@dateTo": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "noDueDate": "No due date",
+  "typeDiscussionNote": "Type a note (Enter)...",
+  "noDiscussionNotes": "No notes yet. Type and press Post.",
+  "themeModeLabel": "Appearance (Theme)",
+  "themeSystem": "System default",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "settingsTitle": "Settings"
 }

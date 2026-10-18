@@ -1,11 +1,9 @@
 {
   "@@locale": "vi",
-  
   "appTitle": "PeerTask",
   "@appTitle": {
     "description": "Tên ứng dụng"
   },
-
   "login": "Đăng nhập",
   "register": "Đăng ký",
   "signIn": "Đăng nhập",
@@ -18,7 +16,6 @@
   "dontHaveAccount": "Chưa có tài khoản?",
   "alreadyHaveAccount": "Đã có tài khoản?",
   "logout": "Đăng xuất",
-  
   "signInTitle": "ĐĂNG NHẬP",
   "signUpTitle": "ĐĂNG KÝ",
   "signInSubtitle": "Chào mừng trở lại! Vui lòng đăng nhập để tiếp tục",
@@ -40,10 +37,9 @@
   "termsAgreement": "Tôi đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư",
   "termsAgreementRequired": "Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư để tiếp tục",
   "byRegistering": "Bằng việc đăng ký, bạn đồng ý với Điều khoản và Điều kiện của chúng tôi",
-  
-  "emailRequired": "Email không được để trống",
-  "emailInvalid": "Email không hợp lệ",
-  "passwordRequired": "Mật khẩu không được để trống",
+  "emailRequired": "Vui lòng nhập email",
+  "emailInvalid": "Vui lòng nhập email hợp lệ",
+  "passwordRequired": "Vui lòng nhập mật khẩu",
   "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
   "passwordMinLength8": "Mật khẩu phải có ít nhất 8 ký tự",
   "passwordRequireUppercase": "Mật khẩu phải có ít nhất 1 chữ hoa",
@@ -51,7 +47,7 @@
   "passwordRequireDigit": "Mật khẩu phải có ít nhất 1 chữ số",
   "passwordConfirmRequired": "Vui lòng xác nhận mật khẩu",
   "passwordNotMatch": "Mật khẩu không khớp",
-  "nameRequired": "Tên không được để trống",
+  "nameRequired": "Vui lòng nhập tên",
   "nameMinLength": "Tên phải có ít nhất 2 ký tự",
   "nameMaxLength": "Tên không được quá 50 ký tự",
   "nameLettersOnly": "Tên chỉ được chứa chữ cái",
@@ -59,15 +55,23 @@
   "fieldMinLength": "{field} phải có ít nhất {min} ký tự",
   "@fieldMinLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
     }
   },
   "fieldMaxLength": "{field} không được quá {max} ký tự",
   "@fieldMaxLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "max": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "phoneNumberRequired": "Số điện thoại không được để trống",
@@ -80,31 +84,44 @@
   "valueMin": "{field} phải lớn hơn hoặc bằng {min}",
   "@valueMin": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "num"
+      }
     }
   },
   "valueMax": "{field} phải nhỏ hơn hoặc bằng {max}",
   "@valueMax": {
     "placeholders": {
-      "field": {"type": "String"},
-      "max": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "num"
+      }
     }
   },
   "valueRange": "{field} phải nằm trong khoảng {min} - {max}",
   "@valueRange": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "num"},
-      "max": {"type": "num"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "num"
+      },
+      "max": {
+        "type": "num"
+      }
     }
   },
   "workspaceNameRequired": "Tên workspace không được để trống",
   "workspaceNameMinLength": "Tên workspace phải có ít nhất 3 ký tự",
   "workspaceNameMaxLength": "Tên workspace không được quá 50 ký tự",
-  "taskTitleRequired": "Tiêu đề task không được để trống",
+  "taskTitleRequired": "Vui lòng nhập tên công việc",
   "taskTitleMaxLength": "Tiêu đề task không được quá 200 ký tự",
-
   "workspaces": "Không gian làm việc",
   "createWorkspace": "Tạo không gian mới",
   "workspaceName": "Tên không gian",
@@ -121,10 +138,9 @@
   "boardCreatedSuccess": "Đã tạo bảng \"{name}\" thành công!",
   "noBoardsYet": "Chưa có bảng nào",
   "createFirstBoard": "Tạo bảng đầu tiên để bắt đầu cộng tác",
-
   "inviteMembers": "Mời thành viên",
   "inviteLink": "Link mời",
-  "inviteByEmail": "Mời qua Email",
+  "inviteByEmail": "Mời bằng email",
   "joinWorkspace": "Tham gia nhóm",
   "scanQR": "Quét mã QR",
   "generateInviteLink": "Tạo link mời",
@@ -141,7 +157,6 @@
   "scanQRToJoin": "Quét mã QR để tham gia",
   "enterInviteLink": "Nhập link mời",
   "joinedSuccessfully": "Đã tham gia nhóm thành công!",
-
   "whiteboard": "Bảng vẽ",
   "drawingTools": "Công cụ vẽ",
   "select": "Chọn",
@@ -159,7 +174,6 @@
   "undo": "Hoàn tác",
   "redo": "Làm lại",
   "clear": "Xóa tất cả",
-
   "properties": "Thuộc tính",
   "noObjectSelected": "Chưa chọn đối tượng",
   "selectObjectToEdit": "Chọn đối tượng để chỉnh sửa",
@@ -169,31 +183,26 @@
   "priority": "Độ ưu tiên",
   "position": "Vị trí",
   "delete": "Xóa",
-
   "taskStatus": "Trạng thái công việc",
   "todo": "Cần thực hiện",
   "inProgress": "Đang thực hiện",
   "done": "Hoàn thành",
   "blocked": "Bị chặn",
-
   "taskPriority": "Độ ưu tiên",
   "high": "Cao",
   "medium": "Trung bình",
   "low": "Thấp",
-
   "peers": "Thành viên",
   "online": "Trực tuyến",
   "offline": "Ngoại tuyến",
   "connected": "Đã kết nối",
   "disconnected": "Mất kết nối",
-
   "settings": "Cài đặt",
   "language": "Ngôn ngữ",
   "english": "English",
   "vietnamese": "Tiếng Việt",
   "profile": "Hồ sơ",
   "about": "Giới thiệu",
-
   "hybridBoard": "Bảng Lai",
   "canvas": "Bảng vẽ",
   "tasks": "Công việc",
@@ -211,7 +220,6 @@
   "pending": "Chờ xử lý",
   "doing": "Đang thực hiện",
   "empty": "Trống",
-  
   "members": "Thành viên",
   "addMember": "Thêm thành viên",
   "removeMember": "Xóa thành viên",
@@ -227,7 +235,6 @@
   "permissions": "Quyền hạn",
   "workspaceRole": "Vai trò không gian",
   "boardPermission": "Quyền bảng",
-
   "save": "Lưu",
   "cancel": "Hủy",
   "ok": "OK",
@@ -237,7 +244,6 @@
   "success": "Thành công",
   "loading": "Đang tải...",
   "retry": "Thử lại",
-
   "serverError": "Lỗi máy chủ. Vui lòng thử lại sau.",
   "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
   "connectionError": "Kết nối thất bại. Vui lòng thử lại.",
@@ -247,33 +253,24 @@
   "permissionDenied": "Bạn không có quyền thực hiện thao tác này",
   "notFound": "Không tìm thấy tài nguyên",
   "invalidCredentials": "Email hoặc mật khẩu không đúng",
-  "emailRequired": "Vui lòng nhập email",
-  "emailInvalid": "Vui lòng nhập email hợp lệ",
-  "passwordRequired": "Vui lòng nhập mật khẩu",
   "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
   "passwordsDoNotMatch": "Mật khẩu không khớp",
-  "nameRequired": "Vui lòng nhập tên",
-  
   "taskSavedSuccess": "Đã lưu công việc thành công",
   "taskUpdatedSuccess": "Đã cập nhật công việc thành công",
   "taskDeletedSuccess": "Đã xóa công việc thành công",
   "taskSaveError": "Không thể lưu công việc",
   "taskUpdateError": "Không thể cập nhật công việc",
   "taskDeleteError": "Không thể xóa công việc",
-  "taskTitleRequired": "Vui lòng nhập tên công việc",
-  
   "boardUpdatedSuccess": "Đã cập nhật bảng thành công",
   "boardDeletedSuccess": "Đã xóa bảng thành công",
   "boardUpdateError": "Không thể cập nhật bảng",
   "boardDeleteError": "Không thể xóa bảng",
   "boardDeleteConfirm": "Bạn có chắc muốn xóa bảng này?",
   "boardNameRequired": "Vui lòng nhập tên bảng",
-  
   "operationSuccess": "Thao tác hoàn thành thành công",
   "operationFailed": "Thao tác thất bại",
   "pleaseWait": "Vui lòng đợi...",
   "processing": "Đang xử lý...",
-
   "workspace": "Không gian",
   "workspaceInfo": "Thông tin không gian",
   "workspaceSettings": "Cài đặt không gian",
@@ -318,7 +315,6 @@
   "yourWorkspaces": "Không gian của bạn",
   "selectWorkspace": "Chọn một không gian để tiếp tục",
   "enterWorkspaceName": "Nhập tên không gian",
-  
   "taskCard": "Thẻ công việc",
   "untitled": "Chưa đặt tên",
   "overdue": "Quá hạn",
@@ -329,7 +325,9 @@
   "moreAssignees": "Còn {count} người",
   "@moreAssignees": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "move": "Di chuyển",
@@ -341,7 +339,7 @@
   "actualHours": "Thời gian thực tế",
   "createdBy": "Tạo bởi",
   "updatedAt": "Cập nhật lúc",
-  "createTask": "Tạo công việc",
+  "createTask": "Tạo nhiệm vụ",
   "editTask": "Sửa công việc",
   "deleteTask": "Xóa công việc",
   "deleteTaskConfirm": "Bạn có chắc muốn xóa công việc này?",
@@ -351,12 +349,13 @@
   "taskCount": "{count} công việc",
   "@taskCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-  "noTasks": "Chưa có công việc nào",
+  "noTasks": "Chưa có nhiệm vụ",
   "addFirstTask": "Thêm công việc đầu tiên để bắt đầu",
-
   "aiBrainstorm": "AI Brainstorm",
   "aiAssistant": "Trợ lý AI",
   "aiThinking": "Đang suy nghĩ...",
@@ -365,29 +364,24 @@
   "aiConnectionError": "Không thể kết nối Ollama",
   "aiConnectionErrorHint": "Hãy chắc chắn Ollama đang chạy (ollama serve)",
   "aiRetryConnection": "Thử kết nối lại",
-  
   "brainstormMode": "Brainstorm",
   "brainstormHint": "Mở rộng ý tưởng",
   "tasksMode": "Công việc",
   "tasksHint": "Tạo danh sách việc",
   "improveMode": "Cải thiện",
   "improveHint": "Cải thiện văn bản",
-  
   "enterIdeaToBrainstorm": "Nhập ý tưởng để brainstorm...",
   "describeProjectForTasks": "Mô tả dự án để tạo danh sách công việc...",
   "enterTextToImprove": "Nhập văn bản cần cải thiện...",
-  
   "addToBoard": "Thêm vào bảng",
   "addedToCanvas": "Đã thêm vào canvas!",
   "copy": "Sao chép",
   "copied": "Đã sao chép!",
-  
   "mainIdea": "Ý tưởng chính",
   "relatedIdeas": "Ý tưởng liên quan",
   "connections": "Kết nối",
   "nextActions": "Hành động tiếp theo",
   "questionsToConsider": "Câu hỏi để suy ngẫm",
-  
   "highPriority": "Ưu tiên cao",
   "mediumPriority": "Ưu tiên trung bình",
   "lowPriority": "Ưu tiên thấp",
@@ -395,23 +389,18 @@
   "summary": "Tổng kết",
   "totalTasks": "Tổng số công việc",
   "estimatedTime": "Thời gian ước tính",
-  
   "improvedText": "Văn bản cải thiện",
   "changes": "Thay đổi",
-  
   "dragToMove": "Kéo để di chuyển",
   "clickToSelect": "Nhấn để chọn",
   "textAddedToBoard": "Đã thêm văn bản vào bảng",
-  
   "voiceCall": "Gọi thoại",
   "startVoiceCall": "Bắt đầu gọi thoại",
   "endVoiceCall": "Kết thúc cuộc gọi",
   "microphonePermissionDenied": "Quyền truy cập micro bị từ chối",
-  
   "screenshot": "Chụp màn hình",
   "screenshotSaved": "Đã lưu ảnh chụp màn hình!",
   "screenshotFailed": "Không thể chụp màn hình",
-  
   "canvasAndKanban": "Canvas + Kanban",
   "showKanban": "Hiện Kanban",
   "hideKanban": "Ẩn Kanban",
@@ -478,7 +467,6 @@
   "noMembersAvailable": "Chưa có thành viên",
   "addLabel": "Thêm nhãn",
   "selectDate": "Chọn ngày",
-  "inviteByEmail": "Mời bằng email",
   "workspaceOverview": "Tổng quan không gian làm việc",
   "openBoardHint": "Nhấn để mở bảng",
   "allCaughtUp": "Không có việc tồn đọng!",
@@ -496,7 +484,9 @@
   "membersCount": "{count} thành viên",
   "@membersCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "oneMember": "1 thành viên",
@@ -529,7 +519,9 @@
   "greetingMorning": "Chào buổi sáng, {name}!",
   "@greetingMorning": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "greetingSubtitle": "Chúc bạn một ngày làm việc hiệu quả! Hãy hoàn thành những nhiệm vụ đang chờ nhé!",
@@ -571,7 +563,6 @@
   "columnTasks": "Số task đang phụ trách",
   "columnStatus": "Trạng thái hoạt động",
   "columnActions": "Thao tác",
-  "removeMember": "Xóa thành viên",
   "removeMemberConfirm": "Bạn có chắc muốn xóa thành viên này khỏi không gian làm việc?",
   "noMembersFound": "Không tìm thấy thành viên nào phù hợp",
   "inviteSentSuccess": "Đã gửi lời mời thành công!",
@@ -591,7 +582,6 @@
   "projectName": "Tên dự án",
   "projectDescription": "Mô tả dự án",
   "projectOwner": "Chủ sở hữu dự án",
-  "saveChanges": "Lưu thay đổi",
   "archiveProject": "Lưu trữ dự án",
   "archiveProjectDesc": "Lưu trữ dự án khi đã hoàn thành. Dự án sẽ chuyển sang chế độ chỉ đọc.",
   "deleteProject": "Xóa dự án",
@@ -618,5 +608,146 @@
   "filterOverdue": "Quá hạn",
   "taskDeadline": "Hạn chót",
   "dueToday": "Hôm nay",
-  "overdue": "Quá hạn"
+  "roomMembersTitle": "THÀNH VIÊN TRONG PHÒNG ({count})",
+  "@roomMembersTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quickDiscussionNotes": "Ghi chú thảo luận nhanh",
+  "unassigned": "Chưa giao",
+  "unknownUser": "Không xác định",
+  "post": "Đăng",
+  "renamePage": "Đổi tên trang",
+  "deletePage": "Xóa trang",
+  "deletePageConfirm": "Bạn có chắc chắn muốn xóa trang này không?",
+  "cannotDeleteLastPage": "Không thể xóa trang cuối cùng",
+  "pageNameExists": "Tên trang đã tồn tại",
+  "pageNameEmpty": "Tên trang không được để trống",
+  "pageTitlePrefix": "Trang",
+  "autoSyncP2P": "Tự động đồng bộ P2P 0.1s",
+  "leaveRoom": "Rời phòng",
+  "leaveRoomConfirm": "Bạn có chắc chắn muốn ngắt kết nối và rời phòng họp thoại không?",
+  "clearCanvasConfirm": "Bạn có chắc chắn muốn xóa toàn bộ nét vẽ và hình trên trang này?",
+  "clearAll": "Xóa tất cả",
+  "undoTooltip": "Hoàn tác (Ctrl+Z)",
+  "redoTooltip": "Làm lại (Ctrl+Shift+Z)",
+  "toolSelect": "Chọn (V)",
+  "toolHand": "Di chuyển tay (H)",
+  "toolPen": "Bút vẽ (P)",
+  "toolEraser": "Cục tẩy (E)",
+  "toolRectangle": "Hình chữ nhật (R)",
+  "toolCircle": "Hình tròn (O)",
+  "toolArrow": "Mũi tên (A)",
+  "toolStickyNote": "Ghi chú sticky (N)",
+  "toolText": "Văn bản (T)",
+  "toolKanban": "Thêm thẻ Kanban (K)",
+  "filterAssignee": "Phụ trách:",
+  "filterPriorityAll": "Mức ưu tiên: Tất cả",
+  "filterPriorityUrgent": "Khẩn cấp",
+  "filterPriorityHigh": "Ưu tiên cao",
+  "filterPriorityMedium": "Ưu tiên trung bình",
+  "filterPriorityLow": "Ưu tiên thấp",
+  "addColumn": "Thêm cột",
+  "addNewCard": "Thêm thẻ mới",
+  "onlinePeople": "{count} người online",
+  "@onlinePeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceLive": "Voice live",
+  "quickMeetP2P": "Họp nhanh P2P",
+  "searchPlaceholder": "Tìm việc, ghi chú cuộc họp, bảng vẽ...",
+  "searchFilterPlaceholder": "Lọc thẻ dự án...",
+  "exportAction": "Export",
+  "createNewAction": "Tạo mới",
+  "createTaskCTA": "Tạo nhiệm vụ",
+  "enterPageName": "Nhập tên trang...",
+  "createNewTaskTitle": "Tạo nhiệm vụ mới",
+  "editTaskTitle": "Chỉnh sửa nhiệm vụ",
+  "taskDialogSubtitle": "Thêm nhiệm vụ để theo dõi tiến độ công việc của bạn và nhóm.",
+  "taskNameLabel": "Tên nhiệm vụ",
+  "taskNamePlaceholder": "Nhập tên nhiệm vụ...",
+  "taskNameRequired": "Vui lòng nhập tên nhiệm vụ",
+  "descriptionLabel": "Mô tả",
+  "descriptionPlaceholder": "Nhập mô tả chi tiết về nhiệm vụ...",
+  "listLabel": "Danh sách",
+  "statusTodo": "Cần làm",
+  "statusDoing": "Đang làm",
+  "statusReview": "Review / Kiểm thử",
+  "statusDone": "Đã hoàn thành",
+  "priorityLabel": "Độ ưu tiên",
+  "priorityUrgent": "Khẩn cấp",
+  "priorityHigh": "Cao",
+  "priorityMedium": "Trung bình",
+  "priorityLow": "Thấp",
+  "assigneeLabel": "Người phụ trách",
+  "selectMemberPlaceholder": "Chọn thành viên...",
+  "labelsLabel": "Nhãn (Label)",
+  "startDateLabel": "Ngày bắt đầu",
+  "dueDateLabel": "Hạn hoàn thành",
+  "pickDate": "Chọn ngày",
+  "setReminder": "Đặt lời nhắc",
+  "repeatIntervalLabel": "Lặp lại",
+  "doesNotRepeat": "Không lặp lại",
+  "repeatDaily": "Hàng ngày",
+  "repeatWeekly": "Hàng tuần",
+  "repeatMonthly": "Hàng tháng",
+  "attachmentsLabel": "File đính kèm",
+  "dragAndDropFiles": "Kéo thả file tại đây hoặc chọn file",
+  "fileSupportHint": "Hỗ trợ JPG, PNG, PDF, DOC... (tối đa 10MB)",
+  "quickCreationTitle": "Tạo nhiệm vụ nhanh chóng",
+  "quickCreationBody": "Điền thông tin và nhấn \"Tạo nhiệm vụ\" để lưu và bắt đầu làm việc.",
+  "previewLabel": "Xem trước",
+  "previewDescriptionDefault": "Mô tả nhiệm vụ...",
+  "moreOptions": "Tùy chọn khác",
+  "notifyMembers": "Gửi thông báo cho các thành viên",
+  "addToSprintPlan": "Thêm vào kế hoạch sprint",
+  "formatBold": "In đậm",
+  "formatItalic": "In nghiêng",
+  "formatUnderline": "Gạch chân",
+  "formatBulletList": "Danh sách",
+  "formatNumberedList": "Danh sách số",
+  "formatLink": "Liên kết",
+  "formatImage": "Hình ảnh",
+  "formatCode": "Mã",
+  "dueDateMustBeAfterStartDate": "Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu",
+  "closeTooltip": "Đóng (ESC)",
+  "columnTodo": "CẦN LÀM",
+  "columnDoing": "ĐANG LÀM",
+  "columnReview": "REVIEW / KIỂM THỬ",
+  "columnDone": "ĐÃ HOÀN THÀNH",
+  "priorityBadgeUrgent": "Khẩn cấp",
+  "priorityBadgeHigh": "Ưu tiên cao",
+  "priorityBadgeMedium": "Ưu tiên trung bình",
+  "priorityBadgeLow": "Ưu tiên thấp",
+  "dateFrom": "Từ {date}",
+  "@dateFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dateTo": "Đến {date}",
+  "@dateTo": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "noDueDate": "Chưa đặt hạn",
+  "typeDiscussionNote": "Nhập ghi chú (Enter)...",
+  "noDiscussionNotes": "Chưa có ghi chú nào. Nhập và nhấn Đăng.",
+  "themeModeLabel": "Giao diện",
+  "themeSystem": "Theo hệ thống",
+  "themeLight": "Sáng",
+  "themeDark": "Tối",
+  "settingsTitle": "Cài đặt"
 }
