@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/task_model.dart';
-import '../../services/cloudinary_service.dart';
 
 /// Label definitions with modern pastel background and text colors
 class _LabelItem {
@@ -387,7 +386,26 @@ class _TaskDialogState extends State<TaskDialog> {
         child: Stack(
           children: [
             InteractiveViewer(
-              child: Center(child: Image.network(url, fit: BoxFit.contain)),
+              child: Center(
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (_, child, progress) => progress == null
+                      ? child
+                      : const Padding(
+                          padding: EdgeInsets.all(48),
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                  errorBuilder: (_, __, ___) => const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white70,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
             ),
             Positioned(
               top: 4,
@@ -1565,7 +1583,6 @@ class _TaskDialogState extends State<TaskDialog> {
   // ==================== Image attachments ====================
   Widget _buildImageAttachments(bool isDark, AppLocalizations l10n) {
     const accent = Color(0xFF5B4CF0);
-    final cloudinary = CloudinaryService();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1659,11 +1676,8 @@ class _TaskDialogState extends State<TaskDialog> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              cloudinary.getOptimizedUrl(
-                                a['url'] as String,
-                                width: 168,
-                                height: 168,
-                              ),
+                              a['url'] as String,
+                              cacheWidth: 168,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
                                 color: isDark

@@ -296,13 +296,6 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
       default:
         activeContent = dashboardView;
     }
-    activeContent = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1300),
-        child: activeContent,
-      ),
-    );
 
     if (isDesktop) {
       return Scaffold(
@@ -325,9 +318,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
                 ref.read(_currentTabProvider.notifier).state = 1;
               },
               user: authState.user,
-              onSettingsTap: () {
-                ref.read(_currentTabProvider.notifier).state = 4;
-              },
+              onSettingsTap: () => context.push('/settings'),
               onBrandTap: _navigateToHome,
             ),
 
@@ -336,9 +327,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               child: Column(
                 children: [
                   DashboardTopBar(
-                    onProfileTap: () {
-                      ref.read(_currentTabProvider.notifier).state = 4;
-                    },
+                    onProfileTap: () => context.push('/settings'),
                     onBrandTap: _navigateToHome,
                     onBack: _navigateToHome,
                     title: workspace?.name,
@@ -426,7 +415,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
           user: authState.user,
           onSettingsTap: () {
             Navigator.pop(context);
-            ref.read(_currentTabProvider.notifier).state = 4;
+            context.push('/settings');
           },
           onBrandTap: _navigateToHome,
         ),
