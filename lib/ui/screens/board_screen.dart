@@ -9,6 +9,7 @@ import '../../models/operation/operation.dart';
 import '../../models/task_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/cloudinary_service.dart';
 import '../../utils/error_display.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
@@ -182,15 +183,16 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
           .getBoardTasks(widget.boardId);
       final notifier = ref.read(whiteboardProvider.notifier);
       for (final task in tasks) {
+        final stamp = DateTime.tryParse(
+          (task['updated_at'] ?? task['created_at'] ?? '').toString(),
+        );
         notifier.receiveOperation(
           Operation(
-            opId: task['id'] ?? 'task-${DateTime.now().millisecondsSinceEpoch}',
+            opId: 'api-${task['id']}-${stamp?.millisecondsSinceEpoch ?? 0}',
             actor: task['created_by'] ?? 'backend',
-            timestamp: task['created_at'] != null
-                ? DateTime.parse(
-                    task['created_at'] as String,
-                  ).millisecondsSinceEpoch
-                : DateTime.now().millisecondsSinceEpoch,
+            timestamp:
+                stamp?.millisecondsSinceEpoch ??
+                DateTime.now().millisecondsSinceEpoch,
             type: OperationType.createObject,
             payload: {
               'id': task['id'],
@@ -205,10 +207,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 'deadline': task['deadline'],
                 'startDate': task['start_date'] ?? task['startDate'],
                 'labels': task['labels'] ?? [],
+                'attachments': task['attachments'] ?? [],
+                'estimated_hours': task['estimated_hours'],
                 'position': task['position'],
                 'created_by': task['created_by'],
                 'creator_name': task['creator_name'],
                 'created_at': task['created_at'],
+                'updated_at': task['updated_at'],
               },
             },
           ),
@@ -224,9 +229,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
 
   void _openTask(Map<String, dynamic>? task, {String status = 'todo'}) {
     final existingStartDate = task != null ? _getTaskStartDate(task) : null;
-    final cleanDesc = task != null
-        ? _getCleanDescription(task['description'] as String?)
-        : null;
 
     showDialog(
       context: context,
@@ -238,7 +240,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 id: task['id'] ?? '',
                 boardId: widget.boardId,
                 title: task['title'] ?? '',
-                description: cleanDesc,
+                description: task['description'] as String?,
                 status: task['status'] ?? status,
                 priority: task['priority'] ?? 'medium',
                 assignees: List<String>.from(task['assignees'] ?? []),
@@ -254,6 +256,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
               )
             : null,
         boardMembers: _members,
+        initialAttachments: [
+          for (final a in (task?['attachments'] as List?) ?? const [])
+            if (a is Map) Map<String, dynamic>.from(a),
+        ],
+        onUploadImage: (bytes, fileName) => CloudinaryService().uploadImage(
+          api: ref.read(apiServiceProvider),
+          imageBytes: bytes,
+          fileName: fileName,
+        ),
         onSave:
             ({
               required String title,
@@ -265,6 +276,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
               List<String>? assignees,
               List<String>? labels,
               double? estimatedHours,
+              List<Map<String, dynamic>>? attachments,
             }) async {
               if (task == null) {
                 await _createTask(
@@ -277,6 +289,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                   assignees: assignees,
                   labels: labels,
                   estimatedHours: estimatedHours,
+                  attachments: attachments,
                 );
               } else {
                 await _updateTask(
@@ -289,6 +302,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                   startDate: startDate,
                   assignees: assignees,
                   labels: labels,
+                  estimatedHours: estimatedHours,
+                  attachments: attachments,
                 );
               }
             },
@@ -307,6 +322,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     List<String>? assignees,
     List<String>? labels,
     double? estimatedHours,
+    List<Map<String, dynamic>>? attachments,
   }) async {
     try {
       final response = await ref
@@ -321,6 +337,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
             assignees: assignees,
             labels: labels,
             estimatedHours: estimatedHours,
+            attachments: attachments,
           );
       ref.read(whiteboardProvider.notifier).createOperation(
         OperationType.createObject,
@@ -361,23 +378,43 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     DateTime? startDate,
     List<String>? assignees,
     List<String>? labels,
+    double? estimatedHours,
+    List<Map<String, dynamic>>? attachments,
   }) async {
     try {
-      final updatedData = {
-        'id': taskId,
-        'title': title,
-        'description': description,
-        'priority': priority,
-        'status': status,
-        'deadline': deadline?.toIso8601String(),
-        'startDate': startDate?.toIso8601String(),
-        'assignees': assignees ?? [],
-        'labels': labels ?? [],
-      };
+      final response = await ref
+          .read(apiServiceProvider)
+          .updateTask(
+            taskId: taskId,
+            title: title,
+            description: description ?? '',
+            priority: priority,
+            status: status,
+            deadline: deadline,
+            assignees: assignees ?? [],
+            labels: labels ?? [],
+            estimatedHours: estimatedHours,
+            attachments: attachments,
+          );
       ref.read(whiteboardProvider.notifier).createOperation(
         OperationType.updateObject,
-        {'id': taskId, 'type': 'task', 'data': updatedData},
-        shouldSaveBackend: true,
+        {
+          'id': taskId,
+          'type': 'task',
+          'data': {
+            ...response,
+            'title': title,
+            'description': description,
+            'priority': priority,
+            'status': status,
+            'deadline': deadline?.toIso8601String(),
+            'startDate': startDate?.toIso8601String(),
+            'assignees': assignees ?? [],
+            'labels': labels ?? [],
+            if (attachments != null) 'attachments': attachments,
+          },
+        },
+        shouldSaveBackend: false,
       );
       if (mounted)
         AppToast.show(
@@ -389,28 +426,44 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     }
   }
 
+  void _broadcastTaskStatus(String taskId, String status) {
+    ref.read(whiteboardProvider.notifier).createOperation(
+      OperationType.updateObject,
+      {
+        'id': taskId,
+        'type': 'task',
+        'data': {'status': status},
+      },
+      shouldSaveBackend: false,
+    );
+  }
+
   Future<void> _moveTask(String taskId, String status) async {
+    final current = _scene(
+      ref.read(whiteboardProvider).operations,
+      AppLocalizations.of(context)!,
+    ).tasks.where((t) => t['id'] == taskId).firstOrNull;
+    final oldStatus = current?['status'] as String?;
+    if (oldStatus == status) return;
+
+    _broadcastTaskStatus(taskId, status);
     try {
-      ref.read(whiteboardProvider.notifier).createOperation(
-        OperationType.updateObject,
-        {
-          'id': taskId,
-          'type': 'task',
-          'data': {'status': status},
-        },
-        shouldSaveBackend: true,
-      );
+      await ref
+          .read(apiServiceProvider)
+          .moveTask(taskId: taskId, status: status, boardId: widget.boardId);
     } catch (e) {
+      if (oldStatus != null) _broadcastTaskStatus(taskId, oldStatus);
       if (mounted) context.showErrorSnackBar(e);
     }
   }
 
   Future<void> _deleteTask(String taskId) async {
     try {
+      await ref.read(apiServiceProvider).deleteTask(taskId);
       ref.read(whiteboardProvider.notifier).createOperation(
         OperationType.deleteObject,
         {'id': taskId, 'type': 'task'},
-        shouldSaveBackend: true,
+        shouldSaveBackend: false,
       );
       if (mounted)
         AppToast.show(
@@ -1113,9 +1166,21 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     return null;
   }
 
+  static final _checklistLine = RegExp(
+    r'^\s*-\s*\[([ xX])\].*$',
+    multiLine: true,
+  );
+
+  ({int done, int total}) _checklistProgress(String? raw) {
+    final items = _checklistLine.allMatches(raw ?? '').toList();
+    final done = items.where((m) => m.group(1)!.toLowerCase() == 'x').length;
+    return (done: done, total: items.length);
+  }
+
   String _getCleanDescription(String? raw) {
     if (raw == null) return '';
     var clean = raw.replaceAll(RegExp(r'<!--start_date:[^>]+-->'), '');
+    clean = clean.replaceAll(_checklistLine, '');
     clean = clean.replaceAll(RegExp(r'<!--[^>]*-->'), '');
     clean = clean.replaceAll(RegExp(r'<[^>]*>'), ' ');
     return clean.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -1146,8 +1211,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     final discussionNotes = <Map<String, dynamic>>[];
     final tasks = <Map<String, dynamic>>[];
     final pages = <Map<String, dynamic>>[];
+    final taskOps = <Operation>[];
 
     for (final op in operations) {
+      if (op.payload['type'] == 'task') {
+        taskOps.add(op);
+        continue;
+      }
       if (op.type == OperationType.deleteObject &&
           (op.payload['objectType'] == 'all' || op.payload['type'] == 'all')) {
         strokes.clear();
@@ -1167,7 +1237,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
         notes.removeWhere((item) => item['id'] == id);
         texts.removeWhere((item) => item['id'] == id);
         discussionNotes.removeWhere((item) => item['id'] == id);
-        tasks.removeWhere((item) => item['id'] == id);
         pages.removeWhere((item) => item['id'] == id);
         continue;
       }
@@ -1197,14 +1266,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
           discussionNotes.removeWhere((item) => item['id'] == id);
           discussionNotes.add(data);
           break;
-        case 'task':
-          tasks.removeWhere((item) => item['id'] == id);
-          tasks.add(data);
-          break;
         case 'whiteboard_page':
           pages.removeWhere((item) => item['id'] == id);
           pages.add(data);
           break;
+      }
+    }
+
+    taskOps.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    for (final op in taskOps) {
+      final id = op.payload['id'] as String?;
+      if (id == null) continue;
+      final index = tasks.indexWhere((t) => t['id'] == id);
+      if (op.type == OperationType.deleteObject) {
+        if (index >= 0) tasks.removeAt(index);
+        continue;
+      }
+      final data = Map<String, dynamic>.from(op.payload['data'] ?? {});
+      if (op.type == OperationType.createObject) {
+        final task = {'id': id, ...data};
+        if (index >= 0) {
+          tasks[index] = task;
+        } else {
+          tasks.add(task);
+        }
+      } else if (index >= 0) {
+        tasks[index] = {...tasks[index], ...data, 'id': id};
       }
     }
 
@@ -2007,30 +2094,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 if (!_isSidebarCollapsed) ...[
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          selfName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1E1B4B),
-                          ),
-                        ),
-                        Text(
-                          ref.watch(authStateProvider).user?.email ?? '',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      selfName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                      ),
                     ),
                   ),
                   const Icon(
@@ -3416,6 +3488,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     final title =
         task['title'] as String? ?? AppLocalizations.of(context)!.newTaskTitle;
     final desc = _getCleanDescription(task['description'] as String?);
+    final checklist = _checklistProgress(task['description'] as String?);
+    final attachmentCount = (task['attachments'] as List?)?.length ?? 0;
     final priority = task['priority'] as String? ?? 'medium';
     final labels = List<String>.from(task['labels'] ?? []);
     final startDate = _getTaskStartDate(task);
@@ -3568,6 +3642,51 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 ),
               ],
             ),
+
+            if (checklist.total > 0 || attachmentCount > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  if (checklist.total > 0) ...[
+                    Icon(
+                      Icons.checklist_rounded,
+                      size: 15,
+                      color: checklist.done == checklist.total
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${checklist.done}/${checklist.total}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: checklist.done == checklist.total
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  if (attachmentCount > 0) ...[
+                    const Icon(
+                      Icons.image_outlined,
+                      size: 15,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$attachmentCount',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
 
             // Row 6: Mô tả ngắn gọn
             if (desc.isNotEmpty) ...[

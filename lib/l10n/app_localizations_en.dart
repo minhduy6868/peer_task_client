@@ -2079,4 +2079,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sprintHint => 'Attach the task directly to the sprint cycle.';
+
+  @override
+  String get checklistLabel => 'Checklist';
+
+  @override
+  String get checklistHint =>
+      'Add steps to complete this task. Mark them done as you go.';
+
+  @override
+  String get addChecklistStep => 'Add step';
+
+  @override
+  String get removeChecklistStep => 'Remove step';
+
+  @override
+  String get taskNotesPlaceholder => 'Notes for this task (optional)...';
+
+  @override
+  String get uploadImages => 'Click to upload images';
+
+  @override
+  String get imageSupportHint => 'JPG, PNG, WEBP, GIF - max 10MB each';
+
+  @override
+  String imageTooLarge(String name) {
+    return '$name is larger than 10MB';
+  }
+
+  @override
+  String get uploadingImages => 'Uploading images...';
+
+  @override
+  String get removeAttachment => 'Remove image';
 }

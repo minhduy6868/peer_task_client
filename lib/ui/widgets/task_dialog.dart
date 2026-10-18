@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/task_model.dart';
+import '../../services/cloudinary_service.dart';
 
 /// Label definitions with modern pastel background and text colors
 class _LabelItem {
@@ -40,25 +42,16 @@ const List<_LabelItem> _kAvailableLabels = [
   ),
 ];
 
-class _UploadedFileItem {
-  final String name;
-  final String size;
-  final double progress;
-  final bool isCompleted;
-
-  const _UploadedFileItem({
-    required this.name,
-    required this.size,
-    this.progress = 1.0,
-    this.isCompleted = true,
-  });
-}
-
 class TaskDialog extends StatefulWidget {
   final TaskModel? existingTask;
   final String initialStatus;
   final List<Map<String, dynamic>> boardMembers;
   final VoidCallback? onDelete;
+  final List<Map<String, dynamic>> initialAttachments;
+
+  /// Uploads image bytes and returns the hosted URL; attachments are hidden when null.
+  final Future<String> Function(Uint8List bytes, String fileName)?
+  onUploadImage;
   final Function({
     required String title,
     String? description,
@@ -69,6 +62,7 @@ class TaskDialog extends StatefulWidget {
     List<String>? assignees,
     List<String>? labels,
     double? estimatedHours,
+    List<Map<String, dynamic>>? attachments,
   })
   onSave;
 
@@ -78,6 +72,8 @@ class TaskDialog extends StatefulWidget {
     this.initialStatus = 'todo',
     required this.boardMembers,
     this.onDelete,
+    this.initialAttachments = const [],
+    this.onUploadImage,
     required this.onSave,
   });
 
@@ -89,6 +85,11 @@ class _TaskDialogState extends State<TaskDialog> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
   final FocusNode _focusNode = FocusNode();
+  final TextEditingController _checklistInputController =
+      TextEditingController();
+  final FocusNode _checklistFocusNode = FocusNode();
+  final List<Map<String, dynamic>> _checklist = [];
+  String? _bucket;
 
   // Form State
   String _status = 'todo'; // todo, doing, review, done
@@ -99,21 +100,18 @@ class _TaskDialogState extends State<TaskDialog> {
   String _repeatInterval = 'none';
 
   // Labels & Assignees
-  final List<String> _selectedLabels = ['Web', 'Backend'];
+  final List<String> _selectedLabels = [];
   final List<String> _selectedAssignees = [];
 
   // Options
   bool _notifyMembers = true;
   bool _addToSprint = false;
 
-  // Rich Text Mock Formatting States
-  bool _isBold = false;
-  bool _isItalic = false;
-  bool _isUnderline = false;
-
-  // File Upload Dropzone State
+  // Image attachments (Cloudinary)
   bool _isDragHovered = false;
-  final List<_UploadedFileItem> _attachedFiles = [];
+  bool _isUploading = false;
+  final List<Map<String, dynamic>> _attachments = [];
+  static const int _maxImageBytes = 10 * 1024 * 1024;
 
   // Validation & Saving
   final _formKey = GlobalKey<FormState>();
@@ -129,6 +127,18 @@ class _TaskDialogState extends State<TaskDialog> {
       text: widget.existingTask?.title ?? '',
     );
     _descController = TextEditingController(text: parsed.notes);
+
+    _checklist.addAll(parsed.checklist);
+    _bucket = parsed.bucket;
+    if (const ['daily', 'weekly', 'monthly'].contains(parsed.repeat)) {
+      _repeatInterval = parsed.repeat!;
+    }
+    _attachments.addAll(
+      widget.initialAttachments.map((a) => Map<String, dynamic>.from(a)),
+    );
+    _checklistFocusNode.addListener(() {
+      if (!_checklistFocusNode.hasFocus) _addChecklistItem();
+    });
 
     _startDate = parsed.startDate ?? DateTime.now();
     _dueDate =
@@ -164,37 +174,109 @@ class _TaskDialogState extends State<TaskDialog> {
     _descController.removeListener(_onFormUpdated);
     _titleController.dispose();
     _descController.dispose();
+    _checklistInputController.dispose();
+    _checklistFocusNode.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
-  static ({DateTime? startDate, String notes}) _parseDescription(String? raw) {
-    if (raw == null || raw.trim().isEmpty) {
-      return (startDate: null, notes: '');
-    }
-
+  static ({
+    DateTime? startDate,
+    String? repeat,
+    String? bucket,
+    List<Map<String, dynamic>> checklist,
+    String notes,
+  })
+  _parseDescription(String? raw) {
     DateTime? startDate;
+    String? repeat;
+    String? bucket;
+    final checklist = <Map<String, dynamic>>[];
     final notesLines = <String>[];
-    final lines = raw.replaceAll('\r', '').split('\n');
-    final startDateRegex = RegExp(r'<!--start_date:([^>]+)-->');
 
-    for (final line in lines) {
+    final startDateRegex = RegExp(r'<!--start_date:([^>]+)-->');
+    final repeatRegex = RegExp(r'<!--repeat:([^>]+)-->');
+    final bucketRegex = RegExp(r'<!--bucket:([^>]+)-->');
+    final checklistRegex = RegExp(r'^\s*-\s*\[([ xX])\]\s*(.*)$');
+
+    for (final line in (raw ?? '').replaceAll('\r', '').split('\n')) {
       final trimmed = line.trim();
       final startMatch = startDateRegex.firstMatch(trimmed);
       if (startMatch != null) {
-        final dateStr = startMatch.group(1);
-        if (dateStr != null) {
-          startDate = DateTime.tryParse(dateStr.trim());
+        startDate = DateTime.tryParse(startMatch.group(1)!.trim());
+        continue;
+      }
+      final repeatMatch = repeatRegex.firstMatch(trimmed);
+      if (repeatMatch != null) {
+        repeat = repeatMatch.group(1)?.trim();
+        continue;
+      }
+      final bucketMatch = bucketRegex.firstMatch(trimmed);
+      if (bucketMatch != null) {
+        bucket = bucketMatch.group(1)?.trim();
+        continue;
+      }
+      final checkMatch = checklistRegex.firstMatch(line);
+      if (checkMatch != null) {
+        final title = (checkMatch.group(2) ?? '').trim();
+        if (title.isNotEmpty) {
+          checklist.add({
+            'title': title,
+            'done': checkMatch.group(1)!.toLowerCase() == 'x',
+          });
         }
         continue;
       }
-      if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) {
-        continue;
-      }
+      if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) continue;
       notesLines.add(line);
     }
 
-    return (startDate: startDate, notes: notesLines.join('\n').trim());
+    return (
+      startDate: startDate,
+      repeat: repeat,
+      bucket: bucket,
+      checklist: checklist,
+      notes: notesLines.join('\n').trim(),
+    );
+  }
+
+  static String _formatDescription({
+    DateTime? startDate,
+    String? repeat,
+    String? bucket,
+    required List<Map<String, dynamic>> checklist,
+    required String notes,
+  }) {
+    final buffer = StringBuffer();
+    if (startDate != null) {
+      buffer.writeln('<!--start_date:${startDate.toIso8601String()}-->');
+    }
+    if (repeat != null && repeat != 'none') {
+      buffer.writeln('<!--repeat:$repeat-->');
+    }
+    if (bucket != null && bucket.isNotEmpty) {
+      buffer.writeln('<!--bucket:$bucket-->');
+    }
+    for (final item in checklist) {
+      final title = (item['title'] ?? '').toString().trim();
+      if (title.isEmpty) continue;
+      buffer.writeln('- [${item['done'] == true ? 'x' : ' '}] $title');
+    }
+    final trimmedNotes = notes.trim();
+    if (trimmedNotes.isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.writeln();
+      buffer.write(trimmedNotes);
+    }
+    return buffer.toString().trim();
+  }
+
+  void _addChecklistItem() {
+    final text = _checklistInputController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _checklist.add({'title': text, 'done': false});
+      _checklistInputController.clear();
+    });
   }
 
   bool _validateDates([AppLocalizations? l10n]) {
@@ -226,17 +308,25 @@ class _TaskDialogState extends State<TaskDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final cleanNotes = _descController.text.trim();
+      _addChecklistItem();
+      final description = _formatDescription(
+        startDate: _startDate,
+        repeat: _repeatInterval,
+        bucket: _bucket,
+        checklist: _checklist,
+        notes: _descController.text,
+      );
 
       widget.onSave(
         title: _titleController.text.trim(),
-        description: cleanNotes.isNotEmpty ? cleanNotes : null,
+        description: description,
         priority: _priority,
         status: _status,
         deadline: _dueDate,
         startDate: _startDate,
         assignees: _selectedAssignees,
         labels: _selectedLabels,
+        attachments: widget.onUploadImage != null ? _attachments : null,
       );
 
       if (mounted) {
@@ -249,17 +339,68 @@ class _TaskDialogState extends State<TaskDialog> {
     }
   }
 
-  void _addSampleFile() {
-    setState(() {
-      _attachedFiles.add(
-        _UploadedFileItem(
-          name: 'tai-lieu-dac-ta-v${_attachedFiles.length + 1}.pdf',
-          size: '2.4 MB',
-          progress: 1.0,
-          isCompleted: true,
+  Future<void> _pickImages() async {
+    final upload = widget.onUploadImage;
+    if (upload == null || _isUploading) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    final picked = await ImagePicker().pickMultiImage(
+      maxWidth: 2048,
+      imageQuality: 85,
+    );
+    if (picked.isEmpty || !mounted) return;
+
+    setState(() => _isUploading = true);
+    try {
+      for (final file in picked) {
+        final bytes = await file.readAsBytes();
+        if (bytes.length > _maxImageBytes) {
+          messenger?.showSnackBar(
+            SnackBar(content: Text(l10n.imageTooLarge(file.name))),
+          );
+          continue;
+        }
+        final url = await upload(bytes, file.name);
+        if (!mounted) return;
+        setState(() {
+          _attachments.add({
+            'url': url,
+            'name': file.name,
+            'bytes': bytes.length,
+          });
+        });
+      }
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _previewImage(String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: Center(child: Image.network(url, fit: BoxFit.contain)),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
   @override
@@ -518,128 +659,53 @@ class _TaskDialogState extends State<TaskDialog> {
         ),
         const SizedBox(height: 18),
 
-        // 2. Mô tả (Rich-text Editor Mock)
+        // 2. Mô tả: ghi chú + checklist
         _buildFieldLabel(l10n.descriptionLabel, isDark: isDark),
         const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF262638) : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        TextFormField(
+          controller: _descController,
+          minLines: 2,
+          maxLines: 5,
+          style: TextStyle(
+            fontSize: 13.5,
+            color: isDark ? Colors.white : const Color(0xFF1E293B),
+          ),
+          decoration: InputDecoration(
+            hintText: l10n.taskNotesPlaceholder,
+            hintStyle: TextStyle(
+              fontSize: 13,
+              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+            ),
+            filled: true,
+            fillColor: isDark ? const Color(0xFF262638) : Colors.white,
+            contentPadding: const EdgeInsets.all(12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3B3B52)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3B3B52)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: Color(0xFF5B4CF0),
+                width: 1.5,
+              ),
             ),
           ),
-          child: Column(
-            children: [
-              // Rich-text Toolbar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF2A2A3F)
-                      : const Color(0xFFF8FAFC),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(8),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDark
-                          ? const Color(0xFF3B3B52)
-                          : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildToolbarButton(
-                        icon: Icons.format_bold_rounded,
-                        tooltip: '${l10n.formatBold} (Ctrl+B)',
-                        isActive: _isBold,
-                        onTap: () => setState(() => _isBold = !_isBold),
-                        isDark: isDark,
-                      ),
-                      _buildToolbarButton(
-                        icon: Icons.format_italic_rounded,
-                        tooltip: '${l10n.formatItalic} (Ctrl+I)',
-                        isActive: _isItalic,
-                        onTap: () => setState(() => _isItalic = !_isItalic),
-                        isDark: isDark,
-                      ),
-                      _buildToolbarButton(
-                        icon: Icons.format_underlined_rounded,
-                        tooltip: '${l10n.formatUnderline} (Ctrl+U)',
-                        isActive: _isUnderline,
-                        onTap: () =>
-                            setState(() => _isUnderline = !_isUnderline),
-                        isDark: isDark,
-                      ),
-                      _buildToolbarDivider(isDark),
-                      _buildToolbarButton(
-                        icon: Icons.format_list_bulleted_rounded,
-                        tooltip: l10n.formatBulletList,
-                        onTap: () {},
-                        isDark: isDark,
-                      ),
-                      _buildToolbarButton(
-                        icon: Icons.format_list_numbered_rounded,
-                        tooltip: l10n.formatNumberedList,
-                        onTap: () {},
-                        isDark: isDark,
-                      ),
-                      _buildToolbarDivider(isDark),
-                      _buildToolbarButton(
-                        icon: Icons.link_rounded,
-                        tooltip: l10n.formatLink,
-                        onTap: () {},
-                        isDark: isDark,
-                      ),
-                      _buildToolbarButton(
-                        icon: Icons.image_outlined,
-                        tooltip: l10n.formatImage,
-                        onTap: () {},
-                        isDark: isDark,
-                      ),
-                      _buildToolbarButton(
-                        icon: Icons.code_rounded,
-                        tooltip: '${l10n.formatCode} </>',
-                        onTap: () {},
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // TextArea
-              TextFormField(
-                controller: _descController,
-                maxLines: 4,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: _isBold ? FontWeight.w700 : FontWeight.w400,
-                  fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
-                  decoration: _isUnderline
-                      ? TextDecoration.underline
-                      : TextDecoration.none,
-                  color: isDark ? Colors.white : const Color(0xFF1E293B),
-                ),
-                decoration: InputDecoration(
-                  hintText: l10n.descriptionPlaceholder,
-                  hintStyle: TextStyle(
-                    fontSize: 13,
-                    color: isDark
-                        ? const Color(0xFF64748B)
-                        : const Color(0xFF94A3B8),
-                  ),
-                  filled: false,
-                  contentPadding: const EdgeInsets.all(12),
-                  border: InputBorder.none,
-                ),
-              ),
-            ],
-          ),
         ),
+        const SizedBox(height: 14),
+        _buildChecklistSection(isDark, l10n),
         const SizedBox(height: 18),
 
         // 3. Row: Danh sách (Cột) & Độ ưu tiên
@@ -884,9 +950,11 @@ class _TaskDialogState extends State<TaskDialog> {
         const SizedBox(height: 18),
 
         // 7. File đính kèm (Dropzone)
-        _buildFieldLabel(l10n.attachmentsLabel, isDark: isDark),
-        const SizedBox(height: 6),
-        _buildFileDropZone(isDark, l10n),
+        if (widget.onUploadImage != null) ...[
+          _buildFieldLabel(l10n.attachmentsLabel, isDark: isDark),
+          const SizedBox(height: 6),
+          _buildImageAttachments(isDark, l10n),
+        ],
       ],
     );
   }
@@ -1038,14 +1106,18 @@ class _TaskDialogState extends State<TaskDialog> {
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          l10n.addToSprintPlan,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1E293B),
+                        Flexible(
+                          child: Text(
+                            l10n.addToSprintPlan,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1220,14 +1292,18 @@ class _TaskDialogState extends State<TaskDialog> {
                 color: Color(0xFF64748B),
               ),
               const SizedBox(width: 6),
-              Text(
-                '${_formatDate(_startDate)}  →  ${_formatDate(_dueDate)}',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF64748B),
+              Flexible(
+                child: Text(
+                  '${_formatDate(_startDate)}  →  ${_formatDate(_dueDate)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
+                  ),
                 ),
               ),
             ],
@@ -1343,52 +1419,202 @@ class _TaskDialogState extends State<TaskDialog> {
     );
   }
 
-  // ==================== Dropzone & File List ====================
-  Widget _buildFileDropZone(bool isDark, AppLocalizations l10n) {
+  // ==================== Checklist ====================
+  Widget _buildChecklistSection(bool isDark, AppLocalizations l10n) {
+    const accent = Color(0xFF5B4CF0);
+    final muted = isDark ? const Color(0xFF64748B) : const Color(0xFF9CA3AF);
+    final done = _checklist.where((c) => c['done'] == true).length;
+
+    Widget emptyCircle() => Container(
+      width: 17,
+      height: 17,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: muted, width: 1.6),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262638) : const Color(0xFFFAFAFE),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.checklist_rounded, size: 17, color: accent),
+              const SizedBox(width: 6),
+              Text(
+                l10n.checklistLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF111827),
+                ),
+              ),
+              const Spacer(),
+              if (_checklist.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    '$done/${_checklist.length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: muted,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (int i = 0; i < _checklist.length; i++)
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => setState(
+                    () => _checklist[i]['done'] = _checklist[i]['done'] != true,
+                  ),
+                  customBorder: const CircleBorder(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: _checklist[i]['done'] == true
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            size: 19,
+                            color: accent,
+                          )
+                        : emptyCircle(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _checklist[i]['title'] as String,
+                    style: TextStyle(
+                      fontSize: 13,
+                      decoration: _checklist[i]['done'] == true
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: _checklist[i]['done'] == true
+                          ? muted
+                          : (isDark
+                                ? const Color(0xFFE2E8F0)
+                                : const Color(0xFF374151)),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.removeChecklistStep,
+                  icon: Icon(Icons.close_rounded, size: 16, color: muted),
+                  onPressed: () => setState(() => _checklist.removeAt(i)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                ),
+              ],
+            ),
+          Row(
+            children: [
+              Padding(padding: const EdgeInsets.all(2), child: emptyCircle()),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _checklistInputController,
+                  focusNode: _checklistFocusNode,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: l10n.checklistHint,
+                    hintStyle: TextStyle(color: muted, fontSize: 13),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onSubmitted: (_) {
+                    _addChecklistItem();
+                    _checklistFocusNode.requestFocus();
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.addChecklistStep,
+                icon: const Icon(Icons.add_rounded, color: accent, size: 20),
+                onPressed: _addChecklistItem,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== Image attachments ====================
+  Widget _buildImageAttachments(bool isDark, AppLocalizations l10n) {
+    const accent = Color(0xFF5B4CF0);
+    final cloudinary = CloudinaryService();
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         MouseRegion(
           onEnter: (_) => setState(() => _isDragHovered = true),
           onExit: (_) => setState(() => _isDragHovered = false),
-          child: GestureDetector(
-            onTap: _addSampleFile,
+          child: InkWell(
+            onTap: _isUploading ? null : _pickImages,
+            borderRadius: BorderRadius.circular(8),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
               decoration: BoxDecoration(
                 color: _isDragHovered
-                    ? const Color(0xFF5B4CF0).withValues(alpha: 0.08)
+                    ? accent.withValues(alpha: 0.08)
                     : (isDark
                           ? const Color(0xFF262638)
                           : const Color(0xFFFAFAFE)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _isDragHovered
-                      ? const Color(0xFF5B4CF0)
-                      : const Color(0xFFC7D2FE),
+                  color: _isDragHovered ? accent : const Color(0xFFC7D2FE),
                   width: 1.5,
-                  style: BorderStyle.solid,
                 ),
               ),
               child: Column(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5B4CF0).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                  if (_isUploading)
+                    const SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  else
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: accent,
+                        size: 22,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.cloud_upload_outlined,
-                      color: Color(0xFF5B4CF0),
-                      size: 22,
-                    ),
-                  ),
                   const SizedBox(height: 8),
                   Text(
-                    l10n.dragAndDropFiles,
+                    _isUploading ? l10n.uploadingImages : l10n.uploadImages,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -1400,7 +1626,8 @@ class _TaskDialogState extends State<TaskDialog> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    l10n.fileSupportHint,
+                    l10n.imageSupportHint,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11.5,
                       color: isDark
@@ -1413,75 +1640,72 @@ class _TaskDialogState extends State<TaskDialog> {
             ),
           ),
         ),
-
-        // Attached Files List with simulated progress
-        if (_attachedFiles.isNotEmpty) ...[
+        if (_attachments.isNotEmpty) ...[
           const SizedBox(height: 10),
-          for (final f in _attachedFiles) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF262638)
-                    : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF3B3B52)
-                      : const Color(0xFFE2E8F0),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final a in _attachments)
+                SizedBox(
+                  width: 84,
+                  height: 84,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: InkWell(
+                          onTap: () => _previewImage(a['url'] as String),
+                          borderRadius: BorderRadius.circular(8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              cloudinary.getOptimizedUrl(
+                                a['url'] as String,
+                                width: 168,
+                                height: 168,
+                              ),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: isDark
+                                    ? const Color(0xFF262638)
+                                    : const Color(0xFFF1F5F9),
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Tooltip(
+                          message: l10n.removeAttachment,
+                          child: InkWell(
+                            onTap: () => setState(() => _attachments.remove(a)),
+                            customBorder: const CircleBorder(),
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0x99000000),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.insert_drive_file_outlined,
-                    size: 18,
-                    color: Color(0xFF5B4CF0),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          f.name,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1E293B),
-                          ),
-                        ),
-                        Text(
-                          f.size,
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 16,
-                    color: Color(0xFF10B981),
-                  ),
-                  const SizedBox(width: 6),
-                  GestureDetector(
-                    onTap: () => setState(() => _attachedFiles.remove(f)),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ],
       ],
     );
@@ -1917,47 +2141,6 @@ class _TaskDialogState extends State<TaskDialog> {
   String _formatDate(DateTime? dt) {
     if (dt == null) return '--/--/----';
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-  }
-
-  Widget _buildToolbarButton({
-    required IconData icon,
-    required String tooltip,
-    bool isActive = false,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: isActive
-                ? const Color(0xFF5B4CF0).withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: isActive
-                ? const Color(0xFF5B4CF0)
-                : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToolbarDivider(bool isDark) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      width: 1,
-      height: 16,
-      color: isDark ? const Color(0xFF3B3B52) : const Color(0xFFE2E8F0),
-    );
   }
 }
 

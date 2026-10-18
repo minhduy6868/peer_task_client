@@ -60,6 +60,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
 
       final cloudinary = CloudinaryService();
       final url = await cloudinary.uploadImage(
+        api: ref.read(apiServiceProvider),
         imageBytes: bytes,
         fileName: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
         folder: 'avatars',

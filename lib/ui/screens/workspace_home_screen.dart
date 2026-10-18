@@ -235,6 +235,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
     final myTasks = tasksAsync.valueOrNull;
     final dashboardTasks = myTasks?.map((t) => DashboardTaskData(
       id: t.id,
+      boardId: t.boardId,
       title: t.title,
       projectName: t.boardName.isNotEmpty ? 'Dự án: ${t.boardName}' : (workspace?.name ?? ''),
       deadline: t.deadline != null
@@ -268,10 +269,9 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
       onOpenBoard: (boardId) {
         context.go('/board/$boardId');
       },
-      onOpenTask: (taskId) {
-        if (boards.isNotEmpty) {
-          context.go('/board/${boards.first.id}');
-        }
+      onOpenTask: (task) {
+        final boardId = task.boardId ?? (boards.isNotEmpty ? boards.first.id : null);
+        if (boardId != null) context.go('/board/$boardId');
       },
     );
 
@@ -296,6 +296,13 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
       default:
         activeContent = dashboardView;
     }
+    activeContent = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1300),
+        child: activeContent,
+      ),
+    );
 
     if (isDesktop) {
       return Scaffold(
@@ -335,6 +342,8 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
                       ref.read(_currentTabProvider.notifier).state = 4;
                     },
                     onBrandTap: _navigateToHome,
+                    onBack: _navigateToHome,
+                    title: workspace?.name,
                     user: authState.user,
                   ),
                   Expanded(child: activeContent),
@@ -375,6 +384,11 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.workspaces,
+            icon: const Icon(Icons.apps_rounded, color: Color(0xFF64748B)),
+            onPressed: _navigateToHome,
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Color(0xFF64748B)),
             onPressed: () => ref.read(_currentTabProvider.notifier).state = 4,

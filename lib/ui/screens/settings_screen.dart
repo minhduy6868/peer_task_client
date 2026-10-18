@@ -49,6 +49,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // 1. Upload to Cloudinary
         final cloudinary = CloudinaryService();
         final avatarUrl = await cloudinary.uploadImage(
+          api: ref.read(apiServiceProvider),
           imageBytes: bytes,
           fileName: fileName,
           folder: 'avatars',

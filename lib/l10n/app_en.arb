@@ -788,5 +788,22 @@
         "type": "String"
       }
     }
-  }
+  },
+  "checklistLabel": "Checklist",
+  "checklistHint": "Add steps to complete this task. Mark them done as you go.",
+  "addChecklistStep": "Add step",
+  "removeChecklistStep": "Remove step",
+  "taskNotesPlaceholder": "Notes for this task (optional)...",
+  "uploadImages": "Click to upload images",
+  "imageSupportHint": "JPG, PNG, WEBP, GIF - max 10MB each",
+  "imageTooLarge": "{name} is larger than 10MB",
+  "@imageTooLarge": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadingImages": "Uploading images...",
+  "removeAttachment": "Remove image"
 }

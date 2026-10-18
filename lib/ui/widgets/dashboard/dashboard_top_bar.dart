@@ -9,6 +9,8 @@ class DashboardTopBar extends ConsumerWidget {
   final ValueChanged<String>? onSearch;
   final VoidCallback? onProfileTap;
   final VoidCallback? onBrandTap;
+  final VoidCallback? onBack;
+  final String? title;
   final User? user;
 
   const DashboardTopBar({
@@ -17,6 +19,8 @@ class DashboardTopBar extends ConsumerWidget {
     this.onSearch,
     this.onProfileTap,
     this.onBrandTap,
+    this.onBack,
+    this.title,
     this.user,
   });
 
@@ -37,6 +41,45 @@ class DashboardTopBar extends ConsumerWidget {
       color: Colors.transparent,
       child: Row(
         children: [
+          if (onBack != null)
+            Tooltip(
+              message: l10n.workspaces,
+              child: InkWell(
+                onTap: onBack,
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.arrow_back_rounded, size: 18, color: Color(0xFF475569)),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.workspaces,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (title != null && title!.isNotEmpty) ...[
+            const SizedBox(width: 14),
+            Flexible(
+              child: Text(
+                title!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+              ),
+            ),
+          ],
           const Spacer(),
 
           // Search Box (Pill-shaped, clean modern input matching mockup)

@@ -2075,4 +2075,38 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get sprintHint => 'Đính kèm task trực tiếp vào chu kỳ sprint.';
+
+  @override
+  String get checklistLabel => 'Checklist';
+
+  @override
+  String get checklistHint =>
+      'Thêm các bước để hoàn thành công việc. Đánh dấu khi xong.';
+
+  @override
+  String get addChecklistStep => 'Thêm bước';
+
+  @override
+  String get removeChecklistStep => 'Xóa bước';
+
+  @override
+  String get taskNotesPlaceholder =>
+      'Ghi chú cho công việc (không bắt buộc)...';
+
+  @override
+  String get uploadImages => 'Nhấn để tải ảnh lên';
+
+  @override
+  String get imageSupportHint => 'JPG, PNG, WEBP, GIF - tối đa 10MB mỗi ảnh';
+
+  @override
+  String imageTooLarge(String name) {
+    return '$name lớn hơn 10MB';
+  }
+
+  @override
+  String get uploadingImages => 'Đang tải ảnh lên...';
+
+  @override
+  String get removeAttachment => 'Xóa ảnh';
 }

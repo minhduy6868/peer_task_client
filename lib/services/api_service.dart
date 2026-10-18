@@ -752,6 +752,7 @@ class ApiService {
     String? parentId,
     List<String>? labels,
     double? estimatedHours,
+    List<Map<String, dynamic>>? attachments,
   }) async {
     return Map<String, dynamic>.from(_handleResponse(await _post('/tasks', {
       'boardId': boardId,
@@ -764,6 +765,7 @@ class ApiService {
       if (parentId != null) 'parent_id': parentId,
       if (labels != null) 'labels': labels,
       if (estimatedHours != null) 'estimated_hours': estimatedHours,
+      if (attachments != null) 'attachments': attachments,
     })));
   }
 
@@ -778,6 +780,7 @@ class ApiService {
     DateTime? deadline,
     List<String>? labels,
     double? estimatedHours,
+    List<Map<String, dynamic>>? attachments,
   }) async {
     return Map<String, dynamic>.from(_handleResponse(await _put('/tasks/$taskId', {
       if (title != null) 'title': title,
@@ -789,7 +792,14 @@ class ApiService {
       if (deadline != null) 'deadline': deadline.toIso8601String(),
       if (labels != null) 'labels': labels,
       if (estimatedHours != null) 'estimated_hours': estimatedHours,
+      if (attachments != null) 'attachments': attachments,
     })));
+  }
+
+  Future<Map<String, dynamic>> getUploadSignature(String folder) async {
+    return Map<String, dynamic>.from(
+      _handleResponse(await _post('/uploads/signature', {'folder': folder})),
+    );
   }
 
   Future<void> deleteTask(String taskId) async {

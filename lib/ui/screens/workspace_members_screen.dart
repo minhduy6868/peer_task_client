@@ -824,10 +824,13 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
                           ),
                         ),
                         SizedBox(
-                          width: 48,
+                          width: 88,
                           child: Text(
                             l10n.columnActions.toUpperCase(),
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B), letterSpacing: 0.5),
                           ),
                         ),
@@ -972,7 +975,7 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
 
           // 5. Thao tác PopupMenu
           SizedBox(
-            width: 48,
+            width: 88,
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_horiz_rounded, size: 20, color: Color(0xFF94A3B8)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

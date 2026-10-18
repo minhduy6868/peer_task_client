@@ -781,5 +781,15 @@
   "listening": "Đang nghe",
   "newTaskTitle": "Nhiệm vụ mới",
   "deadlineBeforeStart": "Hạn hoàn thành phải sau hoặc cùng ngày bắt đầu",
-  "sprintHint": "Đính kèm task trực tiếp vào chu kỳ sprint."
+  "sprintHint": "Đính kèm task trực tiếp vào chu kỳ sprint.",
+  "checklistLabel": "Checklist",
+  "checklistHint": "Thêm các bước để hoàn thành công việc. Đánh dấu khi xong.",
+  "addChecklistStep": "Thêm bước",
+  "removeChecklistStep": "Xóa bước",
+  "taskNotesPlaceholder": "Ghi chú cho công việc (không bắt buộc)...",
+  "uploadImages": "Nhấn để tải ảnh lên",
+  "imageSupportHint": "JPG, PNG, WEBP, GIF - tối đa 10MB mỗi ảnh",
+  "imageTooLarge": "{name} lớn hơn 10MB",
+  "uploadingImages": "Đang tải ảnh lên...",
+  "removeAttachment": "Xóa ảnh"
 }

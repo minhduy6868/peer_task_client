@@ -4075,6 +4075,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attach the task directly to the sprint cycle.'**
   String get sprintHint;
+
+  /// No description provided for @checklistLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get checklistLabel;
+
+  /// No description provided for @checklistHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add steps to complete this task. Mark them done as you go.'**
+  String get checklistHint;
+
+  /// No description provided for @addChecklistStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Add step'**
+  String get addChecklistStep;
+
+  /// No description provided for @removeChecklistStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove step'**
+  String get removeChecklistStep;
+
+  /// No description provided for @taskNotesPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for this task (optional)...'**
+  String get taskNotesPlaceholder;
+
+  /// No description provided for @uploadImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to upload images'**
+  String get uploadImages;
+
+  /// No description provided for @imageSupportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'JPG, PNG, WEBP, GIF - max 10MB each'**
+  String get imageSupportHint;
+
+  /// No description provided for @imageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is larger than 10MB'**
+  String imageTooLarge(String name);
+
+  /// No description provided for @uploadingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading images...'**
+  String get uploadingImages;
+
+  /// No description provided for @removeAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get removeAttachment;
 }
 
 class _AppLocalizationsDelegate

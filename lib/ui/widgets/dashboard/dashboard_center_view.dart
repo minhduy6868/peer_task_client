@@ -6,6 +6,7 @@ import 'package:peertask/l10n/app_localizations.dart';
 
 class DashboardTaskData {
   final String id;
+  final String? boardId;
   final String title;
   final String projectName;
   final String deadline;
@@ -13,6 +14,7 @@ class DashboardTaskData {
 
   const DashboardTaskData({
     required this.id,
+    this.boardId,
     required this.title,
     required this.projectName,
     required this.deadline,
@@ -46,7 +48,7 @@ class DashboardCenterView extends StatelessWidget {
   final VoidCallback onViewAllBoards;
   final VoidCallback? onViewAllTasks;
   final ValueChanged<String>? onOpenBoard;
-  final ValueChanged<String>? onOpenTask;
+  final ValueChanged<DashboardTaskData>? onOpenTask;
 
   const DashboardCenterView({
     super.key,
@@ -76,7 +78,9 @@ class DashboardCenterView extends StatelessWidget {
     return Container(
       color: const Color(0xFFF8FAFC),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(28, 16, 28, 48),
+        padding: MediaQuery.sizeOf(context).width < 600
+            ? const EdgeInsets.fromLTRB(16, 16, 16, 32)
+            : const EdgeInsets.fromLTRB(28, 20, 28, 48),
         children: [
           // 1. Workspace Hero Banner with Robot mascot & embedded Task Notification
           _buildWorkspaceHeroBanner(
@@ -700,7 +704,7 @@ class DashboardCenterView extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => onOpenTask?.call(task.id),
+      onTap: () => onOpenTask?.call(task),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
