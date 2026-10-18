@@ -541,6 +541,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           ]
         : scene.pages;
     final pageIndex = canvasPages.indexWhere((page) => page['id'] == pageId);
+    final compactBar = MediaQuery.sizeOf(context).width < 600;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -581,17 +582,22 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           // + Add Task button (compact on mobile, full on desktop)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-            child: FilledButton(
-              onPressed: () => _openTask(null),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: const Size(0, 36),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+            child: Tooltip(
+              message: l10n.addTask,
+              child: FilledButton(
+                onPressed: () => _openTask(null),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: compactBar ? 8 : 12),
+                  minimumSize: const Size(36, 36),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                child: compactBar
+                    ? const Icon(Icons.add_rounded, size: 20)
+                    : Text(l10n.addTask),
               ),
-              child: Text(l10n.addTask),
             ),
           ),
           const SizedBox(width: 8),

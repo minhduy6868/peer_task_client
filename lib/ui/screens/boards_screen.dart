@@ -9,7 +9,6 @@ import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
 
 const _boardAccents = [
   AppColors.primary,
@@ -65,7 +64,7 @@ final workspaceBoardSummaryProvider = FutureProvider.autoDispose.family<Map<Stri
   };
 });
 
-class _WorkItem {
+class WorkItem {
   final String id;
   final String title;
   final String boardId;
@@ -74,7 +73,7 @@ class _WorkItem {
   final String? priority;
   final DateTime? deadline;
 
-  const _WorkItem({
+  const WorkItem({
     required this.id,
     required this.title,
     required this.boardId,
@@ -87,12 +86,12 @@ class _WorkItem {
   bool get isOverdue => deadline != null && deadline!.isBefore(DateTime.now());
 }
 
-final myWorkspaceTasksProvider = FutureProvider.autoDispose.family<List<_WorkItem>, String>((ref, workspaceId) async {
-  final rows = await ref.watch(apiServiceProvider).getMyTasks(workspaceId: workspaceId, open: true, limit: 8);
+final myWorkspaceTasksProvider = FutureProvider.autoDispose.family<List<WorkItem>, String>((ref, workspaceId) async {
+  final rows = await ref.watch(apiServiceProvider).getMyTasks(workspaceId: workspaceId, open: false, limit: 50);
   return [
     for (final row in rows)
       if (row['id'] is String && row['board_id'] is String)
-        _WorkItem(
+        WorkItem(
           id: row['id'] as String,
           title: (row['title'] as String?)?.trim().isNotEmpty == true ? row['title'] as String : '',
           boardId: row['board_id'] as String,
@@ -105,11 +104,18 @@ final myWorkspaceTasksProvider = FutureProvider.autoDispose.family<List<_WorkIte
 });
 
 enum BoardFilter { all, owner, editor, viewer }
+enum BoardStatusFilter { all, active, completed }
+enum BoardSortBy { recent, name }
 
 class BoardsScreen extends ConsumerStatefulWidget {
   final String workspaceId;
+  final int initialTab; // 0: Boards, 1: Tasks
 
-  const BoardsScreen({super.key, required this.workspaceId});
+  const BoardsScreen({
+    super.key,
+    required this.workspaceId,
+    this.initialTab = 0,
+  });
 
   @override
   ConsumerState<BoardsScreen> createState() => _BoardsScreenState();
@@ -119,6 +125,33 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   BoardFilter _filter = BoardFilter.all;
+  BoardStatusFilter _statusFilter = BoardStatusFilter.all;
+  BoardSortBy _sortBy = BoardSortBy.recent;
+
+  // Task-specific filter states
+  final _taskSearchController = TextEditingController();
+  String _taskQuery = '';
+  String _taskStatus = 'all'; // all, doing, todo, done, overdue
+  String? _taskBoardId;
+  String? _taskPriority;
+  String _taskSortBy = 'deadline'; // deadline, priority, title
+
+  late int _activeTab; // 0: Boards, 1: Tasks
+
+  @override
+  void initState() {
+    super.initState();
+    _activeTab = widget.initialTab;
+  }
+
+  @override
+  void didUpdateWidget(covariant BoardsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      _activeTab = widget.initialTab;
+    }
+  }
+
   Future<void> _openBoardSettings(Board board, {int initialTabIndex = 0}) async {
     final result = await showDialog(
       context: context,
@@ -142,9 +175,270 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
     await _openBoardSettings(board, initialTabIndex: 1);
   }
 
+  void _showRenameBoardDialog(Board board) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: board.name);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primarySubtle,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.edit_note_rounded, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.renameBoard,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l10n.boardName,
+                  hintText: l10n.enterBoardName,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                validator: ValidatorsL10n.required(context),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final newName = controller.text.trim();
+              Navigator.pop(dialogContext);
+              if (newName == board.name) return;
+              try {
+                final api = ref.read(apiServiceProvider);
+                await api.updateBoard(boardId: board.id, name: newName);
+                if (mounted) {
+                  ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                  ErrorHandler.showSuccess(context, 'Đã đổi tên bảng thành "$newName"');
+                }
+              } catch (e) {
+                if (mounted) context.showErrorSnackBar(e);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDescriptionDialog(Board board) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: board.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primarySubtle,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.description_outlined, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.editDescription,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: TextFormField(
+          controller: controller,
+          maxLines: 3,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.boardDescription,
+            hintText: l10n.boardDescriptionOptional,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newDesc = controller.text.trim();
+              Navigator.pop(dialogContext);
+              try {
+                final api = ref.read(apiServiceProvider);
+                await api.updateBoard(boardId: board.id, description: newDesc.isEmpty ? null : newDesc);
+                if (mounted) {
+                  ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                  ErrorHandler.showSuccess(context, 'Đã cập nhật mô tả bảng');
+                }
+              } catch (e) {
+                if (mounted) context.showErrorSnackBar(e);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showArchiveBoardDialog(Board board) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.archive_outlined, color: Color(0xFFD97706), size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.archiveBoard,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          l10n.archiveBoardConfirm,
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ErrorHandler.showSuccess(context, 'Đã lưu trữ bảng "${board.name}"');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.archiveBoard),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteBoardDialog(Board board) {
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.deleteBoard,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa bảng "${board.name}" không? Tất cả công việc trong bảng sẽ bị xóa vĩnh viễn.',
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                final api = ref.read(apiServiceProvider);
+                await api.deleteBoard(board.id);
+                if (mounted) {
+                  ref.invalidate(workspaceBoardsProvider(widget.workspaceId));
+                  ref.invalidate(workspaceBoardSummaryProvider(widget.workspaceId));
+                  ref.invalidate(myWorkspaceTasksProvider(widget.workspaceId));
+                  ErrorHandler.showSuccess(context, 'Đã xóa bảng "${board.name}"');
+                }
+              } catch (e) {
+                if (mounted) context.showErrorSnackBar(e);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _taskSearchController.dispose();
     super.dispose();
   }
 
@@ -360,6 +654,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             return !isOwn && !isEd && (b.permission == 'view' || role == 'viewer');
           }).length;
 
+          final summary = ref.watch(workspaceBoardSummaryProvider(widget.workspaceId)).valueOrNull ?? const {};
           final query = _query.trim().toLowerCase();
           final visible = boards.where((board) {
             final isOwn = board.isBoardOwner == true || isWorkspaceOwner;
@@ -374,6 +669,16 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             };
             if (!matchesFilter) return false;
 
+            // Status filter
+            final bCounts = summary[board.id] ?? const _BoardCounts();
+            final isCompleted = bCounts.total > 0 && bCounts.done == bCounts.total;
+            final matchesStatus = switch (_statusFilter) {
+              BoardStatusFilter.all => true,
+              BoardStatusFilter.active => !isCompleted,
+              BoardStatusFilter.completed => isCompleted,
+            };
+            if (!matchesStatus) return false;
+
             if (query.isNotEmpty) {
               final name = board.name.toLowerCase();
               final description = board.description?.toLowerCase() ?? '';
@@ -382,192 +687,321 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
             return true;
           }).toList();
 
-          final summary = ref.watch(workspaceBoardSummaryProvider(widget.workspaceId)).valueOrNull ?? const {};
+          // Sắp xếp
+          if (_sortBy == BoardSortBy.name) {
+            visible.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          } else {
+            // Sắp xếp theo cập nhật gần nhất
+            visible.sort((a, b) {
+              final aDate = a.updatedAt ?? a.createdAt;
+              final bDate = b.updatedAt ?? b.createdAt;
+              if (aDate != null && bDate != null) {
+                return bDate.compareTo(aDate);
+              }
+              return 0;
+            });
+          }
+
           final workAsync = ref.watch(myWorkspaceTasksProvider(widget.workspaceId));
-          final work = (workAsync.valueOrNull ?? const <_WorkItem>[])
-              .where((item) {
-                if (query.isEmpty) return true;
-                return item.title.toLowerCase().contains(query) || item.boardName.toLowerCase().contains(query);
-              })
-              .toList();
+          final rawWork = workAsync.valueOrNull ?? const <WorkItem>[];
+          final work = rawWork;
           final totalDone = summary.values.fold<int>(0, (sum, c) => sum + c.done);
+
+          final taskDoingCount = rawWork.where((t) => t.status == 'doing').length;
+          final taskTodoCount = rawWork.where((t) => t.status == 'todo').length;
+          final taskDoneCount = rawWork.where((t) => t.status == 'done').length;
+          final taskOverdueCount = rawWork.where((t) => t.isOverdue).length;
+
+          final taskQuery = _taskQuery.trim().toLowerCase();
+          final filteredTasks = rawWork.where((item) {
+            if (taskQuery.isNotEmpty) {
+              if (!item.title.toLowerCase().contains(taskQuery) &&
+                  !item.boardName.toLowerCase().contains(taskQuery)) {
+                return false;
+              }
+            }
+            if (_taskStatus == 'doing' && item.status != 'doing') return false;
+            if (_taskStatus == 'todo' && item.status != 'todo') return false;
+            if (_taskStatus == 'done' && item.status != 'done') return false;
+            if (_taskStatus == 'overdue' && !item.isOverdue) return false;
+
+            if (_taskBoardId != null && item.boardId != _taskBoardId) return false;
+
+            if (_taskPriority != null) {
+              if (_taskPriority == 'high' && item.priority != 'high' && item.priority != 'urgent') {
+                return false;
+              }
+              if (_taskPriority == 'medium' && item.priority != 'medium') return false;
+              if (_taskPriority == 'low' && item.priority != 'low') return false;
+            }
+            return true;
+          }).toList();
+
+          if (_taskSortBy == 'priority') {
+            final pWeights = {'urgent': 3, 'high': 3, 'medium': 2, 'low': 1};
+            filteredTasks.sort((a, b) {
+              final aw = pWeights[a.priority] ?? 0;
+              final bw = pWeights[b.priority] ?? 0;
+              return bw.compareTo(aw);
+            });
+          } else if (_taskSortBy == 'title') {
+            filteredTasks.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+          } else {
+            filteredTasks.sort((a, b) {
+              if (a.deadline == null && b.deadline == null) return 0;
+              if (a.deadline == null) return 1;
+              if (b.deadline == null) return -1;
+              return a.deadline!.compareTo(b.deadline!);
+            });
+          }
+
+          final paddingH = isDesktop ? 28.0 : 16.0;
+
+          // Top Segmented Button separating Boards and Tasks
+          final topSegmentSwitcher = Container(
+            padding: EdgeInsets.fromLTRB(paddingH, 12, paddingH, 6),
+            alignment: Alignment.centerLeft,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<int>(
+                segments: [
+                  ButtonSegment<int>(
+                    value: 0,
+                    icon: const Icon(Icons.dashboard_rounded, size: 16),
+                    label: Text(
+                      '${l10n.workBoards} (${visible.length})',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ),
+                  ButtonSegment<int>(
+                    value: 1,
+                    icon: const Icon(Icons.assignment_turned_in_rounded, size: 16),
+                    label: Text(
+                      '${l10n.yourTasks} (${rawWork.length})',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ),
+                ],
+                selected: {_activeTab},
+                onSelectionChanged: (selected) {
+                  setState(() => _activeTab = selected.first);
+                },
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: AppColors.primarySubtle,
+                  selectedForegroundColor: AppColors.primaryDark,
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          );
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _HomeHeader(
-                greeting: l10n.welcome,
-                name: greetingName,
-                workspaceName: workspaceName ?? '',
-                role: role != null
-                    ? (role == 'owner'
-                        ? l10n.owner
-                        : (role == 'editor'
-                            ? l10n.editor
-                            : (role == 'viewer' ? l10n.viewer : role)))
-                    : null,
-                totalBoards: boards.length,
-                totalWork: work.length,
-                totalDone: totalDone,
-                canCreate: canCreateBoard,
-                onCreateBoard: _showCreateBoardDialog,
-                searchController: _searchController,
-                searchHint: l10n.searchBoards,
-                query: _query,
-                onSearch: (value) => setState(() => _query = value),
-                onClearSearch: () {
-                  _searchController.clear();
-                  setState(() => _query = '');
-                },
-                selectedFilter: _filter,
-                onSelectFilter: (f) => setState(() => _filter = f),
-                countAll: countAll,
-                countOwner: countOwner,
-                countEditor: countEditor,
-                countViewer: countViewer,
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final wide = constraints.maxWidth >= 980;
-                    final workPanel = _YourWorkPanel(
-                      loading: workAsync.isLoading && !workAsync.hasValue,
-                      failed: workAsync.hasError,
-                      items: work,
-                      scroll: wide,
-                      onRetry: () => ref.invalidate(myWorkspaceTasksProvider(widget.workspaceId)),
-                      onOpen: (boardId) => context.go('/board/$boardId'),
-                    );
-                    final hasFilterOrQuery = _filter != BoardFilter.all || query.isNotEmpty;
-                    final showAddCard = canCreateBoard && !hasFilterOrQuery;
-                    final boardCount = visible.length + (showAddCard ? 1 : 0);
+              topSegmentSwitcher,
+              if (_activeTab == 0) ...[
+                // ===== PHẦN 1: BẢNG LÀM VIỆC (BOARDS) =====
+                _HomeHeader(
+                  greeting: l10n.welcome,
+                  name: greetingName,
+                  workspaceName: workspaceName ?? '',
+                  role: role != null
+                      ? (role == 'owner'
+                          ? l10n.owner
+                          : (role == 'editor'
+                              ? l10n.editor
+                              : (role == 'viewer' ? l10n.viewer : role)))
+                      : null,
+                  totalBoards: boards.length,
+                  totalWork: rawWork.length,
+                  totalDone: totalDone,
+                  canCreate: canCreateBoard,
+                  onCreateBoard: _showCreateBoardDialog,
+                  searchController: _searchController,
+                  searchHint: l10n.searchBoards,
+                  query: _query,
+                  onSearch: (value) => setState(() => _query = value),
+                  onClearSearch: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  selectedFilter: _filter,
+                  onSelectFilter: (f) => setState(() => _filter = f),
+                  statusFilter: _statusFilter,
+                  onSelectStatusFilter: (s) => setState(() => _statusFilter = s),
+                  sortBy: _sortBy,
+                  onSelectSortBy: (s) => setState(() => _sortBy = s),
+                  countAll: countAll,
+                  countOwner: countOwner,
+                  countEditor: countEditor,
+                  countViewer: countViewer,
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 720;
+                      final extraWide = constraints.maxWidth >= 1200;
+                      final hasFilterOrQuery = _filter != BoardFilter.all || _statusFilter != BoardStatusFilter.all || query.isNotEmpty;
+                      final showAddCard = canCreateBoard && !hasFilterOrQuery;
+                      final boardCount = visible.length + (showAddCard ? 1 : 0);
 
-                    final boardPanel = visible.isEmpty && !showAddCard
-                        ? _EmptyBoards(
-                            canCreate: canCreateBoard && !hasFilterOrQuery,
+                      if (visible.isEmpty && !showAddCard) {
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(paddingH, 0, paddingH, 16),
+                          child: _EmptyBoards(
+                            canCreate: hasFilterOrQuery || canCreateBoard,
                             onCreate: hasFilterOrQuery
                                 ? () {
                                     setState(() {
                                       _query = '';
                                       _searchController.clear();
                                       _filter = BoardFilter.all;
+                                      _statusFilter = BoardStatusFilter.all;
+                                      _sortBy = BoardSortBy.recent;
                                     });
                                   }
                                 : _showCreateBoardDialog,
                             title: hasFilterOrQuery ? l10n.noBoardsMatchingFilter : l10n.noBoardsYet,
                             subtitle: hasFilterOrQuery ? l10n.clearFilter : null,
                             action: hasFilterOrQuery ? l10n.clearFilter : l10n.createBoard,
-                          )
-                        : GridView.builder(
+                          ),
+                        );
+                      }
+
+                      if (!wide) {
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(paddingH, 0, paddingH, 16),
+                          child: ListView.builder(
                             padding: const EdgeInsets.only(bottom: 96),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: wide ? 2 : 1,
-                              mainAxisExtent: 205,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
                             itemCount: boardCount,
                             itemBuilder: (context, index) {
                               if (showAddCard && index == visible.length) {
-                                return _NewBoardCard(onTap: _showCreateBoardDialog);
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: SizedBox(
+                                    height: 180,
+                                    child: _NewBoardCard(onTap: _showCreateBoardDialog),
+                                  ),
+                                );
                               }
                               final board = visible[index];
-                              return _BoardCard(
-                                board: board,
-                                accent: _boardAccents[index % _boardAccents.length],
-                                counts: summary[board.id] ?? const _BoardCounts(),
-                                workspaceRole: role,
-                                onTap: () => context.go('/board/${board.id}'),
-                                onSettings: () => _openBoardSettings(board),
-                                onOpenMembers: () => _openBoardMembers(board),
-                              );
-                            },
-                          );
-                    if (!wide) {
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-                        children: [
-                          if (visible.isEmpty && !showAddCard)
-                            SizedBox(height: 240, child: boardPanel)
-                          else ...[
-                              for (var i = 0; i < visible.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 232,
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: SizedBox(
+                                  height: 224,
                                   child: _BoardCard(
-                                    board: visible[i],
-                                    accent: _boardAccents[i % _boardAccents.length],
-                                    counts: summary[visible[i].id] ?? const _BoardCounts(),
+                                    board: board,
+                                    accent: _boardAccents[index % _boardAccents.length],
+                                    counts: summary[board.id] ?? const _BoardCounts(),
                                     workspaceRole: role,
-                                    onTap: () => context.go('/board/${visible[i].id}'),
-                                    onSettings: () => _openBoardSettings(visible[i]),
-                                    onOpenMembers: () => _openBoardMembers(visible[i]),
+                                    onTap: () => context.go('/board/${board.id}'),
+                                    onRename: () => _showRenameBoardDialog(board),
+                                    onEditDesc: () => _showEditDescriptionDialog(board),
+                                    onOpenMembers: () => _openBoardMembers(board),
+                                    onArchive: () => _showArchiveBoardDialog(board),
+                                    onDelete: () => _showDeleteBoardDialog(board),
+                                    onSettings: () => _openBoardSettings(board),
                                   ),
                                 ),
-                              ],
-                              if (showAddCard) ...[
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 150,
-                                  child: _NewBoardCard(onTap: _showCreateBoardDialog),
-                                ),
-                              ],
-                            ],
-                        ],
-                      );
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(width: 350, child: workPanel),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primarySubtle,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(Icons.dashboard_rounded, size: 18, color: AppColors.primary),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      l10n.myBoards,
-                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primarySubtle,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '${visible.length}',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryDark),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Expanded(child: boardPanel),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                        ],
-                      ),
-                    );
-                  },
+                        );
+                      }
+
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(paddingH, 0, paddingH, 16),
+                        child: GridView.builder(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: extraWide ? 3 : 2,
+                            mainAxisExtent: 215,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: boardCount,
+                          itemBuilder: (context, index) {
+                            if (showAddCard && index == visible.length) {
+                              return _NewBoardCard(onTap: _showCreateBoardDialog);
+                            }
+                            final board = visible[index];
+                            return _BoardCard(
+                              board: board,
+                              accent: _boardAccents[index % _boardAccents.length],
+                              counts: summary[board.id] ?? const _BoardCounts(),
+                              workspaceRole: role,
+                              onTap: () => context.go('/board/${board.id}'),
+                              onRename: () => _showRenameBoardDialog(board),
+                              onEditDesc: () => _showEditDescriptionDialog(board),
+                              onOpenMembers: () => _openBoardMembers(board),
+                              onArchive: () => _showArchiveBoardDialog(board),
+                              onDelete: () => _showDeleteBoardDialog(board),
+                              onSettings: () => _openBoardSettings(board),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              ] else ...[
+                // ===== PHẦN 2: CÔNG VIỆC CỦA BẠN (TASKS) =====
+                _TasksHeader(
+                  greeting: l10n.welcome,
+                  name: greetingName,
+                  workspaceName: workspaceName ?? '',
+                  role: role != null
+                      ? (role == 'owner'
+                          ? l10n.owner
+                          : (role == 'editor'
+                              ? l10n.editor
+                              : (role == 'viewer' ? l10n.viewer : role)))
+                      : null,
+                  totalTasks: rawWork.length,
+                  doingCount: taskDoingCount,
+                  todoCount: taskTodoCount,
+                  doneCount: taskDoneCount,
+                  overdueCount: taskOverdueCount,
+                  searchController: _taskSearchController,
+                  searchHint: 'Tìm kiếm công việc theo tiêu đề hoặc bảng...',
+                  query: _taskQuery,
+                  onSearch: (value) => setState(() => _taskQuery = value),
+                  onClearSearch: () {
+                    _taskSearchController.clear();
+                    setState(() => _taskQuery = '');
+                  },
+                  statusFilter: _taskStatus,
+                  onSelectStatusFilter: (s) => setState(() => _taskStatus = s),
+                  priorityFilter: _taskPriority,
+                  onSelectPriorityFilter: (p) => setState(() => _taskPriority = p),
+                  sortBy: _taskSortBy,
+                  onSelectSortBy: (s) => setState(() => _taskSortBy = s),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(paddingH, 0, paddingH, 16),
+                    child: _TasksPanel(
+                      loading: workAsync.isLoading && !workAsync.hasValue,
+                      failed: workAsync.hasError,
+                      items: filteredTasks,
+                      onRetry: () => ref.invalidate(myWorkspaceTasksProvider(widget.workspaceId)),
+                      onClearFilter: () {
+                        setState(() {
+                          _taskQuery = '';
+                          _taskSearchController.clear();
+                          _taskStatus = 'all';
+                          _taskPriority = null;
+                          _taskSortBy = 'deadline';
+                        });
+                      },
+                      onOpen: (boardId) => context.go('/board/$boardId'),
+                    ),
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -604,7 +1038,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                 maxCrossAxisExtent: isLargeScreen ? 400 : double.infinity,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: 1.5,
+                mainAxisExtent: 232,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Container(
@@ -640,6 +1074,10 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onClearSearch;
   final BoardFilter selectedFilter;
   final ValueChanged<BoardFilter> onSelectFilter;
+  final BoardStatusFilter statusFilter;
+  final ValueChanged<BoardStatusFilter> onSelectStatusFilter;
+  final BoardSortBy sortBy;
+  final ValueChanged<BoardSortBy> onSelectSortBy;
   final int countAll;
   final int countOwner;
   final int countEditor;
@@ -662,6 +1100,10 @@ class _HomeHeader extends StatelessWidget {
     required this.onClearSearch,
     required this.selectedFilter,
     required this.onSelectFilter,
+    required this.statusFilter,
+    required this.onSelectStatusFilter,
+    required this.sortBy,
+    required this.onSelectSortBy,
     required this.countAll,
     required this.countOwner,
     required this.countEditor,
@@ -681,79 +1123,90 @@ class _HomeHeader extends StatelessWidget {
 
           return Padding(
             padding: EdgeInsets.fromLTRB(paddingH, 16, paddingH, 12),
-            child: Container(
-              padding: EdgeInsets.all(isWide ? 20 : 16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.white, Color(0xFFFAF7FF), Color(0xFFF3EDFF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.55)),
-                boxShadow: AppColors.elegantCardShadow,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.gradientPrimary,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.28),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Hero Banner: Title, Subtitle, Standout Create Button, Stats
+                Container(
+                  padding: EdgeInsets.all(isWide ? 22 : 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.white, Color(0xFFFAF7FF), Color(0xFFF3EDFF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+                    boxShadow: AppColors.elegantCardShadow,
+                  ),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: _buildWelcomeInfo(context, l10n, isWide: true),
                             ),
+                            const SizedBox(width: 20),
+                            _buildStatsAndAction(l10n, isWide: true),
                           ],
-                        ),
-                        child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
+                        )
+                      : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              workspaceName.isEmpty ? l10n.boards : workspaceName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.screenTitle.copyWith(color: AppColors.textPrimary),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.boards,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-                            ),
+                            _buildWelcomeInfo(context, l10n, isWide: false),
+                            const SizedBox(height: 14),
+                            _buildStatsAndAction(l10n, isWide: false),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 14),
+
+                // Search & Filter Toolbar: Name search + Role filter + Status filter + Sort
+                if (isWide)
+                  Row(
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        child: _buildSearchBox(l10n),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChipsRow(l10n),
+                              const SizedBox(width: 10),
+                              _buildStatusFilterButton(l10n),
+                              const SizedBox(width: 8),
+                              _buildSortButton(l10n),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSearchBox(l10n),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChipsRow(l10n),
+                            const SizedBox(width: 10),
+                            _buildStatusFilterButton(l10n),
+                            const SizedBox(width: 8),
+                            _buildSortButton(l10n),
                           ],
                         ),
                       ),
-                      if (canCreate) ...[
-                        const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: onCreateBoard,
-                          child: Text(l10n.newBoard),
-                        ),
-                      ],
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: isWide ? 360 : double.infinity),
-                      child: _buildSearchBox(l10n),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           );
         },
@@ -833,11 +1286,125 @@ class _HomeHeader extends StatelessWidget {
     );
   }
 
+  Widget _buildStatusFilterButton(AppLocalizations l10n) {
+    final isFilteringStatus = statusFilter != BoardStatusFilter.all;
+    final label = switch (statusFilter) {
+      BoardStatusFilter.all => l10n.filterAllStatus,
+      BoardStatusFilter.active => l10n.filterActive,
+      BoardStatusFilter.completed => l10n.filterCompleted,
+    };
+
+    return PopupMenuButton<BoardStatusFilter>(
+      tooltip: 'Lọc trạng thái dự án',
+      initialValue: statusFilter,
+      onSelected: onSelectStatusFilter,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: isFilteringStatus ? AppColors.primarySubtle : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isFilteringStatus ? AppColors.primary : AppColors.border,
+            width: isFilteringStatus ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.filter_alt_outlined,
+              size: 14,
+              color: isFilteringStatus ? AppColors.primaryDark : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isFilteringStatus ? FontWeight.w700 : FontWeight.w500,
+                color: isFilteringStatus ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 18,
+              color: isFilteringStatus ? AppColors.primaryDark : AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: BoardStatusFilter.all,
+          child: Text(l10n.filterAllStatus, style: const TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem(
+          value: BoardStatusFilter.active,
+          child: Text(l10n.filterActive, style: const TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem(
+          value: BoardStatusFilter.completed,
+          child: Text(l10n.filterCompleted, style: const TextStyle(fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSortButton(AppLocalizations l10n) {
+    final label = sortBy == BoardSortBy.recent ? l10n.sortByRecent : l10n.sortByName;
+
+    return PopupMenuButton<BoardSortBy>(
+      tooltip: 'Sắp xếp danh sách',
+      initialValue: sortBy,
+      onSelected: onSelectSortBy,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.sort_rounded, size: 14, color: AppColors.textSecondary),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: BoardSortBy.recent,
+          child: Text(l10n.sortByRecent, style: const TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem(
+          value: BoardSortBy.name,
+          child: Text(l10n.sortByName, style: const TextStyle(fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWelcomeInfo(BuildContext context, AppLocalizations l10n, {required bool isWide}) {
-    final cleanGreeting = greeting.endsWith('!') ? greeting : '$greeting!';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Top tags: Brand + User chip + Workspace + Role
         Wrap(
           spacing: 8,
           runSpacing: 6,
@@ -884,29 +1451,48 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ),
               ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-              decoration: BoxDecoration(
-                color: AppColors.primarySubtle,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.6)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.waving_hand_rounded, size: 13, color: AppColors.primary),
-                  const SizedBox(width: 5),
-                  Text(
-                    cleanGreeting,
-                    style: const TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+            if (name.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 8.5,
+                      backgroundColor: AppColors.primarySubtle,
+                      child: Text(
+                        name.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             if (workspaceName.isNotEmpty) ...[
               Material(
                 color: Colors.transparent,
@@ -982,9 +1568,11 @@ class _HomeHeader extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
+
+        // ① Tiêu đề: Bảng làm việc
         Text(
-          name,
+          l10n.workBoards,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -994,62 +1582,87 @@ class _HomeHeader extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 3),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.auto_awesome_rounded, size: 12, color: AppColors.primary),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                l10n.workspaceOverview,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: 4),
+
+        // ① Mô tả ngắn: Quản lý và theo dõi các dự án của bạn.
+        Text(
+          l10n.workBoardsDesc,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildStatsAndAction(AppLocalizations l10n, {required bool isWide}) {
+    final createBtn = canCreate
+        ? ElevatedButton.icon(
+            onPressed: onCreateBoard,
+            icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+            label: Text(
+              l10n.createNewBoard,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shadowColor: AppColors.primary.withValues(alpha: 0.35),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          )
+        : const SizedBox.shrink();
+
     if (!isWide) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: _MetricPill(
-              icon: Icons.dashboard_rounded,
-              iconColor: AppColors.primary,
-              value: '$totalBoards',
-              label: l10n.boards,
-              isCompact: true,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _MetricPill(
-              icon: Icons.assignment_turned_in_rounded,
-              iconColor: AppColors.warning,
-              value: '$totalWork',
-              label: l10n.yourWork,
-              isCompact: true,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _MetricPill(
-              icon: Icons.check_circle_rounded,
-              iconColor: AppColors.success,
-              value: '$totalDone',
-              label: l10n.done,
-              isCompact: true,
-            ),
+          if (canCreate) ...[
+            createBtn,
+            const SizedBox(height: 10),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: _MetricPill(
+                  icon: Icons.dashboard_rounded,
+                  iconColor: AppColors.primary,
+                  value: '$totalBoards',
+                  label: l10n.boards,
+                  isCompact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MetricPill(
+                  icon: Icons.assignment_turned_in_rounded,
+                  iconColor: AppColors.warning,
+                  value: '$totalWork',
+                  label: l10n.yourWork,
+                  isCompact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MetricPill(
+                  icon: Icons.check_circle_rounded,
+                  iconColor: AppColors.success,
+                  value: '$totalDone',
+                  label: l10n.done,
+                  isCompact: true,
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -1078,43 +1691,7 @@ class _HomeHeader extends StatelessWidget {
           value: '$totalDone',
           label: l10n.done,
         ),
-        if (canCreate)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onCreateBoard,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: AppColors.gradientPrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n.newBoard,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        createBtn,
       ],
     );
   }
@@ -1223,6 +1800,662 @@ class _MetricPill extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _TasksHeader extends StatelessWidget {
+  final String greeting;
+  final String name;
+  final String workspaceName;
+  final String? role;
+  final int totalTasks;
+  final int doingCount;
+  final int todoCount;
+  final int doneCount;
+  final int overdueCount;
+  final TextEditingController searchController;
+  final String searchHint;
+  final String query;
+  final ValueChanged<String> onSearch;
+  final VoidCallback onClearSearch;
+  final String statusFilter;
+  final ValueChanged<String> onSelectStatusFilter;
+  final String? priorityFilter;
+  final ValueChanged<String?> onSelectPriorityFilter;
+  final String sortBy;
+  final ValueChanged<String> onSelectSortBy;
+
+  const _TasksHeader({
+    required this.greeting,
+    required this.name,
+    required this.workspaceName,
+    this.role,
+    required this.totalTasks,
+    required this.doingCount,
+    required this.todoCount,
+    required this.doneCount,
+    required this.overdueCount,
+    required this.searchController,
+    required this.searchHint,
+    required this.query,
+    required this.onSearch,
+    required this.onClearSearch,
+    required this.statusFilter,
+    required this.onSelectStatusFilter,
+    required this.priorityFilter,
+    required this.onSelectPriorityFilter,
+    required this.sortBy,
+    required this.onSelectSortBy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return SafeArea(
+      bottom: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 840;
+          final paddingH = constraints.maxWidth >= 960 ? 28.0 : 16.0;
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(paddingH, 16, paddingH, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Hero Banner
+                Container(
+                  padding: EdgeInsets.all(isWide ? 22 : 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.white, Color(0xFFFAF7FF), Color(0xFFF3EDFF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+                    boxShadow: AppColors.elegantCardShadow,
+                  ),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(child: _buildWelcomeInfo(context, l10n, isWide: true)),
+                            const SizedBox(width: 20),
+                            _buildStats(l10n, isWide: true),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildWelcomeInfo(context, l10n, isWide: false),
+                            const SizedBox(height: 14),
+                            _buildStats(l10n, isWide: false),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 14),
+
+                // Search & Filter Toolbar
+                if (isWide)
+                  Row(
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        child: _buildSearchBox(l10n),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildStatusChipsRow(l10n),
+                              const SizedBox(width: 10),
+                              _buildPriorityFilterButton(l10n),
+                              const SizedBox(width: 8),
+                              _buildSortButton(l10n),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSearchBox(l10n),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildStatusChipsRow(l10n),
+                            const SizedBox(width: 10),
+                            _buildPriorityFilterButton(l10n),
+                            const SizedBox(width: 8),
+                            _buildSortButton(l10n),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSearchBox(AppLocalizations l10n) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: searchController,
+        onChanged: onSearch,
+        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          hintText: searchHint,
+          hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
+          suffixIcon: query.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.textSecondary),
+                  tooltip: l10n.clearSearch,
+                  onPressed: onClearSearch,
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChipsRow(AppLocalizations l10n) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _FilterChip(
+          label: l10n.filterAll,
+          count: totalTasks,
+          isSelected: statusFilter == 'all',
+          onTap: () => onSelectStatusFilter('all'),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: l10n.inProgress,
+          count: doingCount,
+          isSelected: statusFilter == 'doing',
+          onTap: () => onSelectStatusFilter('doing'),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: l10n.todo,
+          count: todoCount,
+          isSelected: statusFilter == 'todo',
+          onTap: () => onSelectStatusFilter('todo'),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: l10n.done,
+          count: doneCount,
+          isSelected: statusFilter == 'done',
+          onTap: () => onSelectStatusFilter('done'),
+        ),
+        if (overdueCount > 0) ...[
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: l10n.overdue,
+            count: overdueCount,
+            isSelected: statusFilter == 'overdue',
+            onTap: () => onSelectStatusFilter('overdue'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPriorityFilterButton(AppLocalizations l10n) {
+    final isFilteringPriority = priorityFilter != null;
+    final label = switch (priorityFilter) {
+      'high' => l10n.highPriority,
+      'medium' => l10n.mediumPriority,
+      'low' => l10n.lowPriority,
+      _ => 'Mức ưu tiên',
+    };
+
+    return PopupMenuButton<String?>(
+      tooltip: 'Lọc theo độ ưu tiên',
+      initialValue: priorityFilter,
+      onSelected: onSelectPriorityFilter,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: isFilteringPriority ? AppColors.primarySubtle : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isFilteringPriority ? AppColors.primary : AppColors.border,
+            width: isFilteringPriority ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.flag_outlined,
+              size: 14,
+              color: isFilteringPriority ? AppColors.primaryDark : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isFilteringPriority ? FontWeight.w700 : FontWeight.w500,
+                color: isFilteringPriority ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 18,
+              color: isFilteringPriority ? AppColors.primaryDark : AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        const PopupMenuItem<String?>(
+          value: null,
+          child: Text('Tất cả độ ưu tiên', style: TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem<String?>(
+          value: 'high',
+          child: Row(
+            children: [
+              const Icon(Icons.arrow_upward_rounded, size: 16, color: AppColors.error),
+              const SizedBox(width: 8),
+              Text(l10n.highPriority, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String?>(
+          value: 'medium',
+          child: Row(
+            children: [
+              const Icon(Icons.remove_rounded, size: 16, color: AppColors.warning),
+              const SizedBox(width: 8),
+              Text(l10n.mediumPriority, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String?>(
+          value: 'low',
+          child: Row(
+            children: [
+              const Icon(Icons.arrow_downward_rounded, size: 16, color: AppColors.info),
+              const SizedBox(width: 8),
+              Text(l10n.lowPriority, style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSortButton(AppLocalizations l10n) {
+    final label = switch (sortBy) {
+      'priority' => 'Ưu tiên',
+      'title' => 'Tên việc',
+      _ => 'Hạn chót',
+    };
+
+    return PopupMenuButton<String>(
+      tooltip: 'Sắp xếp công việc',
+      initialValue: sortBy,
+      onSelected: onSelectSortBy,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.sort_rounded, size: 14, color: AppColors.textSecondary),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'deadline',
+          child: Text('Hạn chót gần nhất', style: TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem(
+          value: 'priority',
+          child: Text('Mức độ ưu tiên', style: TextStyle(fontSize: 13)),
+        ),
+        PopupMenuItem(
+          value: 'title',
+          child: Text('Tên công việc (A-Z)', style: TextStyle(fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeInfo(BuildContext context, AppLocalizations l10n, {required bool isWide}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Top tags: Brand + User chip + Workspace + Role
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (!isWide)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    try {
+                      context.go('/workspaces');
+                    } catch (_) {}
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.gradientPrimary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.diversity_3_rounded, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'PeerTask',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (name.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 8.5,
+                      backgroundColor: AppColors.primarySubtle,
+                      child: Text(
+                        name.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (workspaceName.isNotEmpty) ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    try {
+                      context.go('/workspaces');
+                    } catch (_) {}
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.business_center_outlined, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 5),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: Text(
+                            workspaceName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (role != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.workspace_premium_rounded, size: 11, color: AppColors.primaryDark),
+                    const SizedBox(width: 4),
+                    Text(
+                      role!,
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Tiêu đề: Công việc của bạn
+        Text(
+          l10n.yourTasks,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: isWide ? 26 : 21,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // Mô tả ngắn: Xem và quản lý tất cả nhiệm vụ được giao cho bạn.
+        Text(
+          l10n.yourTasksDesc,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStats(AppLocalizations l10n, {required bool isWide}) {
+    if (!isWide) {
+      return Row(
+        children: [
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.flash_on_rounded,
+              iconColor: AppColors.primary,
+              value: '$doingCount',
+              label: l10n.inProgress,
+              isCompact: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.checklist_rtl_rounded,
+              iconColor: const Color(0xFF6366F1),
+              value: '$todoCount',
+              label: l10n.todo,
+              isCompact: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _MetricPill(
+              icon: Icons.check_circle_rounded,
+              iconColor: AppColors.success,
+              value: '$doneCount',
+              label: l10n.done,
+              isCompact: true,
+            ),
+          ),
+          if (overdueCount > 0) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MetricPill(
+                icon: Icons.warning_amber_rounded,
+                iconColor: AppColors.error,
+                value: '$overdueCount',
+                label: l10n.overdue,
+                isCompact: true,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _MetricPill(
+          icon: Icons.flash_on_rounded,
+          iconColor: AppColors.primary,
+          value: '$doingCount',
+          label: l10n.inProgress,
+        ),
+        _MetricPill(
+          icon: Icons.checklist_rtl_rounded,
+          iconColor: const Color(0xFF6366F1),
+          value: '$todoCount',
+          label: l10n.todo,
+        ),
+        _MetricPill(
+          icon: Icons.check_circle_rounded,
+          iconColor: AppColors.success,
+          value: '$doneCount',
+          label: l10n.done,
+        ),
+        if (overdueCount > 0)
+          _MetricPill(
+            icon: Icons.warning_amber_rounded,
+            iconColor: AppColors.error,
+            value: '$overdueCount',
+            label: l10n.overdue,
+          ),
+      ],
     );
   }
 }
@@ -1382,15 +2615,32 @@ class _EmptyBoards extends StatelessWidget {
             const SizedBox(height: 6),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320),
-              child: Text(
-                subtitle ?? l10n.createFirstBoard,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
+              child: subtitle != null
+                  ? Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onCreate,
+                        borderRadius: BorderRadius.circular(6),
+                        child: Text(
+                          subtitle!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Text(
+                      l10n.createFirstBoard,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
             ),
             if (canCreate) ...[
               const SizedBox(height: 20),
@@ -1415,7 +2665,11 @@ class _EmptyBoards extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                        Icon(
+                          action == l10n.clearFilter ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           action,
@@ -1444,8 +2698,12 @@ class _BoardCard extends ConsumerStatefulWidget {
   final _BoardCounts counts;
   final String? workspaceRole;
   final VoidCallback onTap;
-  final VoidCallback onSettings;
+  final VoidCallback onRename;
+  final VoidCallback onEditDesc;
   final VoidCallback onOpenMembers;
+  final VoidCallback onArchive;
+  final VoidCallback onDelete;
+  final VoidCallback onSettings;
 
   const _BoardCard({
     required this.board,
@@ -1453,8 +2711,12 @@ class _BoardCard extends ConsumerStatefulWidget {
     required this.counts,
     this.workspaceRole,
     required this.onTap,
-    required this.onSettings,
+    required this.onRename,
+    required this.onEditDesc,
     required this.onOpenMembers,
+    required this.onArchive,
+    required this.onDelete,
+    required this.onSettings,
   });
 
   @override
@@ -1479,11 +2741,15 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
+        transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _isHovered ? widget.accent.withValues(alpha: 0.45) : AppColors.border,
+            color: _isHovered
+                ? widget.accent.withValues(alpha: 0.55)
+                : AppColors.border,
+            width: _isHovered ? 1.5 : 1,
           ),
           boxShadow: _isHovered ? AppColors.hoverShadow : AppColors.elegantCardShadow,
         ),
@@ -1496,6 +2762,7 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Accent gradient stripe on top
                 Container(
                   height: 5,
                   decoration: BoxDecoration(
@@ -1583,38 +2850,114 @@ class _BoardCardState extends ConsumerState<_BoardCard> {
                               ),
                             ),
                             PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_horiz_rounded, size: 18),
+                              icon: const Icon(Icons.more_horiz_rounded, size: 20),
                               color: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               tooltip: l10n.boardSettings,
                               padding: EdgeInsets.zero,
                               itemBuilder: (context) => [
+                                if (canManageMembers)
+                                  PopupMenuItem(
+                                    value: 'rename',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.edit_note_rounded, size: 16, color: AppColors.primary),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.renameBoard,
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (canManageMembers)
+                                  PopupMenuItem(
+                                    value: 'edit_desc',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.description_outlined, size: 16, color: AppColors.textSecondary),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.editDescription,
+                                            style: const TextStyle(fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 PopupMenuItem(
                                   value: 'members',
                                   child: Row(
                                     children: [
                                       const Icon(Icons.people_outline_rounded, size: 16, color: AppColors.primary),
                                       const SizedBox(width: 8),
-                                      Text(l10n.boardMembers, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                      Expanded(
+                                        child: Text(
+                                          l10n.manageMembers,
+                                          style: const TextStyle(fontSize: 13),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                PopupMenuItem(
-                                  value: 'settings',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.settings_outlined, size: 16, color: AppColors.textSecondary),
-                                      const SizedBox(width: 8),
-                                      Text(l10n.boardSettings, style: const TextStyle(fontSize: 13)),
-                                    ],
+                                if (canManageMembers)
+                                  PopupMenuItem(
+                                    value: 'archive',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.archive_outlined, size: 16, color: AppColors.textSecondary),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.archiveBoard,
+                                            style: const TextStyle(fontSize: 13),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                if (isOwner)
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.error),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.deleteBoard,
+                                            style: const TextStyle(fontSize: 13, color: AppColors.error, fontWeight: FontWeight.w600),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                               ],
                               onSelected: (value) {
-                                if (value == 'members') {
-                                  widget.onOpenMembers();
-                                } else if (value == 'settings') {
-                                  widget.onSettings();
+                                switch (value) {
+                                  case 'rename':
+                                    widget.onRename();
+                                    break;
+                                  case 'edit_desc':
+                                    widget.onEditDesc();
+                                    break;
+                                  case 'members':
+                                    widget.onOpenMembers();
+                                    break;
+                                  case 'archive':
+                                    widget.onArchive();
+                                    break;
+                                  case 'delete':
+                                    widget.onDelete();
+                                    break;
                                 }
                               },
                             ),
@@ -2061,241 +3404,221 @@ class _CountChip extends StatelessWidget {
   }
 }
 
-class _YourWorkPanel extends StatelessWidget {
+class _TasksPanel extends StatelessWidget {
   final bool loading;
   final bool failed;
-  final bool scroll;
-  final List<_WorkItem> items;
+  final List<WorkItem> items;
   final VoidCallback onRetry;
+  final VoidCallback onClearFilter;
   final ValueChanged<String> onOpen;
 
-  const _YourWorkPanel({
+  const _TasksPanel({
     required this.loading,
     required this.failed,
-    required this.scroll,
     required this.items,
     required this.onRetry,
+    required this.onClearFilter,
     required this.onOpen,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final body = loading
-        ? const _WorkSkeleton()
-        : failed
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextButton.icon(
-                    onPressed: onRetry,
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text(l10n.retry),
-                  ),
-                ),
-              )
-            : items.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primarySubtle,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.task_alt_rounded,
-                              size: 26,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            l10n.allCaughtUp,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.nothingAssigned,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (var i = 0; i < items.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 8),
-                        _WorkRow(item: items[i], onOpen: () => onOpen(items[i].boardId)),
-                      ],
-                    ],
-                  );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppColors.elegantCardShadow,
-      ),
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    if (loading) {
+      return const _TasksSkeleton();
+    }
+
+    if (failed) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: AppColors.gradientPrimary,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.assignment_turned_in_rounded, size: 18, color: Colors.white),
+              const Icon(Icons.error_outline_rounded, size: 40, color: AppColors.error),
+              const SizedBox(height: 12),
+              const Text(
+                'Không thể tải danh sách công việc',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
-              const SizedBox(width: 10),
-              Text(
-                l10n.yourWork,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: items.isEmpty ? AppColors.surfaceVariant : AppColors.primarySubtle,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${items.length}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: items.isEmpty ? AppColors.textTertiary : AppColors.primaryDark,
-                  ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text(l10n.retry),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: 14),
-          if (scroll) Expanded(child: SingleChildScrollView(child: body)) else body,
-          if (items.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primarySubtle.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.tips_and_updates_outlined, size: 14, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.quickTipsBody,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        ),
+      );
+    }
+
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+              boxShadow: AppColors.elegantCardShadow,
             ),
-          ],
-        ],
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primarySubtle,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.task_alt_rounded,
+                    size: 28,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.allCaughtUp,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.nothingAssigned,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: onClearFilter,
+                  icon: const Icon(Icons.filter_list_off_rounded, size: 16),
+                  label: Text(l10n.clearFilter),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryDark,
+                    side: const BorderSide(color: AppColors.primaryLight),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 96),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _TaskFullCard(
+          item: item,
+          onOpen: () => onOpen(item.boardId),
+        );
+      },
     );
   }
 }
 
-class _WorkSkeleton extends StatelessWidget {
-  const _WorkSkeleton();
+class _TasksSkeleton extends StatelessWidget {
+  const _TasksSkeleton();
 
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Colors.grey[200]!,
       highlightColor: Colors.white,
-      child: Column(
-        children: [
-          for (var i = 0; i < 3; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-            ),
-          ],
-        ],
+      child: ListView.separated(
+        itemCount: 4,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, __) => Container(
+          height: 90,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _WorkRow extends StatefulWidget {
-  final _WorkItem item;
+class _TaskFullCard extends StatefulWidget {
+  final WorkItem item;
   final VoidCallback onOpen;
 
-  const _WorkRow({required this.item, required this.onOpen});
+  const _TaskFullCard({
+    required this.item,
+    required this.onOpen,
+  });
 
   @override
-  State<_WorkRow> createState() => _WorkRowState();
+  State<_TaskFullCard> createState() => _TaskFullCardState();
 }
 
-class _WorkRowState extends State<_WorkRow> {
+class _TaskFullCardState extends State<_TaskFullCard> {
   bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
     final l10n = AppLocalizations.of(context)!;
+
     final statusLabel = switch (item.status) {
       'doing' => l10n.inProgress,
       'done' => l10n.done,
       _ => l10n.todo,
     };
     final statusColor = switch (item.status) {
-      'doing' => AppColors.primaryDark,
+      'doing' => AppColors.primary,
       'done' => AppColors.success,
-      _ => AppColors.textSecondary,
+      _ => const Color(0xFF6366F1), // indigo
     };
+    final statusIcon = switch (item.status) {
+      'doing' => Icons.pending_outlined,
+      'done' => Icons.check_circle_rounded,
+      _ => Icons.radio_button_unchecked_rounded,
+    };
+
     final priorityLabel = switch (item.priority) {
       'urgent' => l10n.urgent,
       'high' => l10n.highPriority,
+      'medium' => l10n.mediumPriority,
+      'low' => l10n.lowPriority,
       _ => null,
     };
+    final priorityColor = switch (item.priority) {
+      'urgent' || 'high' => AppColors.error,
+      'medium' => AppColors.warning,
+      'low' => const Color(0xFF0EA5E9),
+      _ => AppColors.textSecondary,
+    };
+
     final due = item.deadline?.toLocal();
-    final dueText = due == null ? null : '${due.day.toString().padLeft(2, '0')}/${due.month.toString().padLeft(2, '0')}';
+    final dueText = due == null
+        ? null
+        : '${due.day.toString().padLeft(2, '0')}/${due.month.toString().padLeft(2, '0')}/${due.year}';
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -2303,124 +3626,202 @@ class _WorkRowState extends State<_WorkRow> {
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
+        transform: Matrix4.translationValues(0, _isHovered ? -2 : 0, 0),
         decoration: BoxDecoration(
-          color: _isHovered ? AppColors.surfaceHover.withValues(alpha: 0.5) : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _isHovered ? AppColors.primary.withValues(alpha: 0.4) : AppColors.borderLight,
-            width: _isHovered ? 1.2 : 1,
+            color: _isHovered ? AppColors.primary.withValues(alpha: 0.5) : AppColors.border,
+            width: _isHovered ? 1.5 : 1,
           ),
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow: _isHovered ? AppColors.hoverShadow : AppColors.elegantCardShadow,
         ),
         child: Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: InkWell(
             onTap: widget.onOpen,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+              padding: const EdgeInsets.all(16),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Status accent strip
                   Container(
-                    width: 3.5,
-                    height: 38,
+                    width: 4,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: statusColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
+
+                  // Main content
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Tags row: Board badge + Status badge + Priority badge
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            // Board Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: AppColors.borderLight),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.dashboard_outlined, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      item.boardName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Status Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(statusIcon, size: 12, color: statusColor),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      statusLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Priority Badge
+                            if (priorityLabel != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: priorityColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.flag_rounded, size: 11, color: priorityColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      priorityLabel,
+                                      style: TextStyle(
+                                        color: priorityColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Title
                         Text(
                           item.title.isEmpty ? l10n.untitled : item.title,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.5,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
                             color: _isHovered ? AppColors.primaryDark : AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            const Icon(Icons.dashboard_outlined, size: 11, color: AppColors.textTertiary),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                item.boardName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+
+                        // Deadline info if present
+                        if (dueText != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 13,
+                                color: item.isOverdue ? AppColors.error : AppColors.textTertiary,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                item.isOverdue ? 'Quá hạn ($dueText)' : 'Hạn: $dueText',
+                                style: TextStyle(
+                                  color: item.isOverdue ? AppColors.error : AppColors.textSecondary,
+                                  fontSize: 11.5,
+                                  fontWeight: item.isOverdue ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Open Kanban board action button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _isHovered ? AppColors.primary : AppColors.primarySubtle,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Mở bảng',
+                          style: TextStyle(
+                            color: _isHovered ? Colors.white : AppColors.primaryDark,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: _isHovered ? Colors.white : AppColors.primaryDark,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          statusLabel,
-                          style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      if (priorityLabel != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          priorityLabel,
-                          style: const TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                      if (dueText != null) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              size: 10,
-                              color: item.isOverdue ? AppColors.error : AppColors.textTertiary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              item.isOverdue ? '${l10n.overdue} $dueText' : dueText,
-                              style: TextStyle(
-                                color: item.isOverdue ? AppColors.error : AppColors.textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (_isHovered) ...[
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
-                  ],
                 ],
               ),
             ),

@@ -222,9 +222,9 @@ void main() {
     expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
     expect(find.byIcon(Icons.swap_vert_rounded), findsOneWidget);
 
-    // Verify column headers (To Do, Doing, Done in Vietnamese: Cần làm, Đang làm, Hoàn thành)
-    expect(find.text('Cần làm'), findsWidgets);
-    expect(find.text('Đang làm'), findsWidgets);
+    // Verify column headers (To Do, Doing, Done in Vietnamese: Cần thực hiện, Đang thực hiện, Hoàn thành)
+    expect(find.text('Cần thực hiện'), findsWidgets);
+    expect(find.text('Đang thực hiện'), findsWidgets);
     expect(find.text('Hoàn thành'), findsWidgets);
 
     // Verify task cards loaded from board
