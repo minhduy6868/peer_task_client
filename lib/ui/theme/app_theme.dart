@@ -288,4 +288,47 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.dark(
+        primary: const Color(0xFF6366F1),
+        secondary: const Color(0xFF8B5CF6),
+        tertiary: AppColors.accent,
+        surface: const Color(0xFF1E1E2C),
+        error: AppColors.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: Colors.white,
+        onError: Colors.white,
+        outline: const Color(0xFF2E2E3E),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF12121A),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF181824),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        shape: Border(bottom: BorderSide(color: Color(0xFF2E2E3E))),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1E1E2C),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFF2E2E3E)),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF2E2E3E),
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
 }
+

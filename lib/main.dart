@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_providers.dart';
 import 'providers/language_provider.dart';
+import 'providers/theme_provider.dart';
 import 'services/storage_service.dart';
 import 'services/config_service.dart';
 import 'ui/screens/landing_screen.dart';
@@ -224,10 +225,14 @@ class _MyAppState extends ConsumerState<MyApp> {
       ],
     );
 
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'PeerTask',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       locale: locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,

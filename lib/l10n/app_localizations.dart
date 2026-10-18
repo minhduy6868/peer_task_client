@@ -1571,7 +1571,7 @@ abstract class AppLocalizations {
   /// No description provided for @saveChanges.
   ///
   /// In en, this message translates to:
-  /// **'Save Changes'**
+  /// **'Save changes'**
   String get saveChanges;
 
   /// No description provided for @role.
@@ -1739,7 +1739,7 @@ abstract class AppLocalizations {
   /// No description provided for @createTask.
   ///
   /// In en, this message translates to:
-  /// **'Create Task'**
+  /// **'Create task'**
   String get createTask;
 
   /// No description provided for @editTask.
@@ -1787,7 +1787,7 @@ abstract class AppLocalizations {
   /// No description provided for @noTasks.
   ///
   /// In en, this message translates to:
-  /// **'No tasks yet'**
+  /// **'No tasks'**
   String get noTasks;
 
   /// No description provided for @addFirstTask.
@@ -2629,6 +2629,690 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Click any task card to navigate directly to its board.'**
   String get quickTipsBody;
+
+  /// No description provided for @roomMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ROOM MEMBERS ({count})'**
+  String roomMembersTitle(int count);
+
+  /// No description provided for @quickDiscussionNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick discussion notes'**
+  String get quickDiscussionNotes;
+
+  /// No description provided for @unassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get unassigned;
+
+  /// No description provided for @unknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknownUser;
+
+  /// No description provided for @post.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get post;
+
+  /// No description provided for @renamePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename page'**
+  String get renamePage;
+
+  /// No description provided for @deletePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete page'**
+  String get deletePage;
+
+  /// No description provided for @deletePageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this page?'**
+  String get deletePageConfirm;
+
+  /// No description provided for @cannotDeleteLastPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot delete the last page'**
+  String get cannotDeleteLastPage;
+
+  /// No description provided for @pageNameExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Page name already exists'**
+  String get pageNameExists;
+
+  /// No description provided for @pageNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Page name cannot be empty'**
+  String get pageNameEmpty;
+
+  /// No description provided for @pageTitlePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Page'**
+  String get pageTitlePrefix;
+
+  /// No description provided for @autoSyncP2P.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-sync P2P 0.1s'**
+  String get autoSyncP2P;
+
+  /// No description provided for @leaveRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave room'**
+  String get leaveRoom;
+
+  /// No description provided for @leaveRoomConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to disconnect and leave the voice room?'**
+  String get leaveRoomConfirm;
+
+  /// No description provided for @clearCanvasConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear all drawings and shapes on this page?'**
+  String get clearCanvasConfirm;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @undoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo (Ctrl+Z)'**
+  String get undoTooltip;
+
+  /// No description provided for @redoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo (Ctrl+Shift+Z)'**
+  String get redoTooltip;
+
+  /// No description provided for @toolSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select (V)'**
+  String get toolSelect;
+
+  /// No description provided for @toolHand.
+  ///
+  /// In en, this message translates to:
+  /// **'Pan (H)'**
+  String get toolHand;
+
+  /// No description provided for @toolPen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen (P)'**
+  String get toolPen;
+
+  /// No description provided for @toolEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser (E)'**
+  String get toolEraser;
+
+  /// No description provided for @toolRectangle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rectangle (R)'**
+  String get toolRectangle;
+
+  /// No description provided for @toolCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle (O)'**
+  String get toolCircle;
+
+  /// No description provided for @toolArrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow (A)'**
+  String get toolArrow;
+
+  /// No description provided for @toolStickyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticky note (N)'**
+  String get toolStickyNote;
+
+  /// No description provided for @toolText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text (T)'**
+  String get toolText;
+
+  /// No description provided for @toolKanban.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Kanban card (K)'**
+  String get toolKanban;
+
+  /// No description provided for @filterAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee:'**
+  String get filterAssignee;
+
+  /// No description provided for @filterPriorityAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority: All'**
+  String get filterPriorityAll;
+
+  /// No description provided for @filterPriorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get filterPriorityUrgent;
+
+  /// No description provided for @filterPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get filterPriorityHigh;
+
+  /// No description provided for @filterPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get filterPriorityMedium;
+
+  /// No description provided for @filterPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get filterPriorityLow;
+
+  /// No description provided for @addColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add column'**
+  String get addColumn;
+
+  /// No description provided for @addNewCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new card'**
+  String get addNewCard;
+
+  /// No description provided for @onlinePeople.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} online'**
+  String onlinePeople(int count);
+
+  /// No description provided for @voiceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice live'**
+  String get voiceLive;
+
+  /// No description provided for @quickMeetP2P.
+  ///
+  /// In en, this message translates to:
+  /// **'P2P Quick Meet'**
+  String get quickMeetP2P;
+
+  /// No description provided for @searchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks, meeting notes, drawings...'**
+  String get searchPlaceholder;
+
+  /// No description provided for @searchFilterPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter project cards...'**
+  String get searchFilterPlaceholder;
+
+  /// No description provided for @exportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportAction;
+
+  /// No description provided for @createNewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get createNewAction;
+
+  /// No description provided for @createTaskCTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get createTaskCTA;
+
+  /// No description provided for @enterPageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter page name...'**
+  String get enterPageName;
+
+  /// No description provided for @createNewTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new task'**
+  String get createNewTaskTitle;
+
+  /// No description provided for @editTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task'**
+  String get editTaskTitle;
+
+  /// No description provided for @taskDialogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task to track the progress of your work and your team.'**
+  String get taskDialogSubtitle;
+
+  /// No description provided for @taskNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Task name'**
+  String get taskNameLabel;
+
+  /// No description provided for @taskNamePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter task name...'**
+  String get taskNamePlaceholder;
+
+  /// No description provided for @taskNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter task name'**
+  String get taskNameRequired;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionLabel;
+
+  /// No description provided for @descriptionPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a detailed description of the task...'**
+  String get descriptionPlaceholder;
+
+  /// No description provided for @listLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get listLabel;
+
+  /// No description provided for @statusTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To do'**
+  String get statusTodo;
+
+  /// No description provided for @statusDoing.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusDoing;
+
+  /// No description provided for @statusReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review / Testing'**
+  String get statusReview;
+
+  /// No description provided for @statusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get statusDone;
+
+  /// No description provided for @priorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get priorityLabel;
+
+  /// No description provided for @priorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get priorityUrgent;
+
+  /// No description provided for @priorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get priorityHigh;
+
+  /// No description provided for @priorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get priorityMedium;
+
+  /// No description provided for @priorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get priorityLow;
+
+  /// No description provided for @assigneeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get assigneeLabel;
+
+  /// No description provided for @selectMemberPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select member...'**
+  String get selectMemberPlaceholder;
+
+  /// No description provided for @labelsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get labelsLabel;
+
+  /// No description provided for @startDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get startDateLabel;
+
+  /// No description provided for @dueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get dueDateLabel;
+
+  /// No description provided for @pickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date'**
+  String get pickDate;
+
+  /// No description provided for @setReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminder'**
+  String get setReminder;
+
+  /// No description provided for @repeatIntervalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get repeatIntervalLabel;
+
+  /// No description provided for @doesNotRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not repeat'**
+  String get doesNotRepeat;
+
+  /// No description provided for @repeatDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get repeatDaily;
+
+  /// No description provided for @repeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get repeatWeekly;
+
+  /// No description provided for @repeatMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get repeatMonthly;
+
+  /// No description provided for @attachmentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get attachmentsLabel;
+
+  /// No description provided for @dragAndDropFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and drop files here or choose a file'**
+  String get dragAndDropFiles;
+
+  /// No description provided for @fileSupportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports JPG, PNG, PDF, DOC... (max 10MB)'**
+  String get fileSupportHint;
+
+  /// No description provided for @quickCreationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick task creation'**
+  String get quickCreationTitle;
+
+  /// No description provided for @quickCreationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the details and press \"Create task\" to save and get started.'**
+  String get quickCreationBody;
+
+  /// No description provided for @previewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewLabel;
+
+  /// No description provided for @previewDescriptionDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Task description...'**
+  String get previewDescriptionDefault;
+
+  /// No description provided for @moreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptions;
+
+  /// No description provided for @notifyMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify members'**
+  String get notifyMembers;
+
+  /// No description provided for @addToSprintPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to sprint plan'**
+  String get addToSprintPlan;
+
+  /// No description provided for @formatBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get formatBold;
+
+  /// No description provided for @formatItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get formatItalic;
+
+  /// No description provided for @formatUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get formatUnderline;
+
+  /// No description provided for @formatBulletList.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet list'**
+  String get formatBulletList;
+
+  /// No description provided for @formatNumberedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get formatNumberedList;
+
+  /// No description provided for @formatLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get formatLink;
+
+  /// No description provided for @formatImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get formatImage;
+
+  /// No description provided for @formatCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get formatCode;
+
+  /// No description provided for @dueDateMustBeAfterStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date must be after or on start date'**
+  String get dueDateMustBeAfterStartDate;
+
+  /// No description provided for @closeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close (ESC)'**
+  String get closeTooltip;
+
+  /// No description provided for @columnTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'TO DO'**
+  String get columnTodo;
+
+  /// No description provided for @columnDoing.
+  ///
+  /// In en, this message translates to:
+  /// **'IN PROGRESS'**
+  String get columnDoing;
+
+  /// No description provided for @columnReview.
+  ///
+  /// In en, this message translates to:
+  /// **'REVIEW / TESTING'**
+  String get columnReview;
+
+  /// No description provided for @columnDone.
+  ///
+  /// In en, this message translates to:
+  /// **'DONE'**
+  String get columnDone;
+
+  /// No description provided for @priorityBadgeUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get priorityBadgeUrgent;
+
+  /// No description provided for @priorityBadgeHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High priority'**
+  String get priorityBadgeHigh;
+
+  /// No description provided for @priorityBadgeMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium priority'**
+  String get priorityBadgeMedium;
+
+  /// No description provided for @priorityBadgeLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low priority'**
+  String get priorityBadgeLow;
+
+  /// No description provided for @dateFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {date}'**
+  String dateFrom(String date);
+
+  /// No description provided for @dateTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {date}'**
+  String dateTo(String date);
+
+  /// No description provided for @noDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get noDueDate;
+
+  /// No description provided for @typeDiscussionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a note (Enter)...'**
+  String get typeDiscussionNote;
+
+  /// No description provided for @noDiscussionNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet. Type and press Post.'**
+  String get noDiscussionNotes;
+
+  /// No description provided for @themeModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance (Theme)'**
+  String get themeModeLabel;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
 }
 
 class _AppLocalizationsDelegate

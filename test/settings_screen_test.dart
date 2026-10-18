@@ -5,6 +5,7 @@ import 'package:peertask/l10n/app_localizations.dart';
 import 'package:peertask/models/user/user.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/providers/language_provider.dart';
+import 'package:peertask/providers/theme_provider.dart';
 import 'package:peertask/services/api_service.dart';
 import 'package:peertask/services/storage_service.dart';
 import 'package:peertask/ui/dialogs/edit_profile_dialog.dart';
@@ -31,9 +32,18 @@ class FakeLanguageNotifier extends StateNotifier<Locale> implements LanguageNoti
   }
 }
 
+class FakeThemeModeNotifier extends StateNotifier<ThemeMode> implements ThemeModeNotifier {
+  FakeThemeModeNotifier([ThemeMode initial = ThemeMode.system]) : super(initial);
+
+  @override
+  Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
+  }
+}
+
 class FakeStorageService extends Fake implements StorageService {
   @override
-  String? getAccessToken() => 'dummy-token';
+  String? getAuthToken() => 'dummy-token';
   @override
   Map<String, dynamic>? getUser() => {
         'id': 'user-123',
@@ -76,6 +86,7 @@ void main() {
         apiServiceProvider.overrideWithValue(FakeApiService()),
         authStateProvider.overrideWith((ref) => MockAuthNotifier(ref, testUser)),
         languageProvider.overrideWith((ref) => FakeLanguageNotifier(locale)),
+        themeModeProvider.overrideWith((ref) => FakeThemeModeNotifier()),
       ],
       child: MaterialApp(
         locale: locale,
@@ -100,6 +111,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       final err = tester.takeException();
+      if (err != null) {
+        debugPrint('TEST ERROR: $err');
+      }
       expect(err, isNull, reason: 'Overflow or error in locale $locale: $err');
       expect(find.text('Alex Rivera'), findsOneWidget);
       expect(find.text('alex@example.com'), findsOneWidget);
