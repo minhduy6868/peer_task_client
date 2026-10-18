@@ -791,5 +791,7 @@
   "imageSupportHint": "JPG, PNG, WEBP, GIF - tối đa 10MB mỗi ảnh",
   "imageTooLarge": "{name} lớn hơn 10MB",
   "uploadingImages": "Đang tải ảnh lên...",
-  "removeAttachment": "Xóa ảnh"
+  "removeAttachment": "Xóa ảnh",
+  "helpNav": "Trợ giúp",
+  "searchWorkspacesHint": "Tìm workspace..."
 }

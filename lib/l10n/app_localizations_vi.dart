@@ -2109,4 +2109,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get removeAttachment => 'Xóa ảnh';
+
+  @override
+  String get helpNav => 'Trợ giúp';
+
+  @override
+  String get searchWorkspacesHint => 'Tìm workspace...';
 }

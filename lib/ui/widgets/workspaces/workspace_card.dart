@@ -54,10 +54,10 @@ class WorkspaceCard extends StatefulWidget {
 class _WorkspaceCardState extends State<WorkspaceCard> {
   bool _isHovered = false;
 
-  static const Color primaryPurple = Color(0xFF8B5CF6);
+  static const Color primaryPurple = Color(0xFF6366F1);
   static const Color textDark = Color(0xFF1E1B4B);
   static const Color textMuted = Color(0xFF6B7280);
-  static const Color borderColor = Color(0xFFF1E9DC);
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   // 4 Pastel Themes matching the reference image cards
   static const List<WorkspaceCardStyle> _styles = [
@@ -264,7 +264,7 @@ class _WorkspaceCardState extends State<WorkspaceCard> {
                       ),
                       const SizedBox(height: 14),
 
-                      const Divider(height: 1, color: Color(0xFFF1E9DC)),
+                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
                       const SizedBox(height: 10),
 
                       // Metadata stats footer (Boards and Tasks)

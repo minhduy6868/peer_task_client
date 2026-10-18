@@ -36,11 +36,11 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
   final Set<String> _favoriteIds = {};
   final Map<String, int> _boardsCountCache = {};
 
-  static const Color saasPrimary = Color(0xFF8B5CF6);
-  static const Color saasBackground = Color(0xFFFFF9F0); // Warm Cream background
+  static const Color saasPrimary = Color(0xFF6366F1);
+  static const Color saasBackground = Color(0xFFF8FAFC); // Warm Cream background
   static const Color textDark = Color(0xFF1E1B4B);
   static const Color textMuted = Color(0xFF6B7280);
-  static const Color borderColor = Color(0xFFF1E9DC);
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   @override
   void initState() {
@@ -156,7 +156,7 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                         hintText: 'Ví dụ: Đồ án tốt nghiệp, Dự án Mobile...',
                         hintStyle: const TextStyle(fontSize: 13, color: textMuted),
                         filled: true,
-                        fillColor: const Color(0xFFFBF8F3),
+                        fillColor: const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(color: borderColor),
@@ -344,37 +344,6 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
     );
   }
 
-  void _showNotificationsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.notifications_none_rounded, color: saasPrimary),
-            SizedBox(width: 8),
-            Text('Thông báo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.mark_email_read_outlined, size: 40, color: textMuted),
-            SizedBox(height: 12),
-            Text('Không có thông báo mới', style: TextStyle(color: textMuted, fontSize: 14)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _openWorkspace(Workspace workspace) async {
     final storage = ref.read(storageServiceProvider);
     await storage.saveLastWorkspace(workspace.id);
@@ -494,7 +463,6 @@ class _WorkspaceSelectionScreenState extends ConsumerState<WorkspaceSelectionScr
                       searchController: _searchController,
                       onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
                       user: user,
-                      onOpenNotifications: _showNotificationsDialog,
                       onOpenSettings: () => context.push('/settings'),
                       onLogout: () {
                         ref.read(authStateProvider.notifier).logout();

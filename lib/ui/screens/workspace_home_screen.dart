@@ -11,8 +11,8 @@ import '../dialogs/workspace_menu_dialog.dart';
 import '../widgets/dashboard/dashboard_sidebar.dart';
 import '../widgets/dashboard/dashboard_top_bar.dart';
 import '../widgets/dashboard/dashboard_center_view.dart';
+import '../widgets/app_shell_style.dart';
 import 'boards_screen.dart';
-import 'settings_screen.dart';
 import 'workspace_members_screen.dart';
 import 'project_settings_screen.dart';
 
@@ -306,7 +306,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
 
     if (isDesktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppShellStyle.background,
         body: Row(
           children: [
             // Left Sidebar (full-height matching mockup)
@@ -336,8 +336,6 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               child: Column(
                 children: [
                   DashboardTopBar(
-                    searchController: _searchController,
-                    onSearch: (q) {},
                     onProfileTap: () {
                       ref.read(_currentTabProvider.notifier).state = 4;
                     },
@@ -359,8 +357,11 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppShellStyle.surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: AppShellStyle.headerHeight,
+        shape: const Border(bottom: BorderSide(color: AppShellStyle.divider, width: 1.5)),
         title: Row(
           children: [
             Container(
@@ -373,13 +374,17 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               child: const Icon(Icons.diversity_3_rounded, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
-            Text(
+            Flexible(
+              child: Text(
               workspace?.name ?? 'PeerTask',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1E293B),
               ),
+            ),
             ),
           ],
         ),
@@ -439,21 +444,21 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
               ref.read(_currentTabProvider.notifier).state = idx == 2 ? 4 : idx;
             },
             backgroundColor: Colors.white,
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Trang chủ',
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded),
+                label: AppLocalizations.of(context)!.homeNav,
               ),
               NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard_rounded),
-                label: 'Bảng',
+                icon: const Icon(Icons.dashboard_outlined),
+                selectedIcon: const Icon(Icons.dashboard_rounded),
+                label: AppLocalizations.of(context)!.boards,
               ),
               NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: 'Cài đặt',
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings_rounded),
+                label: AppLocalizations.of(context)!.settings,
               ),
             ],
           ),

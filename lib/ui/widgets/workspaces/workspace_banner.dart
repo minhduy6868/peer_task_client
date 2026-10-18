@@ -10,7 +10,7 @@ class WorkspaceBanner extends StatelessWidget {
     required this.onShowGuide,
   });
 
-  static const Color primaryPurple = Color(0xFF8B5CF6);
+  static const Color primaryPurple = Color(0xFF6366F1);
   static const Color primaryDark = Color(0xFF7C3AED);
   static const Color textDark = Color(0xFF1E1B4B);
   static const Color textMuted = Color(0xFF6B7280);
@@ -29,7 +29,7 @@ class WorkspaceBanner extends StatelessWidget {
             gradient: const LinearGradient(
               colors: [
                 Color(0xFFEDE9FE), // Soft Lavender
-                Color(0xFFF3E8FF), // Light Violet
+                Color(0xFFEDE9FE), // Light Violet
                 Color(0xFFFDFBF7), // Warm tone fade
               ],
               begin: Alignment.topLeft,

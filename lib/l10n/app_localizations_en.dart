@@ -2112,4 +2112,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeAttachment => 'Remove image';
+
+  @override
+  String get helpNav => 'Help';
+
+  @override
+  String get searchWorkspacesHint => 'Search workspaces...';
 }

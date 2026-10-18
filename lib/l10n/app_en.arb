@@ -805,5 +805,7 @@
     }
   },
   "uploadingImages": "Uploading images...",
-  "removeAttachment": "Remove image"
+  "removeAttachment": "Remove image",
+  "helpNav": "Help",
+  "searchWorkspacesHint": "Search workspaces..."
 }

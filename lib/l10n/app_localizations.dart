@@ -4135,6 +4135,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove image'**
   String get removeAttachment;
+
+  /// No description provided for @helpNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get helpNav;
+
+  /// No description provided for @searchWorkspacesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search workspaces...'**
+  String get searchWorkspacesHint;
 }
 
 class _AppLocalizationsDelegate

@@ -3,6 +3,7 @@ import 'package:peertask/models/workspace/workspace.dart';
 import 'package:peertask/models/user/user.dart';
 import 'package:peertask/models/board/board.dart';
 import 'package:peertask/l10n/app_localizations.dart';
+import '../app_shell_style.dart';
 
 class DashboardSidebar extends StatelessWidget {
   final int currentTab;
@@ -43,7 +44,7 @@ class DashboardSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final width = isCompact ? 72.0 : 240.0;
+    final width = isCompact ? AppShellStyle.sidebarCompactWidth : AppShellStyle.sidebarWidth;
     final userName = user?.name?.isNotEmpty == true
         ? user!.name!
         : (user?.email?.split('@').first ?? '');
@@ -52,84 +53,15 @@ class DashboardSidebar extends StatelessWidget {
 
     return Container(
       width: width,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: borderColor, width: 1.5)),
-      ),
+      decoration: AppShellStyle.sidebarDecoration,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top: Brand Logo + PeerTask + Tagline
-            InkWell(
+            AppShellStyle.brand(
+              tagline: l10n.tagline,
+              compact: isCompact,
               onTap: onBrandTap,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(isCompact ? 14 : 18, 16, isCompact ? 14 : 18, 18),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.diversity_3_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    if (!isCompact) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'PeerTask',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: textDark,
-                                letterSpacing: -0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.tagline,
-                              style: const TextStyle(
-                                fontSize: 10.5,
-                                color: textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ),
 
             const SizedBox(height: 4),
@@ -308,53 +240,12 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const activeBg = Color(0xFFEDE9FE);
-    const activeColor = Color(0xFF6366F1);
-    const idleColor = Color(0xFF64748B);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Tooltip(
-        message: isCompact ? label : '',
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          hoverColor: const Color(0xFFF1F5F9),
-          child: Container(
-            height: 44,
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 0 : 12),
-            decoration: BoxDecoration(
-              color: isActive ? activeBg : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
-              children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isActive ? activeColor : idleColor,
-                ),
-                if (!isCompact) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                        color: isActive ? activeColor : const Color(0xFF334155),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+    return AppShellStyle.navItem(
+      icon: icon,
+      label: label,
+      active: isActive,
+      compact: isCompact,
+      onTap: onTap,
     );
   }
 }

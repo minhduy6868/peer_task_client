@@ -41,10 +41,10 @@ class WorkspaceFilters extends StatelessWidget {
     required this.onSortChanged,
   });
 
-  static const Color primaryPurple = Color(0xFF8B5CF6);
+  static const Color primaryPurple = Color(0xFF6366F1);
   static const Color textDark = Color(0xFF1E1B4B);
   static const Color textMuted = Color(0xFF6B7280);
-  static const Color borderColor = Color(0xFFF1E9DC);
+  static const Color borderColor = Color(0xFFE2E8F0);
 
   @override
   Widget build(BuildContext context) {
