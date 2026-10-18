@@ -33,19 +33,78 @@ class StorageService {
     }
 
     await Hive.initFlutter();
-    
-    _authBox = await Hive.openBox(_authBoxName);
-    _boardsBox = await Hive.openBox(_boardsBoxName);
-    _operationsBox = await Hive.openBox(_operationsBoxName);
-    _settingsBox = await Hive.openBox(_settingsBoxName);
+
+    _authBox = await _open(_authBoxName);
+    _boardsBox = await _open(_boardsBoxName);
+    _operationsBox = await _open(_operationsBoxName);
+    _settingsBox = await _open(_settingsBoxName);
 
     debugPrint('✅ Storage initialized');
   }
 
+  /// Opens a box, falling back to an in-memory box when the browser refuses
+  /// IndexedDB (private mode, blocked storage, corrupted database).
+  static Future<Box> _open(String name) async {
+    try {
+      return await Hive.openBox(name);
+    } catch (e) {
+      debugPrint('⚠️ Could not open box $name, using memory: $e');
+      return Hive.openBox(name, bytes: Uint8List(0));
+    }
+  }
+
+  Box? _boxNamed(String name) {
+    switch (name) {
+      case _authBoxName:
+        return _authBox;
+      case _boardsBoxName:
+        return _boardsBox;
+      case _operationsBoxName:
+        return _operationsBox;
+      default:
+        return _settingsBox;
+    }
+  }
+
+  Future<Box> _reopen(String name) async {
+    try {
+      await _boxNamed(name)?.close();
+    } catch (_) {}
+    final box = await _open(name);
+    switch (name) {
+      case _authBoxName:
+        _authBox = box;
+      case _boardsBoxName:
+        _boardsBox = box;
+      case _operationsBoxName:
+        _operationsBox = box;
+      default:
+        _settingsBox = box;
+    }
+    return box;
+  }
+
+  /// Runs a write against [name]. Many callers fire and forget, so this never
+  /// throws: a failed IndexedDB transaction (closed connection, another tab
+  /// upgrading the database) reopens the box and retries once.
+  Future<void> _write(String name, Future<void> Function(Box box) op) async {
+    final box = _boxNamed(name);
+    if (box == null) return;
+    try {
+      await op(box);
+    } catch (e) {
+      debugPrint('⚠️ Storage write to $name failed, reopening: $e');
+      try {
+        await op(await _reopen(name));
+      } catch (e) {
+        debugPrint('❌ Storage write to $name failed: $e');
+      }
+    }
+  }
+
   // Language preference persistence
   Future<void> saveLanguage(String languageCode) async {
-    if (_settingsBox == null) return;
-    await _settingsBox!.put('language', languageCode);
+    await _write(_settingsBoxName, (box) => box.put('language', languageCode));
   }
 
   String? getLanguage() {
@@ -54,8 +113,7 @@ class StorageService {
 
   // Auth persistence
   Future<void> saveAuthToken(String token) async {
-    if (_authBox == null) return;
-    await _authBox!.put('token', token);
+    await _write(_authBoxName, (box) => box.put('token', token));
   }
 
   String? getAuthToken() {
@@ -63,12 +121,12 @@ class StorageService {
   }
 
   Future<void> saveRefreshToken(String? token) async {
-    if (_authBox == null) return;
-    if (token == null) {
-      await _authBox!.delete('refreshToken');
-    } else {
-      await _authBox!.put('refreshToken', token);
-    }
+    await _write(
+      _authBoxName,
+      (box) => token == null
+          ? box.delete('refreshToken')
+          : box.put('refreshToken', token),
+    );
   }
 
   Future<String?> getRefreshToken() async {
@@ -76,8 +134,7 @@ class StorageService {
   }
 
   Future<void> saveUserId(String userId) async {
-    if (_authBox == null) return;
-    await _authBox!.put('userId', userId);
+    await _write(_authBoxName, (box) => box.put('userId', userId));
   }
 
   String? getUserId() {
@@ -85,8 +142,7 @@ class StorageService {
   }
 
   Future<void> saveUser(Map<String, dynamic> user) async {
-    if (_authBox == null) return;
-    await _authBox!.put('user', json.encode(user));
+    await _write(_authBoxName, (box) => box.put('user', json.encode(user)));
   }
 
   Map<String, dynamic>? getUser() {
@@ -96,12 +152,12 @@ class StorageService {
   }
 
   Future<void> saveLastWorkspace(String? workspaceId) async {
-    if (_authBox == null) return;
-    if (workspaceId == null) {
-      await _authBox!.delete('lastWorkspaceId');
-    } else {
-      await _authBox!.put('lastWorkspaceId', workspaceId);
-    }
+    await _write(
+      _authBoxName,
+      (box) => workspaceId == null
+          ? box.delete('lastWorkspaceId')
+          : box.put('lastWorkspaceId', workspaceId),
+    );
   }
 
   String? getLastWorkspace() {
@@ -110,8 +166,7 @@ class StorageService {
 
   // Offline username
   Future<void> saveOfflineUsername(String username) async {
-    if (_authBox == null) return;
-    await _authBox!.put('offlineUsername', username);
+    await _write(_authBoxName, (box) => box.put('offlineUsername', username));
   }
 
   String? getOfflineUsername() {
@@ -119,39 +174,26 @@ class StorageService {
   }
 
   Future<void> clearOfflineUsername() async {
-    if (_authBox == null) return;
-    await _authBox!.delete('offlineUsername');
+    await _write(_authBoxName, (box) => box.delete('offlineUsername'));
   }
 
   /// Clear authentication data but preserve offline username
   Future<void> clearAuth() async {
     if (_authBox == null) return;
-    
-    debugPrint('🔄 Clearing auth data...');
-    debugPrint('   Before clear - keys: ${_authBox!.keys.toList()}');
-    
-    // Save offline username before clearing
+
     final offlineUsername = _authBox!.get('offlineUsername');
-    debugPrint('   Saved offline username: $offlineUsername');
-    
-    // Clear all auth data (removes token, refreshToken, userId, user, lastWorkspaceId, everything)
-    await _authBox!.clear();
-    debugPrint('   After clear - keys: ${_authBox!.keys.toList()}');
-    
-    // Restore offline username if it existed
-    if (offlineUsername != null) {
-      await _authBox!.put('offlineUsername', offlineUsername);
-      debugPrint('   Restored offline username: $offlineUsername');
-    }
-    
-    debugPrint('   Final keys: ${_authBox!.keys.toList()}');
+    await _write(_authBoxName, (box) async {
+      await box.clear();
+      if (offlineUsername != null) {
+        await box.put('offlineUsername', offlineUsername);
+      }
+    });
     debugPrint('✅ Auth cleared - only offlineUsername preserved');
   }
 
   // Board state persistence
   Future<void> saveBoardState(String boardId, Map<String, dynamic> state) async {
-    if (_boardsBox == null) return;
-    await _boardsBox!.put(boardId, json.encode(state));
+    await _write(_boardsBoxName, (box) => box.put(boardId, json.encode(state)));
   }
 
   Map<String, dynamic>? getBoardState(String boardId) {
@@ -192,9 +234,11 @@ class StorageService {
 
   // Operation log persistence
   Future<void> saveOperation(String boardId, Operation operation) async {
-    if (_operationsBox == null) return;
     final key = '${boardId}_${operation.opId}';
-    await _operationsBox!.put(key, json.encode(operation.toJson()));
+    await _write(
+      _operationsBoxName,
+      (box) => box.put(key, json.encode(operation.toJson())),
+    );
   }
 
   Future<void> saveOperations(String boardId, List<Operation> operations) async {
@@ -233,22 +277,22 @@ class StorageService {
       }
     }
 
-    for (final key in keysToDelete) {
-      await _operationsBox!.delete(key);
-    }
+    await _write(_operationsBoxName, (box) => box.deleteAll(keysToDelete));
   }
 
   Future<void> clearAll() async {
-    if (_authBox != null) await _authBox!.clear();
-    if (_boardsBox != null) await _boardsBox!.clear();
-    if (_operationsBox != null) await _operationsBox!.clear();
+    await _write(_authBoxName, (box) => box.clear());
+    await _write(_boardsBoxName, (box) => box.clear());
+    await _write(_operationsBoxName, (box) => box.clear());
   }
 
   // Offline queue for pending operations
   Future<void> queueOfflineOperation(String boardId, Operation operation) async {
-    if (_operationsBox == null) return;
     final key = 'pending_${boardId}_${operation.opId}';
-    await _operationsBox!.put(key, json.encode(operation.toJson()));
+    await _write(
+      _operationsBoxName,
+      (box) => box.put(key, json.encode(operation.toJson())),
+    );
   }
 
   List<Operation> getPendingOperations(String boardId) {
@@ -271,9 +315,8 @@ class StorageService {
   }
 
   Future<void> clearPendingOperation(String boardId, String opId) async {
-    if (_operationsBox == null) return;
     final key = 'pending_${boardId}_$opId';
-    await _operationsBox!.delete(key);
+    await _write(_operationsBoxName, (box) => box.delete(key));
   }
 
   Future<void> clearAllPendingOperations(String boardId) async {
@@ -286,17 +329,14 @@ class StorageService {
       }
     }
 
-    for (final key in keysToDelete) {
-      await _operationsBox!.delete(key);
-    }
+    await _write(_operationsBoxName, (box) => box.deleteAll(keysToDelete));
   }
 
   String _draftKey(String boardId) => 'draft_$boardId';
 
   /// Local canvas draft (strokes + text). Separate from offline board state.
   Future<void> saveBoardDraft(String boardId, Map<String, dynamic> draft) async {
-    if (_operationsBox == null) return;
-    await _operationsBox!.put(_draftKey(boardId), json.encode(draft));
+    await _write(_operationsBoxName, (box) => box.put(_draftKey(boardId), json.encode(draft)));
   }
 
   Map<String, dynamic>? getBoardDraft(String boardId) {
@@ -313,7 +353,6 @@ class StorageService {
   }
 
   Future<void> clearBoardDraft(String boardId) async {
-    if (_operationsBox == null) return;
-    await _operationsBox!.delete(_draftKey(boardId));
+    await _write(_operationsBoxName, (box) => box.delete(_draftKey(boardId)));
   }
 }
