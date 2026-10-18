@@ -37,7 +37,7 @@ abstract final class AppShellStyle {
   );
 
   static EdgeInsets headerPadding(double width) =>
-      EdgeInsets.symmetric(horizontal: width < 600 ? 12 : 28);
+      EdgeInsets.only(left: width < 600 ? 12 : 24, right: 12);
 
   static Widget brand({
     required String tagline,
