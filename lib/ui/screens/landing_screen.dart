@@ -13,6 +13,7 @@ import '../../utils/error_display.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_language_switcher.dart';
 
 /// Public homepage: stunning light product page with ambient color field,
 /// frosted navigation bar, and an interactive studio board mockup.
@@ -193,6 +194,10 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
       animation: _scrolled,
       builder: (context, _) {
         final lifted = _scrolled.value;
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final wide = screenWidth >= 960;
+        final isMobile = screenWidth < 640;
+
         return ClipRect(
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -204,29 +209,37 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                     ? [BoxShadow(color: AppColors.shadowLight, blurRadius: 18, offset: const Offset(0, 6))]
                     : const [],
               ),
-              child: _band(
-                pad,
-                SizedBox(
-                  height: 64,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: wide ? 36.0 : 16.0),
+                child: SizedBox(
+                  height: 68,
                   child: Row(
                     children: [
-                      const _LogoMark(),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Text(
-                          l10n.appTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.titleMedium.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: AppColors.textPrimary,
-                          ),
+                      // Brand
+                      InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const _LogoMark(),
+                            const SizedBox(width: 10),
+                            Text(
+                              l10n.appTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        flex: 3,
+                      const SizedBox(width: 12),
+                      // Actions on the Far Right
+                      Expanded(
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: FittedBox(
@@ -235,18 +248,63 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                AppButton(
-                                  label: l10n.signIn,
-                                  variant: ButtonVariant.text,
-                                  size: ButtonSize.small,
+                                const AppLanguageSwitcher(),
+                                const SizedBox(width: 12),
+                                TextButton(
                                   onPressed: () => context.go('/login'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.primaryDark,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  child: Text(
+                                    l10n.signIn,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 4),
-                                AppButton(
-                                  label: l10n.getStarted,
-                                  size: ButtonSize.small,
-                                  color: AppColors.primaryDark,
-                                  onPressed: () => context.go('/login'),
+                                const SizedBox(width: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF7C3AED).withValues(alpha: 0.28),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () => context.go('/login?mode=signup'),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 22,
+                                          vertical: 12,
+                                        ),
+                                        child: Text(
+                                          l10n.getStarted,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -458,7 +516,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                'FEATURES',
+                l10n.landingFeaturesBadge.toUpperCase(),
                 style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w800,
@@ -661,6 +719,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        const AppLanguageSwitcher(),
         if (kIsWeb)
           AppButton(
             label: l10n.downloadAndroidApp,
@@ -1138,7 +1197,7 @@ class _BoardPreview extends StatelessWidget {
                 ),
                 child: Text(
                   card,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textPrimary,
@@ -1165,7 +1224,7 @@ class _BoardPreview extends StatelessWidget {
         children: [
           const SizedBox(width: 10),
           SizedBox(
-            width: 80,
+            width: 95,
             child: Text(
               l10n.landingCanvasTitle,
               maxLines: 2,

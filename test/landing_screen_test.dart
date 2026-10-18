@@ -2,14 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:peertask/l10n/app_localizations.dart';
+import 'package:peertask/providers/language_provider.dart';
 import 'package:peertask/ui/screens/landing_screen.dart';
 import 'package:peertask/ui/theme/app_theme.dart';
+import 'package:peertask/ui/widgets/app_language_switcher.dart';
+
+class FakeLanguageNotifier extends StateNotifier<Locale> implements LanguageNotifier {
+  FakeLanguageNotifier(super.initial);
+
+  @override
+  Future<void> setLanguage(String code) async {
+    state = Locale(code);
+  }
+
+  @override
+  void toggleLanguage() {
+    state = Locale(state.languageCode == 'en' ? 'vi' : 'en');
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Widget app(Locale locale) {
     return ProviderScope(
+      overrides: [
+        languageProvider.overrideWith((ref) => FakeLanguageNotifier(locale)),
+      ],
       child: MaterialApp(
         locale: locale,
         theme: AppTheme.lightTheme,
@@ -52,8 +71,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpAt(tester, const Size(320, 640), const Locale('vi'));
-    expect(find.text('Bảng công việc nhóm dùng thật'), findsOneWidget);
-    expect(find.text('Một chỗ cho cả công việc'), findsOneWidget);
+    expect(find.text('Làm việc nhóm dễ dàng hơn, cùng nhau hiệu quả hơn'), findsOneWidget);
+    expect(find.text('Mọi công việc trong một không gian'), findsOneWidget);
     expectNoException(tester, 'vi');
   });
 
@@ -65,5 +84,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Task columns'), findsWidgets);
     expectNoException(tester, 'chip');
+  });
+
+  testWidgets('landing renders language switcher in navigation bar and footer', (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpAt(tester, const Size(1280, 800), const Locale('vi'));
+    expect(find.byType(AppLanguageSwitcher), findsWidgets);
+    expect(find.text('VI'), findsWidgets);
+    expectNoException(tester, 'switcher');
   });
 }

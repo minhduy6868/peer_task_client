@@ -54,10 +54,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get signUpTitle => 'ĐĂNG KÝ';
 
   @override
-  String get signInSubtitle => 'Đăng nhập bằng địa chỉ email';
+  String get signInSubtitle =>
+      'Chào mừng trở lại! Vui lòng đăng nhập để tiếp tục';
 
   @override
-  String get signUpSubtitle => 'Tạo tài khoản để bắt đầu';
+  String get signUpSubtitle => 'Tạo tài khoản để bắt đầu cộng tác';
 
   @override
   String get signInToAdventure => 'ĐĂNG NHẬP ĐỂ BẮT ĐẦU\nHÀNH TRÌNH!';
@@ -70,7 +71,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cộng tác liền mạch với nhóm của bạn\ntrên bảng trắng và bảng công việc P2P';
 
   @override
-  String get realTimeCollaboration => 'Cộng tác thời gian thực';
+  String get realTimeCollaboration => 'Cộng tác theo thời gian thực';
 
   @override
   String get secureP2P => 'Kết nối P2P bảo mật';
@@ -79,7 +80,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get crossPlatform => 'Hỗ trợ đa nền tảng';
 
   @override
-  String get emailPlaceholder => 'Yourname@gmail.com';
+  String get emailPlaceholder => 'Địa chỉ email của bạn';
 
   @override
   String get passwordPlaceholder => 'Mật khẩu';
@@ -98,6 +99,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get facebook => 'Facebook';
+
+  @override
+  String get rememberMe => 'Ghi nhớ đăng nhập';
+
+  @override
+  String get termsAgreement =>
+      'Tôi đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư';
+
+  @override
+  String get termsAgreementRequired =>
+      'Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư để tiếp tục';
 
   @override
   String get byRegistering =>
@@ -405,10 +417,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get taskStatus => 'Trạng thái công việc';
 
   @override
-  String get todo => 'Cần làm';
+  String get todo => 'Cần thực hiện';
 
   @override
-  String get inProgress => 'Đang làm';
+  String get inProgress => 'Đang thực hiện';
 
   @override
   String get done => 'Hoàn thành';
@@ -507,7 +519,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get pending => 'Chờ xử lý';
 
   @override
-  String get doing => 'Đang làm';
+  String get doing => 'Đang thực hiện';
 
   @override
   String get empty => 'Trống';
@@ -870,10 +882,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteTaskConfirm => 'Bạn có chắc muốn xóa công việc này?';
 
   @override
-  String get todoColumn => 'Cần làm';
+  String get todoColumn => 'Cần thực hiện';
 
   @override
-  String get doingColumn => 'Đang làm';
+  String get doingColumn => 'Đang thực hiện';
 
   @override
   String get doneColumn => 'Hoàn thành';
@@ -1084,7 +1096,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get pageLabel => 'Trang';
 
   @override
-  String get speaking => 'Đang nói';
+  String get speaking => 'Đang trò chuyện';
 
   @override
   String get toolHintPen => 'Vẽ trên canvas';
@@ -1099,62 +1111,67 @@ class AppLocalizationsVi extends AppLocalizations {
   String get getStarted => 'Bắt đầu';
 
   @override
-  String get landingHeadline => 'Bảng công việc nhóm dùng thật';
+  String get landingHeadline =>
+      'Làm việc nhóm dễ dàng hơn, cùng nhau hiệu quả hơn';
 
   @override
   String get landingSubhead =>
-      'Cột việc, trang vẽ và ai đang ở trong phòng, gói trong một không gian.';
+      'Quản lý công việc, cùng vẽ ý tưởng và kết nối với các thành viên trong một không gian duy nhất.';
 
   @override
-  String get landingTasksTitle => 'Cột công việc';
+  String get landingTasksTitle => 'Quản lý công việc';
 
   @override
   String get landingTasksBody =>
-      'Chuyển việc từ cần làm sang xong ngay trên bảng.';
+      'Theo dõi tiến độ từ cần thực hiện đến hoàn thành trực tiếp trên bảng.';
 
   @override
-  String get landingCanvasTitle => 'Nhiều trang vẽ';
+  String get landingCanvasTitle => 'Bảng vẽ cộng tác';
 
   @override
   String get landingCanvasBody =>
-      'Phác thảo cạnh công việc, rồi sang trang mới.';
+      'Phác thảo ý tưởng ngay cạnh công việc và mở rộng trang vẽ không giới hạn.';
 
   @override
-  String get landingPresenceTitle => 'Ai đang trong phòng';
+  String get landingPresenceTitle => 'Thành viên đang trực tuyến';
 
   @override
   String get landingPresenceBody =>
-      'Thấy người online, mic đang bật và ai đang nói.';
+      'Theo dõi thành viên đang hoạt động, trạng thái micro và ai đang trao đổi.';
 
   @override
-  String get landingPreviewCaption => 'Một bảng làm việc, không phải hộp thư';
+  String get landingPreviewCaption =>
+      'Một không gian làm việc, không chỉ là nơi trao đổi tin nhắn';
 
   @override
-  String get landingCta => 'Mở không gian làm việc trong một phút.';
+  String get landingCta => 'Khởi tạo không gian làm việc chỉ trong một phút.';
 
   @override
-  String get landingFeaturesHeading => 'Một chỗ cho cả công việc';
+  String get landingFeaturesBadge => 'Tính năng';
 
   @override
-  String get landingPreviewKickoff => 'Khởi động';
+  String get landingFeaturesHeading => 'Mọi công việc trong một không gian';
 
   @override
-  String get landingPreviewInvite => 'Mời nhóm';
+  String get landingPreviewKickoff => 'Lập kế hoạch dự án';
 
   @override
-  String get landingPreviewLayout => 'Bố cục';
+  String get landingPreviewInvite => 'Mời thành viên';
 
   @override
-  String get landingPreviewVoice => 'Thoại';
+  String get landingPreviewLayout => 'Thiết kế giao diện';
 
   @override
-  String get continueOffline => 'Làm việc ngoại tuyến';
+  String get landingPreviewVoice => 'Kiểm tra và hoàn thiện';
 
   @override
-  String get downloadAndroidApp => 'Tải app Android';
+  String get continueOffline => 'Làm việc khi không có mạng';
 
   @override
-  String get downloadAndroidAppFailed => 'Không tải được app Android';
+  String get downloadAndroidApp => 'Tải ứng dụng Android';
+
+  @override
+  String get downloadAndroidAppFailed => 'Không thể tải ứng dụng Android';
 
   @override
   String get sendResetLink => 'Gửi liên kết đặt lại';

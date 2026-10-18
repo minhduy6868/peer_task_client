@@ -7,6 +7,7 @@ class StorageService {
   static const String _authBoxName = 'auth';
   static const String _boardsBoxName = 'boards';
   static const String _operationsBoxName = 'operations';
+  static const String _settingsBoxName = 'settings';
 
   // Singleton pattern
   static final StorageService _instance = StorageService._internal();
@@ -14,6 +15,7 @@ class StorageService {
   Box? _authBox;
   Box? _boardsBox;
   Box? _operationsBox;
+  Box? _settingsBox;
 
   // Private constructor
   StorageService._internal();
@@ -25,7 +27,7 @@ class StorageService {
 
   Future<void> init() async {
     // Skip if already initialized
-    if (_authBox != null && _boardsBox != null && _operationsBox != null) {
+    if (_authBox != null && _boardsBox != null && _operationsBox != null && _settingsBox != null) {
       debugPrint('✅ Storage already initialized');
       return;
     }
@@ -35,8 +37,19 @@ class StorageService {
     _authBox = await Hive.openBox(_authBoxName);
     _boardsBox = await Hive.openBox(_boardsBoxName);
     _operationsBox = await Hive.openBox(_operationsBoxName);
+    _settingsBox = await Hive.openBox(_settingsBoxName);
 
     debugPrint('✅ Storage initialized');
+  }
+
+  // Language preference persistence
+  Future<void> saveLanguage(String languageCode) async {
+    if (_settingsBox == null) return;
+    await _settingsBox!.put('language', languageCode);
+  }
+
+  String? getLanguage() {
+    return _settingsBox?.get('language') as String?;
   }
 
   // Auth persistence

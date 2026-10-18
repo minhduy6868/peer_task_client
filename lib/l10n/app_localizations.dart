@@ -191,7 +191,7 @@ abstract class AppLocalizations {
   /// No description provided for @signInSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with email address'**
+  /// **'Welcome back! Please sign in to continue'**
   String get signInSubtitle;
 
   /// No description provided for @signUpSubtitle.
@@ -239,7 +239,7 @@ abstract class AppLocalizations {
   /// No description provided for @emailPlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'Yourname@gmail.com'**
+  /// **'Your email address'**
   String get emailPlaceholder;
 
   /// No description provided for @passwordPlaceholder.
@@ -277,6 +277,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Facebook'**
   String get facebook;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me'**
+  String get rememberMe;
+
+  /// No description provided for @termsAgreement.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the Terms of Service and Privacy Policy'**
+  String get termsAgreement;
+
+  /// No description provided for @termsAgreementRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please agree to the Terms of Service and Privacy Policy to continue'**
+  String get termsAgreementRequired;
 
   /// No description provided for @byRegistering.
   ///
@@ -2263,6 +2281,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open a workspace in a minute.'**
   String get landingCta;
+
+  /// No description provided for @landingFeaturesBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get landingFeaturesBadge;
 
   /// No description provided for @landingFeaturesHeading.
   ///

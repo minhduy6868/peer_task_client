@@ -186,7 +186,11 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
         GoRoute(
           path: '/login',
-          builder: (context, state) => const LoginScreen(),
+          builder: (context, state) {
+            final mode = state.uri.queryParameters['mode'];
+            final isRegister = mode == 'register' || mode == 'signup';
+            return LoginScreen(initialRegisterMode: isRegister);
+          },
         ),
         GoRoute(
           path: '/forgot-password',

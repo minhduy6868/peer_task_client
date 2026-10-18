@@ -54,7 +54,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signUpTitle => 'SIGN UP';
 
   @override
-  String get signInSubtitle => 'Sign in with email address';
+  String get signInSubtitle => 'Welcome back! Please sign in to continue';
 
   @override
   String get signUpSubtitle => 'Create your account to get started';
@@ -79,7 +79,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get crossPlatform => 'Cross-platform support';
 
   @override
-  String get emailPlaceholder => 'Yourname@gmail.com';
+  String get emailPlaceholder => 'Your email address';
 
   @override
   String get passwordPlaceholder => 'Password';
@@ -98,6 +98,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get facebook => 'Facebook';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get termsAgreement =>
+      'I agree to the Terms of Service and Privacy Policy';
+
+  @override
+  String get termsAgreementRequired =>
+      'Please agree to the Terms of Service and Privacy Policy to continue';
 
   @override
   String get byRegistering =>
@@ -1136,6 +1147,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingCta => 'Open a workspace in a minute.';
+
+  @override
+  String get landingFeaturesBadge => 'Features';
 
   @override
   String get landingFeaturesHeading => 'One place for the work';

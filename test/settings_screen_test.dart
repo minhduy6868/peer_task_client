@@ -33,7 +33,7 @@ class FakeLanguageNotifier extends StateNotifier<Locale> implements LanguageNoti
 
 class FakeStorageService extends Fake implements StorageService {
   @override
-  String? getAccessToken() => 'dummy-token';
+  String? getAuthToken() => 'dummy-token';
   @override
   Map<String, dynamic>? getUser() => {
         'id': 'user-123',
