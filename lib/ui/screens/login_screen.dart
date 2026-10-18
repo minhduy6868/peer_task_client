@@ -421,7 +421,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    TextButton(
+                    Flexible(
+                      child: TextButton(
                       onPressed: authState.isLoading
                           ? null
                           : () {
@@ -435,12 +436,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: Text(
                         l10n.forgotPassword,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF7C3AED),
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -504,16 +509,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Expanded(
                     child: Divider(color: Color(0xFFE9E5F2), thickness: 1),
                   ),
-                  Padding(
+                  Flexible(
+                    flex: 3,
+                    child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Text(
                       l10n.orContinueWith,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF8490A8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                  ),
                   ),
                   const Expanded(
                     child: Divider(color: Color(0xFFE9E5F2), thickness: 1),
@@ -556,13 +565,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
+                      Flexible(
+                        child: Text(
                         l10n.continueOffline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF2D2140),
                         ),
+                      ),
                       ),
                     ],
                   ),

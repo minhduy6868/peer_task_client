@@ -86,6 +86,11 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
     } catch (_) {}
   }
 
+  void _logout() {
+    ref.read(authStateProvider.notifier).logout();
+    context.go('/login');
+  }
+
   void _showCreateBoardDialog() {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -328,6 +333,7 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
                 children: [
                   DashboardTopBar(
                     onProfileTap: () => context.push('/settings'),
+                    onLogout: _logout,
                     onBrandTap: _navigateToHome,
                     onBack: _navigateToHome,
                     title: workspace?.name,
@@ -377,16 +383,21 @@ class _WorkspaceHomeScreenState extends ConsumerState<WorkspaceHomeScreen> {
             ),
           ],
         ),
+        titleSpacing: 4,
         actions: [
           IconButton(
             tooltip: AppLocalizations.of(context)!.workspaces,
             icon: const Icon(Icons.apps_rounded, color: Color(0xFF64748B)),
             onPressed: _navigateToHome,
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF64748B)),
-            onPressed: () => ref.read(_currentTabProvider.notifier).state = 4,
+          const ShellLanguageMenu(),
+          const SizedBox(width: 8),
+          ShellAccountMenu(
+            user: authState.user,
+            onOpenSettings: () => context.push('/settings'),
+            onLogout: _logout,
           ),
+          const SizedBox(width: 12),
         ],
       ),
       drawer: Drawer(

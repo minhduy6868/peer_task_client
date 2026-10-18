@@ -124,12 +124,14 @@ class _AppLanguageSwitcherState extends ConsumerState<AppLanguageSwitcher> {
                   letterSpacing: 0.2,
                 ),
               ),
-              const SizedBox(width: 2),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
+              if (!widget.compact) ...[
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ],
           ),
         ),

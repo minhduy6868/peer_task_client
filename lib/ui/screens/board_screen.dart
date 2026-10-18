@@ -10,6 +10,7 @@ import '../../models/task_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/cloudinary_service.dart';
+import '../widgets/user_avatar.dart';
 import '../../utils/error_display.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
@@ -1145,6 +1146,30 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     return l10n.unknownUser;
   }
 
+  String? _resolveAssigneeAvatar(String id, Map<String, dynamic> task) {
+    final trimmed = id.trim();
+    final assigneeList = task['assignee_list'] as List?;
+    if (assigneeList != null) {
+      for (final item in assigneeList) {
+        if (item is Map && item['id']?.toString() == trimmed) {
+          final avatar = item['avatar']?.toString();
+          if (avatar != null && avatar.isNotEmpty) return avatar;
+        }
+      }
+    }
+    for (final m in _members) {
+      if ((m['user_id'] ?? m['id'])?.toString() == trimmed) {
+        final avatar = m['avatar']?.toString();
+        if (avatar != null && avatar.isNotEmpty) return avatar;
+      }
+    }
+    final currentUser = ref.read(authStateProvider).user;
+    if (currentUser != null && currentUser.id == trimmed) {
+      return currentUser.avatar;
+    }
+    return null;
+  }
+
   DateTime? _getTaskStartDate(Map<String, dynamic> task) {
     if (task['startDate'] != null) {
       return DateTime.tryParse(task['startDate'].toString());
@@ -2064,17 +2089,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    CircleAvatar(
-                      radius: 17,
+                    UserAvatar(
+                      name: selfName,
+                      imageUrl: ref.watch(authStateProvider).user?.avatar,
+                      size: 34,
+                      maxInitials: 1,
                       backgroundColor: const Color(0xFF5B4CF0),
-                      child: Text(
-                        selfName.isNotEmpty ? selfName[0].toUpperCase() : 'T',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
+                      foregroundColor: Colors.white,
+                      fontSize: 13,
                     ),
                     Positioned(
                       right: 0,
@@ -2717,9 +2739,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                       : AppLocalizations.of(context)!.micOff,
                   isSpeaking: _voice && state.localSpeaking,
                   isMuted: !_voice,
-                  initial: selfName.isNotEmpty
-                      ? selfName[0].toUpperCase()
-                      : 'Q',
+                  avatarUrl: ref.watch(authStateProvider).user?.avatar,
                   avatarColor: const Color(0xFF5B4CF0),
                   isDark: isDark,
                 ),
@@ -2809,7 +2829,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     String peerName = AppLocalizations.of(context)!.member;
     final peerUserId = peer.userId as String?;
     final match = _members.firstWhere(
-      (m) => m['id'] == peerUserId,
+      (m) => (m['user_id'] ?? m['id']) == peerUserId,
       orElse: () => <String, dynamic>{},
     );
     if (match.isNotEmpty && match['name'] != null) {
@@ -2821,7 +2841,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
 
     final isMuted = peer.isMuted == true;
     final isSpeaking = peer.isSpeaking == true && !isMuted;
-    final initial = peerName.isNotEmpty ? peerName[0].toUpperCase() : 'P';
 
     return _buildVoiceMemberRow(
       name: peerName,
@@ -2833,7 +2852,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                 : AppLocalizations.of(context)!.listening),
       isSpeaking: isSpeaking,
       isMuted: isMuted,
-      initial: initial,
+      avatarUrl: (peer.avatar as String?) ?? match['avatar'] as String?,
       avatarColor: const Color(0xFF8B5CF6),
       isDark: isDark,
     );
@@ -2845,7 +2864,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     required String subtitle,
     required bool isSpeaking,
     required bool isMuted,
-    required String initial,
+    String? avatarUrl,
     required Color avatarColor,
     required bool isDark,
   }) {
@@ -2858,17 +2877,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 15,
+          UserAvatar(
+            name: name,
+            imageUrl: avatarUrl,
+            size: 30,
+            maxInitials: 1,
             backgroundColor: avatarColor,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            foregroundColor: Colors.white,
+            fontSize: 11,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -3068,6 +3084,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                   final authorId = note['authorId'] as String?;
                   final canDelete =
                       authorId == currentUserId || authorId == 'self';
+                  final authorAvatar = canDelete
+                      ? ref.watch(authStateProvider).user?.avatar
+                      : _members
+                                .where(
+                                  (m) => (m['user_id'] ?? m['id']) == authorId,
+                                )
+                                .firstOrNull?['avatar']
+                            as String?;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -3086,17 +3110,14 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                       children: [
                         Row(
                           children: [
-                            CircleAvatar(
-                              radius: 8,
+                            UserAvatar(
+                              name: author,
+                              imageUrl: authorAvatar,
+                              size: 16,
+                              maxInitials: 1,
                               backgroundColor: const Color(0xFF5B4CF0),
-                              child: Text(
-                                author.isNotEmpty ? author[0] : 'U',
-                                style: const TextStyle(
-                                  fontSize: 8,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              foregroundColor: Colors.white,
+                              fontSize: 8,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -3502,11 +3523,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     final assigneeIds = List<String>.from(task['assignees'] ?? []);
     String assigneeDisplay = l10n.unassigned;
     String fullAssigneeTooltip = '';
+    String? firstAssigneeName;
+    String? firstAssigneeAvatar;
 
     if (assigneeIds.isNotEmpty) {
       final names = assigneeIds
           .map((id) => _resolveAssigneeName(id, task, l10n))
           .toList();
+      firstAssigneeName = names.first;
+      firstAssigneeAvatar = _resolveAssigneeAvatar(assigneeIds.first, task);
       fullAssigneeTooltip = names.join(', ');
       if (names.length <= 2) {
         assigneeDisplay = names.join(', ');
@@ -3596,11 +3621,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
                   : assigneeDisplay,
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.person_outline_rounded,
-                    size: 16,
-                    color: Color(0xFF64748B),
-                  ),
+                  if (firstAssigneeName != null)
+                    UserAvatar(
+                      name: firstAssigneeName,
+                      imageUrl: firstAssigneeAvatar,
+                      size: 18,
+                      maxInitials: 1,
+                      fontSize: 9,
+                    )
+                  else
+                    const Icon(
+                      Icons.person_outline_rounded,
+                      size: 16,
+                      color: Color(0xFF64748B),
+                    ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(

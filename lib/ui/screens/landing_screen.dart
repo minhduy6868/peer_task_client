@@ -197,6 +197,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
         final screenWidth = MediaQuery.sizeOf(context).width;
         final wide = screenWidth >= 960;
         final isMobile = screenWidth < 640;
+        final isNarrow = screenWidth < 420;
 
         return ClipRect(
           child: BackdropFilter(
@@ -223,6 +224,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const _LogoMark(),
+                            if (!isNarrow) ...[
                             const SizedBox(width: 10),
                             Text(
                               l10n.appTitle,
@@ -234,6 +236,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                                 color: AppColors.textPrimary,
                               ),
                             ),
+                            ],
                           ],
                         ),
                       ),
@@ -248,25 +251,26 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const AppLanguageSwitcher(),
-                                const SizedBox(width: 12),
+                                AppLanguageSwitcher(compact: isMobile),
+                                SizedBox(width: isMobile ? 6 : 12),
                                 TextButton(
                                   onPressed: () => context.go('/login'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: AppColors.primaryDark,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16, vertical: 12),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                   child: Text(
                                     l10n.signIn,
-                                    style: const TextStyle(
-                                      fontSize: 15,
+                                    style: TextStyle(
+                                      fontSize: isMobile ? 14 : 15,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.primaryDark,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                if (!isNarrow) ...[
+                                SizedBox(width: isMobile ? 6 : 10),
                                 Container(
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
@@ -289,14 +293,14 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                                       onTap: () => context.go('/login?mode=signup'),
                                       borderRadius: BorderRadius.circular(12),
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 22,
-                                          vertical: 12,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isMobile ? 14 : 22,
+                                          vertical: isMobile ? 10 : 12,
                                         ),
                                         child: Text(
                                           l10n.getStarted,
-                                          style: const TextStyle(
-                                            fontSize: 15,
+                                          style: TextStyle(
+                                            fontSize: isMobile ? 14 : 15,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,
                                             letterSpacing: 0.2,
@@ -306,6 +310,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> with TickerProvid
                                     ),
                                   ),
                                 ),
+                                ],
                               ],
                             ),
                           ),

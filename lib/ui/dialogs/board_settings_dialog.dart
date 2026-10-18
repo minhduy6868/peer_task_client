@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 
 import '../../utils/error_display.dart';
 import '../theme/app_colors.dart';
+import '../widgets/user_avatar.dart';
 class BoardSettingsDialog extends ConsumerStatefulWidget {
   final String boardId;
   final String boardName;
@@ -392,13 +393,12 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
                     final workspaceRole = member['workspace_role'];
                     
                     return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          (member['name'] ?? member['email'])
-                              .toString()
-                              .substring(0, 1)
-                              .toUpperCase(),
-                        ),
+                      leading: UserAvatar(
+                        name: (member['name'] ?? member['email'] ?? '').toString(),
+                        imageUrl: member['avatar']?.toString(),
+                        size: 40,
+                        maxInitials: 1,
+                        fontSize: 16,
                       ),
                       title: Text(member['name'] ?? member['email']),
                       subtitle: Row(
@@ -667,14 +667,12 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircleAvatar(
-                        radius: 16,
-                        child: Text(
-                          (member['name'] ?? member['email'])
-                              .toString()
-                              .substring(0, 1)
-                              .toUpperCase(),
-                        ),
+                      UserAvatar(
+                        name: (member['name'] ?? member['email'] ?? '').toString(),
+                        imageUrl: member['avatar']?.toString(),
+                        size: 32,
+                        maxInitials: 1,
+                        fontSize: 14,
                       ),
                       const SizedBox(width: 12),
                       Flexible(

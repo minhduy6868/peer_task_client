@@ -5,6 +5,7 @@ import 'package:peertask/l10n/app_localizations.dart';
 import 'package:peertask/providers/language_provider.dart';
 import 'package:peertask/ui/screens/login_screen.dart';
 import 'package:peertask/ui/theme/app_theme.dart';
+import 'package:peertask/ui/widgets/app_language_switcher.dart';
 
 class _FakeLanguageNotifier extends StateNotifier<Locale> implements LanguageNotifier {
   _FakeLanguageNotifier(super.initial);
@@ -115,5 +116,32 @@ void main() {
     // Password error should NOT be visible
     expect(find.text('This field is required'), findsNothing);
     expect(find.text('Password is required'), findsNothing);
+  });
+
+  testWidgets('LoginScreen lays out on phones without overlapping the language switcher', (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+
+    for (final locale in const [Locale('en'), Locale('vi')]) {
+      for (final size in const [Size(320, 640), Size(390, 844)]) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(buildSubject(locale: locale));
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: '$locale $size');
+
+        final switcher = tester.getRect(find.byType(AppLanguageSwitcher));
+        final submit = tester.getRect(find.byKey(const Key('auth-submit-button')));
+        final firstField = tester.getRect(find.byType(TextFormField).first);
+        expect(switcher.overlaps(firstField), isFalse, reason: '$locale $size');
+        expect(switcher.overlaps(submit), isFalse, reason: '$locale $size');
+
+        final toggle = find.byKey(const Key('auth-toggle-mode-button'));
+        await tester.ensureVisible(toggle);
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'sign up $locale $size');
+      }
+    }
   });
 }

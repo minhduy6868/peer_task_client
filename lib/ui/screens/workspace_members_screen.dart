@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:peertask/providers/app_providers.dart';
 import 'package:peertask/l10n/app_localizations.dart';
 import 'package:peertask/utils/error_display.dart';
-import '../theme/app_colors.dart';
+import '../widgets/user_avatar.dart';
 
 class MemberDisplayData {
   final String id;
@@ -103,6 +103,7 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
             role: role,
             assignedTasks: tasks,
             status: status,
+            avatar: m['avatar']?.toString(),
           );
         }).toList();
       } else {
@@ -868,8 +869,6 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
   }
 
   Widget _buildDesktopMemberRow(BuildContext context, AppLocalizations l10n, MemberDisplayData member) {
-    final initials = member.name.trim().split(' ').map((p) => p.isNotEmpty ? p[0].toUpperCase() : '').take(2).join();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
@@ -879,24 +878,17 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
             flex: 4,
             child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(color: const Color(0xFFC4B5FD)),
+                UserAvatar(
+                  name: member.name,
+                  imageUrl: member.avatar,
+                  size: 40,
+                  fontSize: 14,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Center(
-                    child: Text(
-                      initials.isNotEmpty ? initials : 'U',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF6366F1)),
-                    ),
-                  ),
+                  border: Border.all(color: const Color(0xFFC4B5FD)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1033,8 +1025,6 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
   }
 
   Widget _buildMobileMemberCard(BuildContext context, AppLocalizations l10n, MemberDisplayData member) {
-    final initials = member.name.trim().split(' ').map((p) => p.isNotEmpty ? p[0].toUpperCase() : '').take(2).join();
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1047,19 +1037,11 @@ class _WorkspaceMembersScreenState extends ConsumerState<WorkspaceMembersScreen>
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFEDE9FE),
-                ),
-                child: Center(
-                  child: Text(
-                    initials.isNotEmpty ? initials : 'U',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6366F1)),
-                  ),
-                ),
+              UserAvatar(
+                name: member.name,
+                imageUrl: member.avatar,
+                size: 36,
+                fontSize: 13,
               ),
               const SizedBox(width: 10),
               Expanded(

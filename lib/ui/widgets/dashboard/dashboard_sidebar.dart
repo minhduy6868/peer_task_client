@@ -4,6 +4,7 @@ import 'package:peertask/models/user/user.dart';
 import 'package:peertask/models/board/board.dart';
 import 'package:peertask/l10n/app_localizations.dart';
 import '../app_shell_style.dart';
+import '../user_avatar.dart';
 
 class DashboardSidebar extends StatelessWidget {
   final int currentTab;
@@ -44,12 +45,13 @@ class DashboardSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final width = isCompact ? AppShellStyle.sidebarCompactWidth : AppShellStyle.sidebarWidth;
+    final width = isCompact
+        ? AppShellStyle.sidebarCompactWidth
+        : AppShellStyle.sidebarWidth;
     final userName = user?.name?.isNotEmpty == true
         ? user!.name!
         : (user?.email?.split('@').first ?? '');
     final userEmail = user?.email ?? '';
-    final userInitials = userName.trim().split(' ').map((p) => p.isNotEmpty ? p[0].toUpperCase() : '').take(2).join();
 
     return Container(
       width: width,
@@ -131,24 +133,12 @@ class DashboardSidebar extends StatelessWidget {
                   child: Row(
                     children: [
                       // Avatar
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFEDE9FE),
-                          border: Border.all(color: const Color(0xFFDDD6FE)),
-                        ),
-                        child: Center(
-                          child: Text(
-                            userInitials.isNotEmpty ? userInitials : 'D',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF6366F1),
-                            ),
-                          ),
-                        ),
+                      UserAvatar(
+                        name: userName,
+                        imageUrl: user?.avatar,
+                        size: 38,
+                        fontSize: 14,
+                        border: Border.all(color: const Color(0xFFDDD6FE)),
                       ),
                       if (!isCompact) ...[
                         const SizedBox(width: 10),

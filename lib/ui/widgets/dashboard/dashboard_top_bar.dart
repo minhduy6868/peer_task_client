@@ -4,11 +4,13 @@ import 'package:peertask/models/user/user.dart';
 import 'package:peertask/l10n/app_localizations.dart';
 import 'package:peertask/providers/language_provider.dart';
 import '../app_shell_style.dart';
+import '../user_avatar.dart';
 
 class DashboardTopBar extends StatelessWidget {
   final TextEditingController? searchController;
   final ValueChanged<String>? onSearch;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onLogout;
   final VoidCallback? onBrandTap;
   final VoidCallback? onBack;
   final String? title;
@@ -19,6 +21,7 @@ class DashboardTopBar extends StatelessWidget {
     this.searchController,
     this.onSearch,
     this.onProfileTap,
+    this.onLogout,
     this.onBrandTap,
     this.onBack,
     this.title,
@@ -96,7 +99,14 @@ class DashboardTopBar extends StatelessWidget {
           ],
           const ShellLanguageMenu(),
           const SizedBox(width: 14),
-          ShellAvatar(user: user, onTap: onProfileTap),
+          if (onLogout != null)
+            ShellAccountMenu(
+              user: user,
+              onOpenSettings: onProfileTap ?? () {},
+              onLogout: onLogout!,
+            )
+          else
+            ShellAvatar(user: user, onTap: onProfileTap),
         ],
       ),
     );
@@ -191,7 +201,7 @@ class ShellLanguageMenu extends ConsumerWidget {
       ],
       child: Container(
         height: AppShellStyle.searchHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
         decoration: AppShellStyle.searchDecoration,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -212,12 +222,24 @@ class ShellLanguageMenu extends ConsumerWidget {
                 ),
               ),
             ],
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 16,
-              color: AppShellStyle.textHint,
-            ),
+            if (compact) ...[
+              const SizedBox(width: 4),
+              Text(
+                isVietnamese ? 'VI' : 'EN',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppShellStyle.textBody,
+                ),
+              ),
+            ] else ...[
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: AppShellStyle.textHint,
+              ),
+            ],
           ],
         ),
       ),
@@ -235,49 +257,26 @@ class ShellAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = user?.name?.trim().isNotEmpty == true
         ? user!.name!.trim()
-        : (user?.email.split('@').first ?? '');
-    final initials = name
-        .split(' ')
-        .where((p) => p.isNotEmpty)
-        .map((p) => p[0].toUpperCase())
-        .take(2)
-        .join();
-    final avatar = user?.avatar;
+        : (user?.email ?? '');
 
-    final circle = Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppShellStyle.primary.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        image: avatar != null && avatar.isNotEmpty
-            ? DecorationImage(image: NetworkImage(avatar), fit: BoxFit.cover)
-            : null,
+    final circle = UserAvatar(
+      name: name,
+      imageUrl: user?.avatar,
+      size: 38,
+      fontSize: 14,
+      gradient: const LinearGradient(
+        colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      child: avatar != null && avatar.isNotEmpty
-          ? null
-          : Center(
-              child: Text(
-                initials.isNotEmpty ? initials : '?',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppShellStyle.primary,
-                ),
-              ),
-            ),
+      border: Border.all(color: Colors.white, width: 2),
+      boxShadow: [
+        BoxShadow(
+          color: AppShellStyle.primary.withValues(alpha: 0.2),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
     );
 
     if (onTap == null) return circle;
@@ -285,6 +284,116 @@ class ShellAvatar extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: circle,
+    );
+  }
+}
+
+/// Avatar button opening a menu with the user's identity, settings and logout.
+class ShellAccountMenu extends StatelessWidget {
+  final User? user;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onLogout;
+
+  const ShellAccountMenu({
+    super.key,
+    this.user,
+    required this.onOpenSettings,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return PopupMenuButton<String>(
+      tooltip: l10n.accountAndSettings,
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) {
+        if (value == 'settings') onOpenSettings();
+        if (value == 'logout') onLogout();
+      },
+      itemBuilder: (context) => [
+        if (user != null) ...[
+          PopupMenuItem(
+            enabled: false,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 240),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (user!.name?.trim().isNotEmpty == true)
+                    Text(
+                      user!.name!.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppShellStyle.textDark,
+                      ),
+                    ),
+                  Text(
+                    user!.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppShellStyle.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const PopupMenuDivider(),
+        ],
+        PopupMenuItem(
+          value: 'settings',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.settings_outlined,
+                size: 18,
+                color: AppShellStyle.textMuted,
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  l10n.accountAndSettings,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: Color(0xFFEF4444),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  l10n.logout,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: ShellAvatar(user: user),
     );
   }
 }

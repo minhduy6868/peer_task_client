@@ -27,43 +27,45 @@ class AuthLayout extends StatelessWidget {
               ),
             ),
 
-            // Top Language Switcher
-            Positioned(
-              top: 16,
-              right: 16,
-              child: SafeArea(
-                bottom: false,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFE9E5F2),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7C3AED).withValues(alpha: 0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const AppLanguageSwitcher(),
-                ),
-              ),
-            ),
-
-            // Main Content Area
             SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isCompact ? 16 : 24,
-                    vertical: isCompact ? 32 : 48,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, isCompact ? 10 : 16, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFE9E5F2),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF7C3AED).withValues(alpha: 0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const AppLanguageSwitcher(),
+                      ),
+                    ),
                   ),
-                  child: child,
-                ),
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompact ? 16 : 24,
+                          vertical: isCompact ? 16 : 32,
+                        ),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

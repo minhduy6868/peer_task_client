@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
+import '../widgets/user_avatar.dart';
 import '../theme/app_text_styles.dart';
 import '../../utils/error_display.dart';
 
@@ -343,13 +344,12 @@ class _MembersTabState extends ConsumerState<_MembersTab> {
               final isOwner = member['role'] == 'owner';
               
               return ListTile(
-                leading: CircleAvatar(
-                  child: Text(
-                    (member['name'] ?? member['email'])
-                        .toString()
-                        .substring(0, 1)
-                        .toUpperCase(),
-                  ),
+                leading: UserAvatar(
+                  name: (member['name'] ?? member['email'] ?? '').toString(),
+                  imageUrl: member['avatar']?.toString(),
+                  size: 40,
+                  maxInitials: 1,
+                  fontSize: 16,
                 ),
                 title: Text(member['name'] ?? member['email']),
                 subtitle: Text(member['email']),

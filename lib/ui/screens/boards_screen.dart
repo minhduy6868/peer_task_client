@@ -9,6 +9,7 @@ import '../../utils/validators_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../dialogs/board_settings_dialog.dart';
 import '../theme/app_colors.dart';
+import '../widgets/user_avatar.dart';
 
 const _boardAccents = [
   AppColors.primary,
@@ -807,6 +808,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                 _HomeHeader(
                   greeting: l10n.welcome,
                   name: greetingName,
+                  avatarUrl: user?.avatar,
                   workspaceName: workspaceName ?? '',
                   role: role != null
                       ? (role == 'owner'
@@ -952,6 +954,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
                 _TasksHeader(
                   greeting: l10n.welcome,
                   name: greetingName,
+                  avatarUrl: user?.avatar,
                   workspaceName: workspaceName ?? '',
                   role: role != null
                       ? (role == 'owner'
@@ -1060,6 +1063,7 @@ class _BoardsScreenState extends ConsumerState<BoardsScreen> {
 class _HomeHeader extends StatelessWidget {
   final String greeting;
   final String name;
+  final String? avatarUrl;
   final String workspaceName;
   final String? role;
   final int totalBoards;
@@ -1086,6 +1090,7 @@ class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.greeting,
     required this.name,
+    this.avatarUrl,
     required this.workspaceName,
     this.role,
     required this.totalBoards,
@@ -1469,17 +1474,14 @@ class _HomeHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 8.5,
+                    UserAvatar(
+                      name: name,
+                      imageUrl: avatarUrl,
+                      size: 17,
+                      maxInitials: 1,
+                      fontSize: 9.5,
                       backgroundColor: AppColors.primarySubtle,
-                      child: Text(
-                        name.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
+                      foregroundColor: AppColors.primaryDark,
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -1807,6 +1809,7 @@ class _MetricPill extends StatelessWidget {
 class _TasksHeader extends StatelessWidget {
   final String greeting;
   final String name;
+  final String? avatarUrl;
   final String workspaceName;
   final String? role;
   final int totalTasks;
@@ -1829,6 +1832,7 @@ class _TasksHeader extends StatelessWidget {
   const _TasksHeader({
     required this.greeting,
     required this.name,
+    this.avatarUrl,
     required this.workspaceName,
     this.role,
     required this.totalTasks,
@@ -2246,17 +2250,14 @@ class _TasksHeader extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 8.5,
+                    UserAvatar(
+                      name: name,
+                      imageUrl: avatarUrl,
+                      size: 17,
+                      maxInitials: 1,
+                      fontSize: 9.5,
                       backgroundColor: AppColors.primarySubtle,
-                      child: Text(
-                        name.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
+                      foregroundColor: AppColors.primaryDark,
                     ),
                     const SizedBox(width: 5),
                     Text(

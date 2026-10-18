@@ -5,7 +5,7 @@ import '../../providers/app_providers.dart';
 import '../../models/workspace/workspace.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/error_display.dart';
-import '../theme/app_colors.dart';
+import '../widgets/user_avatar.dart';
 
 class ProjectSettingsScreen extends ConsumerStatefulWidget {
   final String workspaceId;
@@ -835,16 +835,12 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFEDE9FE)),
-                    child: Center(
-                      child: Text(
-                        ownerName.isNotEmpty ? ownerName[0].toUpperCase() : 'O',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1), fontSize: 16),
-                      ),
-                    ),
+                  UserAvatar(
+                    name: ownerName,
+                    imageUrl: authUser?.avatar,
+                    size: 44,
+                    maxInitials: 1,
+                    fontSize: 16,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -981,10 +977,12 @@ class _ProjectSettingsScreenState extends ConsumerState<ProjectSettingsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: const Color(0xFFEDE9FE),
-                          child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1), fontSize: 13)),
+                        UserAvatar(
+                          name: name,
+                          imageUrl: member['avatar']?.toString(),
+                          size: 36,
+                          maxInitials: 1,
+                          fontSize: 13,
                         ),
                         const SizedBox(width: 12),
                         Expanded(

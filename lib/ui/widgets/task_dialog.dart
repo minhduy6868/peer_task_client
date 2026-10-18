@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/task_model.dart';
+import 'user_avatar.dart';
 
 /// Label definitions with modern pastel background and text colors
 class _LabelItem {
@@ -2306,18 +2307,14 @@ class _AssigneePickerDialogState extends State<_AssigneePickerDialog> {
                           subtitle: m['name'] != null && m['email'] != null
                               ? m['email'].toString()
                               : null,
-                          avatar: CircleAvatar(
-                            radius: 16,
+                          avatar: UserAvatar(
+                            name: _nameOf(m),
+                            imageUrl: m['avatar']?.toString(),
+                            size: 32,
+                            maxInitials: 1,
+                            fontSize: 13,
                             backgroundColor: const Color(0xFF5B4CF0),
-                            child: Text(
-                              _nameOf(m).isNotEmpty
-                                  ? _nameOf(m)[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
+                            foregroundColor: Colors.white,
                           ),
                         ),
                   ],
